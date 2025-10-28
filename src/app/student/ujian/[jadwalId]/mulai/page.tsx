@@ -462,12 +462,29 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         router.push(`/student/ujian/${jadwalId}/hasil?skor=${data.skor}&maksimal=${data.skorMaksimal}&tampilkan=${data.tampilkanNilai}`)
       } else {
         console.error('Submit failed:', data)
-        // Display error message to user with toast
         const errorMessage = data.error || 'Gagal submit ujian'
-        toast.error(errorMessage, { 
-          duration: 7000,
-          description: data.details || undefined 
-        })
+        
+        // Special handling for minimum time error - show in center with custom style
+        if (errorMessage.includes('harus mengerjakan minimal')) {
+          toast.error(errorMessage, {
+            duration: 8000,
+            position: 'top-center',
+            className: 'text-center font-semibold text-lg',
+            description: 'Silakan kerjakan ujian lebih lama sebelum submit',
+            style: {
+              minWidth: '400px',
+              maxWidth: '600px',
+              padding: '20px',
+              fontSize: '16px',
+            }
+          })
+        } else {
+          // Regular error toast
+          toast.error(errorMessage, { 
+            duration: 7000,
+            description: data.details || undefined 
+          })
+        }
         setSubmitting(false)
       }
     } catch (error) {
