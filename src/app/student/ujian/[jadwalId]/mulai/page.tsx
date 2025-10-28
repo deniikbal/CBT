@@ -66,31 +66,55 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     enableRightClickBlock: agreedToTerms && !!hasilId,
   })
 
+  // Load Eruda for mobile debugging (only in development)
+  useEffect(() => {
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      // Mobile detection
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      if (isMobile) {
+        const script = document.createElement('script')
+        script.src = 'https://cdn.jsdelivr.net/npm/eruda'
+        document.body.appendChild(script)
+        script.onload = () => {
+          // @ts-ignore
+          if (window.eruda) window.eruda.init()
+        }
+      }
+    }
+  }, [])
+
   // Initialize pesertaId on mount
   useEffect(() => {
+    console.log('[INIT] Initializing peserta data...')
     const storedPeserta = localStorage.getItem('peserta')
     if (!storedPeserta) {
-      console.log('No peserta data in localStorage, redirecting to login')
+      console.error('[INIT] No peserta data in localStorage, redirecting to login')
       router.push('/login')
       return
     }
 
-    const pesertaData = JSON.parse(storedPeserta)
-    console.log('Peserta data from localStorage:', pesertaData)
-    
-    // Check if account is active
-    if (pesertaData.isActive === false) {
-      console.log('Account is not active')
-      toast.error('Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.')
-      setTimeout(() => {
-        localStorage.removeItem('peserta')
-        router.push('/login')
-      }, 3000)
-      return
+    try {
+      const pesertaData = JSON.parse(storedPeserta)
+      console.log('[INIT] Peserta data:', { id: pesertaData.id, name: pesertaData.name, isActive: pesertaData.isActive })
+      
+      // Check if account is active
+      if (pesertaData.isActive === false) {
+        console.error('[INIT] Account is not active')
+        toast.error('Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.')
+        setTimeout(() => {
+          localStorage.removeItem('peserta')
+          router.push('/login')
+        }, 3000)
+        return
+      }
+      
+      console.log('[INIT] Setting pesertaId:', pesertaData.id)
+      setPesertaId(pesertaData.id)
+    } catch (error) {
+      console.error('[INIT] Error parsing peserta data:', error)
+      toast.error('Data tidak valid, silakan login kembali')
+      router.push('/login')
     }
-    
-    console.log('Setting pesertaId:', pesertaData.id)
-    setPesertaId(pesertaData.id)
   }, [router])
 
   // Log pesertaId changes
@@ -221,45 +245,72 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   }
 
   const startUjian = async (pesertaId: string) => {
-    console.log('Starting exam for peserta:', pesertaId)
+    console.log('[START] Starting exam for peserta:', pesertaId)
+    console.log('[START] Jadwal ID:', jadwalId)
     setLoading(true)
+    
     try {
+      console.log('[START] Fetching API:', `/api/ujian/${jadwalId}/start`)
       const response = await fetch(`/api/ujian/${jadwalId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pesertaId })
       })
 
-      console.log('Start ujian response:', response.status)
+      console.log('[START] Response status:', response.status)
+      console.log('[START] Response OK:', response.ok)
 
       if (!response.ok) {
         const data = await response.json()
-        console.error('Failed to start ujian:', data)
+        console.error('[START] Failed to start ujian:', data)
+        console.error('[START] Error:', data.error)
+        console.error('[START] Will redirect to /student/ujian after 3 seconds')
+        
         toast.error(data.error || 'Gagal memulai ujian', { duration: 5000 })
         
         // Don't redirect immediately, let user see the error
         setTimeout(() => {
+          console.error('[START] Redirecting now...')
           router.push('/student/ujian')
         }, 3000)
         return
       }
 
       const data = await response.json()
-      console.log('Start ujian data:', { 
+      console.log('[START] Response data:', { 
         hasilId: data.hasilId, 
         soalCount: data.soal?.length,
         jadwalNama: data.jadwal?.namaUjian 
       })
 
-      if (!data.hasilId || !data.soal || !data.jadwal) {
-        console.error('Invalid response data:', data)
-        toast.error('Data ujian tidak lengkap')
+      if (!data.hasilId) {
+        console.error('[START] Missing hasilId in response:', data)
+        toast.error('Data ujian tidak lengkap (hasilId)')
         setTimeout(() => {
           router.push('/student/ujian')
         }, 3000)
         return
       }
 
+      if (!data.soal || data.soal.length === 0) {
+        console.error('[START] Missing soal in response:', data)
+        toast.error('Data ujian tidak lengkap (soal)')
+        setTimeout(() => {
+          router.push('/student/ujian')
+        }, 3000)
+        return
+      }
+
+      if (!data.jadwal) {
+        console.error('[START] Missing jadwal in response:', data)
+        toast.error('Data ujian tidak lengkap (jadwal)')
+        setTimeout(() => {
+          router.push('/student/ujian')
+        }, 3000)
+        return
+      }
+
+      console.log('[START] All data valid, setting state...')
       setJadwal(data.jadwal)
       setSoalList(data.soal)
       setHasilId(data.hasilId)
@@ -300,14 +351,22 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       setTimeLeft(secondsLeft)
       setLoading(false)
       
-      console.log('Ujian started successfully')
+      console.log('[START] ✅ Ujian started successfully!')
+      console.log('[START] State:', { 
+        hasilId: data.hasilId, 
+        soalCount: data.soal.length,
+        agreedToTerms: true,
+        loading: false
+      })
     } catch (error) {
-      console.error('Error starting ujian:', error)
+      console.error('[START] ❌ Exception error starting ujian:', error)
+      console.error('[START] Error details:', error instanceof Error ? error.message : String(error))
       toast.error('Terjadi kesalahan saat memulai ujian', { duration: 5000 })
       setLoading(false)
       
       // Don't redirect immediately
       setTimeout(() => {
+        console.error('[START] Redirecting due to exception...')
         router.push('/student/ujian')
       }, 3000)
     }
@@ -432,24 +491,34 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
   // Agreement handler
   const handleAgreeToTerms = async () => {
-    console.log('Agreement accepted, starting exam...')
+    console.log('[AGREEMENT] Agreement accepted, starting exam...')
     
     // Detect if mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+    console.log('[AGREEMENT] Device detection:', {
+      userAgent: navigator.userAgent,
+      screenWidth: window.innerWidth,
+      isMobile
+    })
     
     // Request fullscreen only on desktop
-    if (requestFullscreen && !isMobile) {
-      console.log('Requesting fullscreen (desktop)...')
-      const success = await requestFullscreen()
-      if (success) {
-        console.log('Fullscreen mode activated')
-      } else {
-        console.log('Fullscreen not activated, continuing without it')
+    if (!isMobile && requestFullscreen) {
+      console.log('[AGREEMENT] Requesting fullscreen (desktop)...')
+      try {
+        const success = await requestFullscreen()
+        if (success) {
+          console.log('[AGREEMENT] Fullscreen mode activated')
+        } else {
+          console.log('[AGREEMENT] Fullscreen not activated, continuing without it')
+        }
+      } catch (error) {
+        console.error('[AGREEMENT] Fullscreen error:', error)
       }
     } else {
-      console.log('Skipping fullscreen (mobile device)')
+      console.log('[AGREEMENT] Skipping fullscreen (mobile device)')
     }
     
+    console.log('[AGREEMENT] Setting agreedToTerms to true')
     setShowAgreement(false)
     setAgreedToTerms(true)
   }

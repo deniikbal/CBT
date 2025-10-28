@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Monitoring API</title>
+</head>
+<body>
+    <h1>Test Monitoring API</h1>
+    <button onclick="testAPI()">Test API</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testAPI() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Loading...';
+            
+            try {
+                console.log('Testing API...');
+                const response = await fetch('/api/admin/monitoring/active-exams');
+                console.log('Response:', response);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultEl.textContent = 'SUCCESS!\n\n' + JSON.stringify(data, null, 2);
+                } else {
+                    const error = await response.text();
+                    resultEl.textContent = 'ERROR ' + response.status + ':\n\n' + error;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                resultEl.textContent = 'FAILED TO FETCH:\n\n' + error.message + '\n\nPossible causes:\n- Development server not running\n- Wrong port (should be 3000)\n- CORS issue';
+            }
+        }
+    </script>
+</body>
+</html>

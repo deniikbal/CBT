@@ -60,21 +60,41 @@ export default function MonitoringPage() {
   const fetchActiveExams = async () => {
     try {
       console.log('[Monitoring Page] Fetching active exams...')
-      const response = await fetch('/api/admin/monitoring/active-exams')
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
+      const response = await fetch('/api/admin/monitoring/active-exams', {
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      clearTimeout(timeoutId)
       
       console.log('[Monitoring Page] Response status:', response.status)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('[Monitoring Page] Received data:', data.length, 'exams')
-        setActiveExams(data)
+        console.log('[Monitoring Page] Received data:', Array.isArray(data) ? data.length : 0, 'exams')
+        // Ensure data is array
+        setActiveExams(Array.isArray(data) ? data : [])
       } else {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         console.error('[Monitoring Page] API error:', errorData)
+        setActiveExams([]) // Set empty array on error
       }
     } catch (error) {
-      console.error('[Monitoring Page] Failed to fetch active exams:', error)
-      console.error('[Monitoring Page] Error details:', error instanceof Error ? error.message : String(error))
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          console.error('[Monitoring Page] Request timeout after 10 seconds')
+        } else {
+          console.error('[Monitoring Page] Failed to fetch active exams:', error.message)
+        }
+      }
+      console.error('[Monitoring Page] Full error:', error)
+      setActiveExams([]) // Set empty array on error
     } finally {
       setLoading(false)
     }

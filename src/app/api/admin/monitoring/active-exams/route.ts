@@ -36,7 +36,15 @@ export async function GET() {
       console.log(`[Monitoring API] Found ${activeExams.length} active exams`);
     } catch (queryError) {
       console.error('[Monitoring API] Database query error:', queryError);
-      throw queryError;
+      // Return empty array instead of throwing error
+      console.log('[Monitoring API] Returning empty array due to query error');
+      return NextResponse.json([]);
+    }
+    
+    // If no active exams, return empty array
+    if (!activeExams || activeExams.length === 0) {
+      console.log('[Monitoring API] No active exams found');
+      return NextResponse.json([]);
     }
 
     // Get activity counts for each exam
