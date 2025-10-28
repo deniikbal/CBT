@@ -117,10 +117,26 @@ export async function GET() {
             activityCounts[act.activityType] = Number(act.totalCount) || 0;
           });
 
-          // Calculate risk level
-          const blurCount = activityCounts.TAB_BLUR || 0;
-          const devToolsCount = activityCounts.ATTEMPTED_DEVTOOLS || 0;
-          const totalSuspicious = blurCount + devToolsCount;
+          // Calculate risk level based on ALL suspicious activities
+          const tabBlur = activityCounts.TAB_BLUR || 0;
+          const devTools = activityCounts.ATTEMPTED_DEVTOOLS || 0;
+          const screenshot = activityCounts.SCREENSHOT_ATTEMPT || 0;
+          const rightClick = activityCounts.RIGHT_CLICK || 0;
+          const copyAttempt = activityCounts.COPY_ATTEMPT || 0;
+          const pasteAttempt = activityCounts.PASTE_ATTEMPT || 0;
+          const sessionViolation = activityCounts.SESSION_VIOLATION || 0;
+          const exitFullscreen = activityCounts.EXIT_FULLSCREEN || 0;
+          
+          // Weight different activities differently
+          const totalSuspicious = 
+            tabBlur + 
+            (devTools * 2) + // DevTools is more serious
+            screenshot + 
+            (rightClick * 0.3) + // Right click less serious
+            (copyAttempt * 0.5) + 
+            (pasteAttempt * 0.5) +
+            (sessionViolation * 3) + // Session violation is very serious
+            (exitFullscreen * 0.5);
 
           let riskLevel: 'low' | 'medium' | 'high' = 'low';
           if (totalSuspicious >= 5) riskLevel = 'high';

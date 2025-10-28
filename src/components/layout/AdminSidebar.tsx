@@ -14,7 +14,8 @@ import {
   BookMarked,
   LayoutDashboard,
   Calendar,
-  ClipboardList
+  ClipboardList,
+  Award
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -60,6 +61,13 @@ const menuItems: MenuItem[] = [
     submenu: [
       { title: 'Jadwal', href: '/admin/pelaksanaan/jadwal', icon: Calendar },
       { title: 'Monitoring', href: '/admin/pelaksanaan/monitoring', icon: Users }
+    ]
+  },
+  {
+    title: 'Hasil Ujian',
+    icon: Award,
+    submenu: [
+      { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList }
     ]
   }
 ]

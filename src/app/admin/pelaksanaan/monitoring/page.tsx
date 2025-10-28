@@ -295,19 +295,40 @@ export default function MonitoringPage() {
                 {
                   header: 'Aktivitas Mencurigakan',
                   accessor: 'totalSuspicious',
-                  cell: (exam) => (
-                    <div className="flex flex-wrap gap-1 text-xs">
-                      {exam.activityCounts.TAB_BLUR > 0 && (
-                        <Badge variant="outline">🔄 {exam.activityCounts.TAB_BLUR}x</Badge>
-                      )}
-                      {exam.activityCounts.ATTEMPTED_DEVTOOLS > 0 && (
-                        <Badge variant="outline" className="text-red-600">⚠️ {exam.activityCounts.ATTEMPTED_DEVTOOLS}x</Badge>
-                      )}
-                      {exam.totalSuspicious === 0 && (
-                        <Badge variant="outline" className="text-green-600">✓ Aman</Badge>
-                      )}
-                    </div>
-                  ),
+                  cell: (exam) => {
+                    const hasActivity = exam.totalSuspicious > 0;
+                    return (
+                      <div className="flex flex-wrap gap-1 text-xs">
+                        {exam.activityCounts.TAB_BLUR > 0 && (
+                          <Badge variant="outline">🔄 Tab: {exam.activityCounts.TAB_BLUR}x</Badge>
+                        )}
+                        {exam.activityCounts.EXIT_FULLSCREEN > 0 && (
+                          <Badge variant="outline">🖥️ Fullscreen: {exam.activityCounts.EXIT_FULLSCREEN}x</Badge>
+                        )}
+                        {exam.activityCounts.ATTEMPTED_DEVTOOLS > 0 && (
+                          <Badge variant="outline" className="text-red-600">⚠️ DevTools: {exam.activityCounts.ATTEMPTED_DEVTOOLS}x</Badge>
+                        )}
+                        {exam.activityCounts.SCREENSHOT_ATTEMPT > 0 && (
+                          <Badge variant="outline">📸 Screenshot: {exam.activityCounts.SCREENSHOT_ATTEMPT}x</Badge>
+                        )}
+                        {exam.activityCounts.RIGHT_CLICK > 0 && (
+                          <Badge variant="outline">🖱️ Right Click: {exam.activityCounts.RIGHT_CLICK}x</Badge>
+                        )}
+                        {exam.activityCounts.COPY_ATTEMPT > 0 && (
+                          <Badge variant="outline">📋 Copy: {exam.activityCounts.COPY_ATTEMPT}x</Badge>
+                        )}
+                        {exam.activityCounts.PASTE_ATTEMPT > 0 && (
+                          <Badge variant="outline">📋 Paste: {exam.activityCounts.PASTE_ATTEMPT}x</Badge>
+                        )}
+                        {exam.activityCounts.SESSION_VIOLATION > 0 && (
+                          <Badge variant="outline" className="text-red-600">🚫 Session: {exam.activityCounts.SESSION_VIOLATION}x</Badge>
+                        )}
+                        {!hasActivity && (
+                          <Badge variant="outline" className="text-green-600">✓ Aman</Badge>
+                        )}
+                      </div>
+                    );
+                  },
                 },
                 {
                   header: 'Aksi',
