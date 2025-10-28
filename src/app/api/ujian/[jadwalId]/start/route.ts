@@ -3,6 +3,35 @@ import { db } from '@/lib/db';
 import { jadwalUjian, soalBank, bankSoal, hasilUjianPeserta, jadwalUjianPeserta } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
+// Helper to create Date object from WIB timezone
+// Input: date and time in WIB, Output: Date object with UTC timestamp
+function createWIBDate(dateValue: Date | string, timeString: string): Date {
+  // Parse date
+  const date = new Date(dateValue);
+  const [hours, minutes] = timeString.split(':').map(Number);
+  
+  // Get date components (these come from the database as UTC but represent local date)
+  const year = date.getUTCFullYear();
+  const month = date.getUTCMonth();
+  const day = date.getUTCDate();
+  
+  // Create the datetime in WIB timezone
+  // WIB is GMT+7, so to get UTC time we subtract 7 hours
+  // Example: 10:00 WIB = 03:00 UTC
+  const utcHours = hours - 7;
+  
+  // Handle day rollover if needed
+  const wibDate = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+  wibDate.setUTCHours(utcHours, minutes, 0, 0);
+  
+  return wibDate;
+}
+
+// Helper to get current timestamp in WIB
+function getNowWIB(): Date {
+  return new Date();
+}
+
 // Helper to shuffle array
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
@@ -102,13 +131,29 @@ export async function POST(
     }
 
     // Check if already started or submitted
-    const now = new Date();
-    const ujianDate = new Date(jadwal.tanggalUjian);
-    const [hours, minutes] = jadwal.jamMulai.split(':').map(Number);
-    ujianDate.setHours(hours, minutes, 0);
+    // All time comparisons use UTC timestamps internally
+    const now = getNowWIB();
     
-    const ujianEnd = new Date(ujianDate);
-    ujianEnd.setMinutes(ujianEnd.getMinutes() + jadwal.durasi);
+    // Create ujian start time in WIB (which converts to UTC for storage)
+    const ujianDate = createWIBDate(jadwal.tanggalUjian, jadwal.jamMulai);
+    
+    // Calculate end time
+    const ujianEnd = new Date(ujianDate.getTime() + jadwal.durasi * 60 * 1000);
+
+    // Debug logging
+    console.log('[TIMEZONE DEBUG]', {
+      nowUTC: now.toISOString(),
+      nowWIB: new Date(now.getTime() + 7 * 60 * 60 * 1000).toISOString(),
+      ujianStartUTC: ujianDate.toISOString(),
+      ujianStartWIB: new Date(ujianDate.getTime() + 7 * 60 * 60 * 1000).toISOString(),
+      ujianEndUTC: ujianEnd.toISOString(),
+      ujianEndWIB: new Date(ujianEnd.getTime() + 7 * 60 * 60 * 1000).toISOString(),
+      comparison: {
+        isBefore: now < ujianDate,
+        isAfter: now > ujianEnd,
+        isValid: now >= ujianDate && now <= ujianEnd,
+      }
+    });
 
     // Check if already started
     const [existingHasil] = await db
@@ -132,16 +177,34 @@ export async function POST(
 
     // If not started yet, check if ujian time is valid
     if (!existingHasil) {
+      const nowWIBDisplay = new Date(now.getTime() + 7 * 60 * 60 * 1000);
+      const ujianStartWIBDisplay = new Date(ujianDate.getTime() + 7 * 60 * 60 * 1000);
+      const ujianEndWIBDisplay = new Date(ujianEnd.getTime() + 7 * 60 * 60 * 1000);
+      
       if (now < ujianDate) {
         return NextResponse.json(
-          { error: 'Ujian belum dimulai' },
+          { 
+            error: 'Ujian belum dimulai',
+            debug: {
+              currentTimeWIB: nowWIBDisplay.toISOString(),
+              ujianStartTimeWIB: ujianStartWIBDisplay.toISOString(),
+              message: 'Waktu sekarang masih sebelum waktu mulai ujian'
+            }
+          },
           { status: 400 }
         );
       }
       
       if (now > ujianEnd) {
         return NextResponse.json(
-          { error: 'Ujian sudah berakhir' },
+          { 
+            error: 'Ujian sudah berakhir',
+            debug: {
+              currentTimeWIB: nowWIBDisplay.toISOString(),
+              ujianEndTimeWIB: ujianEndWIBDisplay.toISOString(),
+              message: 'Waktu sekarang sudah melewati waktu selesai ujian'
+            }
+          },
           { status: 400 }
         );
       }
