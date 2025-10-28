@@ -227,18 +227,129 @@ export async function POST(
       );
     }
 
-    // Acak soal jika perlu
-    let processedSoal = jadwal.acakSoal ? shuffleArray(soalList) : soalList;
+    let processedSoal;
+    let soalOrder;
+    let optionMappings;
 
-    // Acak opsi jika perlu
-    processedSoal = processedSoal.map((soal, index) => {
-      const shuffled = shuffleOptions(soal, jadwal.acakOpsi);
-      return {
-        ...shuffled,
-        nomorSoal: index + 1, // Re-number after shuffle
-        pembahasan: undefined, // Hide pembahasan during exam
-      };
-    });
+    // Check if already started and has saved order
+    if (existingHasil && existingHasil.soalOrder) {
+      console.log('[SHUFFLE] Loading saved shuffle order from database');
+      
+      // Load saved order and mappings
+      soalOrder = JSON.parse(existingHasil.soalOrder);
+      optionMappings = existingHasil.optionMappings 
+        ? JSON.parse(existingHasil.optionMappings) 
+        : {};
+
+      // Re-order soal based on saved order
+      const soalMap = new Map(soalList.map(s => [s.id, s]));
+      processedSoal = soalOrder
+        .map((id: string) => soalMap.get(id))
+        .filter(Boolean); // Remove any missing soal
+
+      // Apply saved option mappings
+      processedSoal = processedSoal.map((soal: any, index) => {
+        const mapping = optionMappings[soal.id];
+        
+        if (mapping && jadwal.acakOpsi) {
+          // Re-apply saved mapping
+          const options = [
+            { key: 'A', value: soal.pilihanA },
+            { key: 'B', value: soal.pilihanB },
+            { key: 'C', value: soal.pilihanC },
+            { key: 'D', value: soal.pilihanD },
+          ];
+          if (soal.pilihanE) {
+            options.push({ key: 'E', value: soal.pilihanE });
+          }
+
+          // Map back to shuffled order
+          const reordered: any[] = [];
+          Object.keys(mapping).forEach(newKey => {
+            const originalKey = mapping[newKey];
+            const option = options.find(o => o.key === originalKey);
+            if (option) {
+              reordered.push({ key: newKey, value: option.value });
+            }
+          });
+
+          return {
+            ...soal,
+            pilihanA: reordered[0]?.value || soal.pilihanA,
+            pilihanB: reordered[1]?.value || soal.pilihanB,
+            pilihanC: reordered[2]?.value || soal.pilihanC,
+            pilihanD: reordered[3]?.value || soal.pilihanD,
+            pilihanE: reordered[4]?.value || null,
+            nomorSoal: index + 1,
+            pembahasan: undefined,
+          };
+        }
+
+        // No mapping or no acak opsi
+        return {
+          ...soal,
+          nomorSoal: index + 1,
+          pembahasan: undefined,
+        };
+      });
+      
+    } else {
+      console.log('[SHUFFLE] Creating new shuffle order');
+      
+      // First time - create new shuffle
+      // Acak soal jika perlu
+      processedSoal = jadwal.acakSoal ? shuffleArray(soalList) : soalList;
+
+      // Save soal order
+      soalOrder = processedSoal.map((s: any) => s.id);
+      optionMappings = {};
+
+      // Acak opsi jika perlu
+      processedSoal = processedSoal.map((soal: any, index) => {
+        const shuffled = shuffleOptions(soal, jadwal.acakOpsi);
+        
+        // Save mapping if options were shuffled
+        if (jadwal.acakOpsi) {
+          // Extract the mapping from shuffled result
+          const options = [
+            { key: 'A', value: soal.pilihanA },
+            { key: 'B', value: soal.pilihanB },
+            { key: 'C', value: soal.pilihanC },
+            { key: 'D', value: soal.pilihanD },
+          ];
+          if (soal.pilihanE) {
+            options.push({ key: 'E', value: soal.pilihanE });
+          }
+
+          // Create reverse mapping (newKey -> originalKey)
+          const mapping: Record<string, string> = {};
+          const shuffledOptions = [
+            { key: 'A', value: shuffled.pilihanA },
+            { key: 'B', value: shuffled.pilihanB },
+            { key: 'C', value: shuffled.pilihanC },
+            { key: 'D', value: shuffled.pilihanD },
+          ];
+          if (shuffled.pilihanE) {
+            shuffledOptions.push({ key: 'E', value: shuffled.pilihanE });
+          }
+
+          shuffledOptions.forEach(newOpt => {
+            const original = options.find(o => o.value === newOpt.value);
+            if (original) {
+              mapping[newOpt.key] = original.key;
+            }
+          });
+
+          optionMappings[soal.id] = mapping;
+        }
+
+        return {
+          ...shuffled,
+          nomorSoal: index + 1,
+          pembahasan: undefined,
+        };
+      });
+    }
 
     // Create or update hasil ujian
     let hasilId = existingHasil?.id;
@@ -252,6 +363,8 @@ export async function POST(
           waktuMulai: now,
           jawaban: JSON.stringify({}),
           status: 'in_progress',
+          soalOrder: JSON.stringify(soalOrder),
+          optionMappings: JSON.stringify(optionMappings),
         })
         .returning();
       

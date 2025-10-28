@@ -100,19 +100,51 @@ export async function POST(
       .from(soalBank)
       .where(eq(soalBank.bankSoalId, jadwal.bankSoalId));
 
+    // Get option mappings if options were shuffled
+    const optionMappings = hasil.optionMappings 
+      ? JSON.parse(hasil.optionMappings) 
+      : {};
+
     // Calculate score
     let benar = 0;
     const totalSoal = soalList.length;
 
+    console.log('[GRADING] Starting grading process');
+    console.log('[GRADING] Has option mappings:', Object.keys(optionMappings).length > 0);
+
     soalList.forEach((soal) => {
       const jawabanPeserta = jawaban[soal.id];
-      if (jawabanPeserta === soal.jawabanBenar) {
+      
+      if (!jawabanPeserta) {
+        // No answer - incorrect
+        return;
+      }
+
+      // If options were shuffled, convert answer back to original key
+      let originalAnswer = jawabanPeserta;
+      if (optionMappings[soal.id] && jadwal.acakOpsi) {
+        const mapping = optionMappings[soal.id];
+        // mapping is { newKey: originalKey }
+        // jawabanPeserta is newKey, we need originalKey
+        originalAnswer = mapping[jawabanPeserta] || jawabanPeserta;
+        console.log('[GRADING]', {
+          soalId: soal.id.substring(0, 8),
+          pesertaAnswer: jawabanPeserta,
+          convertedAnswer: originalAnswer,
+          correctAnswer: soal.jawabanBenar,
+          isCorrect: originalAnswer === soal.jawabanBenar
+        });
+      }
+
+      if (originalAnswer === soal.jawabanBenar) {
         benar++;
       }
     });
 
     const skor = benar;
     const skorMaksimal = totalSoal;
+
+    console.log('[GRADING] Result:', { benar, total: totalSoal, skor, skorMaksimal });
 
     // Update hasil ujian
     await db

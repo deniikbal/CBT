@@ -57,6 +57,13 @@
       "when": 1761622934583,
       "tag": "0007_foamy_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1761651963589,
+      "tag": "0008_deep_power_pack",
+      "breakpoints": true
     }
   ]
 }

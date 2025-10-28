@@ -170,6 +170,8 @@ export const hasilUjianPeserta = pgTable('hasil_ujian_peserta', {
   status: text('status').notNull().default('in_progress'), // in_progress, submitted
   sessionId: text('session_id'), // untuk single session lock
   ipAddress: text('ip_address'), // IP address saat mulai
+  soalOrder: text('soal_order'), // JSON array of soal IDs dalam urutan yang sudah diacak (untuk consistency)
+  optionMappings: text('option_mappings'), // JSON object: { soalId: { A: 'C', B: 'A', ... } } - mapping shuffle opsi
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });
