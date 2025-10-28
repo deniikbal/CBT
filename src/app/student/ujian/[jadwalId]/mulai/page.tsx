@@ -56,8 +56,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   const [showAgreement, setShowAgreement] = useState(true)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [pesertaId, setPesertaId] = useState<string>('')
-  const [showMinTimeDialog, setShowMinTimeDialog] = useState(false)
-  const [minTimeMessage, setMinTimeMessage] = useState('')
 
   // Exam Security Hooks - must be called before any conditional returns
   const { blurCount, isFullscreen, logActivity, requestFullscreen } = useExamSecurity({
@@ -454,7 +452,14 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         body: JSON.stringify(submitData)
       })
 
-      const data = await response.json()
+      let data
+      try {
+        data = await response.json()
+      } catch (parseError) {
+        console.error('Failed to parse response:', parseError)
+        data = { error: 'Server error: Invalid response format' }
+      }
+      
       console.log('Submit response:', response.status, data)
 
       if (response.ok) {
@@ -463,18 +468,22 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         toast.success('Ujian berhasil disubmit!', { duration: 3000 })
         router.push(`/student/ujian/${jadwalId}/hasil?skor=${data.skor}&maksimal=${data.skorMaksimal}&tampilkan=${data.tampilkanNilai}`)
       } else {
-        console.error('Submit failed:', data)
-        const errorMessage = data.error || 'Gagal submit ujian'
+        const errorMessage = data?.error || 'Gagal submit ujian'
+        console.error('Submit failed:', { status: response.status, error: errorMessage, data })
         
-        // Special handling for minimum time error - show dialog in center
+        // Special styling for minimum time error - show toast in center with clean minimal style
         if (errorMessage.includes('harus mengerjakan minimal')) {
-          setMinTimeMessage(errorMessage)
-          setShowMinTimeDialog(true)
+          toast.error(errorMessage, { 
+            duration: 8000,
+            position: 'top-center',
+            className: 'text-center',
+            description: 'Silakan kerjakan ujian lebih lama sebelum submit.',
+          })
         } else {
           // Regular error toast
           toast.error(errorMessage, { 
             duration: 7000,
-            description: data.details || undefined 
+            description: data?.details || undefined 
           })
         }
         setSubmitting(false)
@@ -1038,37 +1047,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         </DialogContent>
       </Dialog>
 
-      {/* Minimum Time Error Dialog */}
-      <Dialog open={showMinTimeDialog} onOpenChange={setShowMinTimeDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <div className="flex items-center justify-center mb-4">
-              <div className="rounded-full bg-red-100 p-3">
-                <Clock className="h-8 w-8 text-red-600" />
-              </div>
-            </div>
-            <DialogTitle className="text-center text-xl">
-              Waktu Pengerjaan Belum Cukup
-            </DialogTitle>
-            <DialogDescription className="text-center text-base pt-4">
-              <div className="font-semibold text-red-600 mb-3 text-lg">
-                {minTimeMessage}
-              </div>
-              <div className="text-gray-600">
-                Silakan kerjakan ujian lebih lama sebelum submit. Waktu minimum ini diberlakukan untuk memastikan Anda membaca soal dengan teliti.
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center mt-4">
-            <Button 
-              onClick={() => setShowMinTimeDialog(false)}
-              className="w-full sm:w-auto"
-            >
-              Mengerti, Lanjutkan Mengerjakan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
