@@ -725,19 +725,26 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                   </Button>
 
                   {currentSoalIndex === totalSoal - 1 ? (
-                    <Button
-                      className={cn(
-                        "text-white",
-                        timeExpired 
-                          ? "bg-red-600 hover:bg-red-700 animate-pulse" 
-                          : "bg-green-600 hover:bg-green-700"
+                    <div className="flex flex-col items-end gap-2">
+                      {totalSoal - getJumlahDijawab() > 0 && !timeExpired && (
+                        <span className="text-xs text-orange-600">
+                          {totalSoal - getJumlahDijawab()} soal belum dijawab
+                        </span>
                       )}
-                      onClick={() => setShowSubmitDialog(true)}
-                      disabled={submitting}
-                    >
-                      <Send className="h-4 w-4 mr-2" />
-                      {timeExpired ? 'Submit Sekarang!' : 'Submit Ujian'}
-                    </Button>
+                      <Button
+                        className={cn(
+                          "text-white",
+                          timeExpired 
+                            ? "bg-red-600 hover:bg-red-700 animate-pulse" 
+                            : "bg-green-600 hover:bg-green-700"
+                        )}
+                        onClick={() => setShowSubmitDialog(true)}
+                        disabled={submitting}
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {timeExpired ? 'Submit Sekarang!' : 'Submit Ujian'}
+                      </Button>
+                    </div>
                   ) : (
                     <Button
                       variant="outline"
@@ -879,7 +886,9 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
           <DialogHeader>
             <DialogTitle>Konfirmasi Submit Ujian</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin mengirim jawaban ujian?
+              {totalSoal - getJumlahDijawab() === 0 
+                ? 'Apakah Anda yakin ingin mengirim jawaban ujian?' 
+                : 'Anda belum menjawab semua soal!'}
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -894,7 +903,12 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Belum Dijawab:</span>
-                <span className="font-semibold text-red-600">{totalSoal - getJumlahDijawab()}</span>
+                <span className={cn(
+                  "font-semibold",
+                  totalSoal - getJumlahDijawab() > 0 ? "text-red-600" : "text-green-600"
+                )}>
+                  {totalSoal - getJumlahDijawab()}
+                </span>
               </div>
             </div>
 
@@ -902,21 +916,39 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
               <Alert className="mt-4" variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  Ada {totalSoal - getJumlahDijawab()} soal yang belum dijawab!
+                  <div className="font-semibold mb-1">
+                    Anda harus menjawab semua soal sebelum submit!
+                  </div>
+                  <div className="text-sm">
+                    Masih ada {totalSoal - getJumlahDijawab()} soal yang belum dijawab. Silakan periksa kembali.
+                  </div>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {totalSoal - getJumlahDijawab() === 0 && (
+              <Alert className="mt-4 border-green-500 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  Semua soal sudah dijawab. Anda dapat submit sekarang.
                 </AlertDescription>
               </Alert>
             )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowSubmitDialog(false)} disabled={submitting}>
-              Batal
+              {totalSoal - getJumlahDijawab() > 0 ? 'Tutup' : 'Batal'}
             </Button>
             <Button 
-              className="bg-green-600 hover:bg-green-700"
+              className={cn(
+                totalSoal - getJumlahDijawab() === 0 
+                  ? "bg-green-600 hover:bg-green-700" 
+                  : "bg-gray-400 cursor-not-allowed"
+              )}
               onClick={handleSubmit} 
-              disabled={submitting}
+              disabled={submitting || totalSoal - getJumlahDijawab() > 0}
             >
-              {submitting ? 'Mengirim...' : 'Ya, Submit Sekarang'}
+              {submitting ? 'Mengirim...' : totalSoal - getJumlahDijawab() > 0 ? 'Belum Bisa Submit' : 'Ya, Submit Sekarang'}
             </Button>
           </DialogFooter>
         </DialogContent>
