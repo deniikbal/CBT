@@ -14,6 +14,14 @@ export default function StudentLayout({
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
+  // Set initial state based on screen size
+  useEffect(() => {
+    // Set initial state on mount
+    if (window.innerWidth >= 1024) {
+      setIsMobileMenuOpen(true)
+    }
+  }, [])
+
   useEffect(() => {
     const peserta = localStorage.getItem('peserta')
     if (!peserta) {
@@ -22,15 +30,22 @@ export default function StudentLayout({
   }, [router, pathname])
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <StudentNavbar onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
+    <div className="flex min-h-screen max-h-screen bg-gray-50 overflow-hidden">
       <StudentSidebar 
         isMobileMenuOpen={isMobileMenuOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
       />
-      <main className="flex-1 lg:ml-0">
-        {children}
-      </main>
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <StudentNavbar 
+          onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          isSidebarOpen={isMobileMenuOpen}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-4 pt-20 lg:p-8 lg:pt-8">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

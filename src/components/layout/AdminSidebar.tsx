@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { 
@@ -60,12 +60,18 @@ const menuItems: MenuItem[] = [
     title: 'Pelaksanaan',
     icon: ClipboardList,
     submenu: [
-      { title: 'Jadwal', href: '/admin/pelaksanaan/jadwal', icon: Calendar }
+      { title: 'Jadwal', href: '/admin/pelaksanaan/jadwal', icon: Calendar },
+      { title: 'Monitoring', href: '/admin/pelaksanaan/monitoring', icon: Users }
     ]
   }
 ]
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+  isOpen: boolean
+  setIsOpen: (open: boolean) => void
+}
+
+export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [openMenus, setOpenMenus] = useState<string[]>(['Data Master', 'Persiapan', 'Pelaksanaan'])
@@ -85,13 +91,44 @@ export default function AdminSidebar() {
     router.push('/adm')
   }
 
+  // Close sidebar when route changes on mobile only
+  useEffect(() => {
+    // Only auto-close on mobile
+    const handleRouteChange = () => {
+      if (window.innerWidth < 1024) {
+        setIsOpen(false)
+      }
+    }
+    handleRouteChange()
+  }, [pathname, setIsOpen])
+
   return (
-    <div className="w-64 min-h-screen bg-slate-900 text-white flex flex-col">
-      {/* Logo/Header */}
-      <div className="p-6 border-b border-slate-700">
-        <h1 className="text-xl font-bold">CBT Admin</h1>
-        <p className="text-sm text-slate-400 mt-1">Computer Based Test</p>
-      </div>
+    <>
+      {/* Overlay - only on mobile when sidebar is open */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity duration-300",
+          isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed lg:sticky inset-y-0 lg:inset-y-auto left-0 top-0 z-50 w-64 h-screen bg-slate-900 text-white flex flex-col transition-all duration-300 ease-in-out overflow-y-auto",
+        // Mobile: always use translate
+        // Desktop: use width/margin approach
+        isOpen 
+          ? "translate-x-0 lg:translate-x-0" 
+          : "-translate-x-full lg:translate-x-0 lg:w-0 lg:min-w-0 lg:border-0 lg:opacity-0"
+      )}>
+        {/* Logo/Header */}
+        <div className="h-16 px-6 border-b border-slate-700 flex items-center shrink-0">
+          <div>
+            <h1 className="text-lg font-bold">CBT Admin</h1>
+            <p className="text-xs text-slate-400">Computer Based Test</p>
+          </div>
+        </div>
 
       {/* Menu Items */}
       <nav className="flex-1 p-4 space-y-2">
@@ -156,20 +193,21 @@ export default function AdminSidebar() {
         ))}
       </nav>
 
-      {/* Footer */}
-      <div className="p-4 border-t border-slate-700 space-y-2">
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
-          <Settings className="h-5 w-5" />
-          <span>Pengaturan</span>
-        </button>
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-red-600 hover:text-white transition-colors"
-        >
-          <LogOut className="h-5 w-5" />
-          <span>Keluar</span>
-        </button>
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-700 space-y-2">
+          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+            <Settings className="h-5 w-5" />
+            <span>Pengaturan</span>
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-red-600 hover:text-white transition-colors"
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Keluar</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

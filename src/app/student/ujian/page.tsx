@@ -105,14 +105,46 @@ export default function UjianSayaPage() {
     router.push(`/student/ujian/${jadwalId}/mulai`)
   }
 
-  const selesaiUjian = jadwalList.filter(j => j.sudahDikerjakan === true)
-  const upcomingUjian = jadwalList.filter(j => !j.sudahDikerjakan && getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'upcoming')
-  const activeUjian = jadwalList.filter(j => !j.sudahDikerjakan && getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'active')
-  const expiredUjian = jadwalList.filter(j => !j.sudahDikerjakan && getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'expired')
+
+
+  // Sudah selesai (submitted)
+  const selesaiUjian = jadwalList.filter(j => 
+    j.sudahDikerjakan === true || j.hasilUjian?.status === 'submitted'
+  )
+  
+  // Sedang dikerjakan (in_progress) - masih bisa dilanjutkan meski waktu expired
+  const sedangDikerjakan = jadwalList.filter(j => 
+    (j.hasilUjian?.status === 'in_progress' || j.hasilUjian?.status === 'mulai') && 
+    j.hasilUjian?.status !== 'submitted' &&
+    !j.sudahDikerjakan
+  )
+  
+  // Belum dimulai - waktu akan datang
+  const upcomingUjian = jadwalList.filter(j => 
+    !j.sudahDikerjakan && 
+    !j.hasilUjian && 
+    getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'upcoming'
+  )
+  
+  // Belum dimulai - waktu sedang berlangsung
+  const activeUjian = jadwalList.filter(j => 
+    !j.sudahDikerjakan && 
+    !j.hasilUjian && 
+    getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'active'
+  )
+  
+  // Belum dimulai - waktu sudah lewat
+  const expiredUjian = jadwalList.filter(j => 
+    !j.sudahDikerjakan && 
+    !j.hasilUjian && 
+    getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'expired'
+  )
+  
+
 
   if (loading) {
     return (
-      <div className="pt-16 pb-4 px-4 lg:pt-20 lg:px-8 lg:pb-8 space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div>
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-5 w-80 mt-2" />
@@ -120,8 +152,8 @@ export default function UjianSayaPage() {
 
         <div className="space-y-4">
           <Skeleton className="h-8 w-64" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
               <Card key={i}>
                 <CardHeader>
                   <div className="flex justify-between items-start mb-2">
@@ -144,12 +176,22 @@ export default function UjianSayaPage() {
   }
 
   return (
-    <div className="pt-16 pb-4 px-4 lg:pt-20 lg:px-8 lg:pb-8 space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Ujian Saya</h1>
         <p className="text-sm md:text-base text-gray-600 mt-1">Daftar ujian yang tersedia untuk Anda</p>
       </div>
+
+      {/* Sedang Dikerjakan Alert */}
+      {sedangDikerjakan.length > 0 && (
+        <Alert className="border-orange-500 bg-orange-50">
+          <AlertCircle className="h-4 w-4 text-orange-600 shrink-0" />
+          <AlertDescription className="text-xs md:text-sm text-orange-800">
+            Ada {sedangDikerjakan.length} ujian yang belum diselesaikan! Segera lanjutkan sebelum waktu habis.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Active Ujian Alert */}
       {activeUjian.length > 0 && (
@@ -161,14 +203,82 @@ export default function UjianSayaPage() {
         </Alert>
       )}
 
-      {/* Sedang Berlangsung */}
+      {/* Sedang Dikerjakan (Belum Selesai) */}
+      {sedangDikerjakan.length > 0 && (
+        <div className="space-y-3 md:space-y-4">
+          <h2 className="text-lg md:text-xl font-semibold text-orange-700 flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            Sedang Dikerjakan ({sedangDikerjakan.length})
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sedangDikerjakan.map((jadwal) => {
+              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
+              const isExpired = status.status === 'expired'
+              
+              return (
+                <Card key={jadwal.id} className="border-orange-500 border-2 shadow-lg bg-orange-50">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start mb-2 gap-2">
+                      <CardTitle className="text-base md:text-lg line-clamp-2">{jadwal.namaUjian}</CardTitle>
+                      <Badge className="bg-orange-500 text-xs shrink-0">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        <span className="hidden sm:inline">Belum Selesai</span>
+                        <span className="sm:hidden">...</span>
+                      </Badge>
+                    </div>
+                    <CardDescription className="flex items-center gap-2 text-xs md:text-sm">
+                      <BookOpen className="h-3 md:h-4 w-3 md:w-4 shrink-0" />
+                      {jadwal.bankSoal?.kodeBankSoal || 'Bank Soal'}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-2 text-xs md:text-sm">
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Calendar className="h-3 md:h-4 w-3 md:w-4 shrink-0" />
+                        <span className="line-clamp-1">{format(new Date(jadwal.tanggalUjian), 'EEEE, dd MMMM yyyy', { locale: localeId })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-600">
+                        <Clock className="h-3 md:h-4 w-3 md:w-4 shrink-0" />
+                        {jadwal.jamMulai} WIB · Durasi {jadwal.durasi} menit
+                      </div>
+                      {isExpired && (
+                        <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded">
+                          <AlertCircle className="h-3 w-3 shrink-0" />
+                          Waktu ujian telah berakhir! Segera submit jawaban.
+                        </div>
+                      )}
+                      {jadwal.minimumPengerjaan && !isExpired && (
+                        <div className="flex items-center gap-2 text-gray-600 text-xs">
+                          <AlertCircle className="h-3 w-3 shrink-0" />
+                          Minimum: {jadwal.minimumPengerjaan} menit
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-2">
+                      <Button 
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-sm md:text-base h-10 md:h-11"
+                        onClick={() => handleMulaiUjian(jadwal.id)}
+                      >
+                        Lanjutkan Ujian
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Sedang Berlangsung (Belum Dimulai) */}
       {activeUjian.length > 0 && (
         <div className="space-y-3 md:space-y-4">
           <h2 className="text-lg md:text-xl font-semibold text-green-700 flex items-center gap-2">
             <CheckCircle className="h-5 w-5 shrink-0" />
             Sedang Berlangsung ({activeUjian.length})
           </h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeUjian.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const StatusIcon = status.icon
@@ -230,7 +340,7 @@ export default function UjianSayaPage() {
             <Clock className="h-5 w-5 shrink-0" />
             Akan Datang ({upcomingUjian.length})
           </h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {upcomingUjian.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const StatusIcon = status.icon
@@ -288,7 +398,7 @@ export default function UjianSayaPage() {
             <XCircle className="h-5 w-5 shrink-0" />
             Sudah Berakhir ({expiredUjian.length})
           </h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {expiredUjian.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const StatusIcon = status.icon
@@ -340,7 +450,7 @@ export default function UjianSayaPage() {
             <CheckCircle className="h-5 w-5 shrink-0" />
             Sudah Selesai ({selesaiUjian.length})
           </h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {selesaiUjian.map((jadwal) => {
               const persentase = jadwal.hasilUjian?.skor && jadwal.hasilUjian?.skorMaksimal
                 ? Math.round((jadwal.hasilUjian.skor / jadwal.hasilUjian.skorMaksimal) * 100)

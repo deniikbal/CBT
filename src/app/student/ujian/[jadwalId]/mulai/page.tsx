@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Clock, AlertCircle, CheckCircle, Send, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { Clock, AlertCircle, CheckCircle, Send, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { useExamSecurity } from '@/hooks/useExamSecurity'
+import ExamAgreementDialog from '@/components/ExamAgreementDialog'
 
 interface Soal {
   id: string
@@ -51,7 +53,20 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   const [saving, setSaving] = useState(false)
   const [showNavigasi, setShowNavigasi] = useState(true)
   const [showMobileModal, setShowMobileModal] = useState(false)
+  const [showAgreement, setShowAgreement] = useState(true)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [pesertaId, setPesertaId] = useState<string>('')
 
+  // Exam Security Hooks - must be called before any conditional returns
+  const { blurCount, isFullscreen, logActivity, requestFullscreen } = useExamSecurity({
+    hasilUjianId: hasilId || 'pending',
+    pesertaId: pesertaId || 'pending',
+    maxBlurCount: 5,
+    enableFullscreen: agreedToTerms && !!hasilId,
+    enableRightClickBlock: agreedToTerms && !!hasilId,
+  })
+
+  // Initialize pesertaId on mount
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
     if (!storedPeserta) {
@@ -60,8 +75,55 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     }
 
     const pesertaData = JSON.parse(storedPeserta)
-    startUjian(pesertaData.id)
+    console.log('Setting pesertaId:', pesertaData.id)
+    setPesertaId(pesertaData.id)
+  }, [router])
+
+  // Log pesertaId changes
+  useEffect(() => {
+    console.log('pesertaId updated to:', pesertaId)
+  }, [pesertaId])
+
+  // Fetch jadwal info for agreement dialog
+  useEffect(() => {
+    if (!jadwal && !agreedToTerms && jadwalId) {
+      fetchJadwalInfo()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jadwalId])
+    
+  // Start exam after agreement
+  useEffect(() => {
+    console.log('Checking start exam conditions:', { agreedToTerms, hasilId, pesertaId, jadwalId })
+    
+    if (!agreedToTerms) {
+      console.log('Waiting for agreement...')
+      return
+    }
+    
+    if (hasilId) {
+      console.log('Exam already started, hasilId exists:', hasilId)
+      return
+    }
+    
+    if (!pesertaId) {
+      console.log('pesertaId not ready yet, waiting...')
+      return
+    }
+    
+    if (!jadwalId) {
+      console.log('jadwalId missing')
+      return
+    }
+    
+    console.log('All conditions met, starting ujian...')
+    const storedPeserta = localStorage.getItem('peserta')
+    if (storedPeserta) {
+      const pesertaData = JSON.parse(storedPeserta)
+      startUjian(pesertaData.id)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agreedToTerms, pesertaId, hasilId])
 
   // Auto-save jawaban ke localStorage setiap kali berubah
   useEffect(() => {
@@ -85,11 +147,14 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     // Don't start timer if timeLeft is null (not loaded yet)
     if (timeLeft === null) return
 
-    // Time expired - auto submit
+    // Time expired - show warning but don't auto submit
+    // Let student submit manually
     if (timeLeft <= 0) {
       if (!timeExpired) {
         setTimeExpired(true)
-        handleAutoSubmit()
+        toast.error('⏰ Waktu ujian telah habis! Silakan submit jawaban Anda sekarang.', {
+          duration: 10000,
+        })
       }
       return
     }
@@ -101,7 +166,33 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     return () => clearInterval(timer)
   }, [timeLeft, timeExpired])
 
+  const fetchJadwalInfo = async () => {
+    try {
+      console.log('Fetching jadwal info for:', jadwalId)
+      const response = await fetch(`/api/ujian/${jadwalId}/info`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Jadwal info fetched:', data)
+        setJadwal({
+          id: data.id,
+          namaUjian: data.namaUjian,
+          durasi: data.durasi,
+          minimumPengerjaan: data.minimumPengerjaan,
+          waktuMulai: data.waktuMulai,
+          tampilkanNilai: data.tampilkanNilai,
+        })
+        setLoading(false)
+      } else {
+        console.error('Failed to fetch jadwal info:', response.status)
+      }
+    } catch (error) {
+      console.error('Error fetching jadwal info:', error)
+    }
+  }
+
   const startUjian = async (pesertaId: string) => {
+    console.log('Starting exam for peserta:', pesertaId)
+    setLoading(true)
     try {
       const response = await fetch(`/api/ujian/${jadwalId}/start`, {
         method: 'POST',
@@ -215,21 +306,34 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
     try {
       const storedPeserta = localStorage.getItem('peserta')
-      if (!storedPeserta) return
+      if (!storedPeserta) {
+        toast.error('Data peserta tidak ditemukan')
+        setSubmitting(false)
+        return
+      }
 
       const pesertaData = JSON.parse(storedPeserta)
+
+      const submitData = {
+        pesertaId: pesertaData.id,
+        hasilId,
+        jawaban
+      }
+
+      console.log('Submitting exam:', { 
+        pesertaId: submitData.pesertaId, 
+        hasilId: submitData.hasilId, 
+        jawabanCount: Object.keys(submitData.jawaban).length 
+      })
 
       const response = await fetch(`/api/ujian/${jadwalId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          pesertaId: pesertaData.id,
-          hasilId,
-          jawaban
-        })
+        body: JSON.stringify(submitData)
       })
 
       const data = await response.json()
+      console.log('Submit response:', response.status, data)
 
       if (response.ok) {
         // Clear localStorage setelah submit berhasil
@@ -237,6 +341,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         toast.success('Ujian berhasil disubmit!')
         router.push(`/student/ujian/${jadwalId}/hasil?skor=${data.skor}&maksimal=${data.skorMaksimal}&tampilkan=${data.tampilkanNilai}`)
       } else {
+        console.error('Submit failed:', data)
         toast.error(data.error || 'Gagal submit ujian')
         setSubmitting(false)
       }
@@ -254,6 +359,24 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       duration: 5000,
     })
     await handleSubmit()
+  }
+
+  // Agreement handler
+  const handleAgreeToTerms = async () => {
+    console.log('Agreement accepted, starting exam...')
+    
+    // Request fullscreen (user interaction context)
+    if (requestFullscreen) {
+      const success = await requestFullscreen()
+      if (success) {
+        console.log('Fullscreen mode activated')
+      } else {
+        console.log('Fullscreen not activated, continuing without it')
+      }
+    }
+    
+    setShowAgreement(false)
+    setAgreedToTerms(true)
   }
 
   const formatTime = (seconds: number | null) => {
@@ -278,6 +401,27 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
   const getJumlahDijawab = () => {
     return Object.keys(jawaban).length
+  }
+
+  // Show agreement dialog first (once jadwal is loaded)
+  if (showAgreement && jadwal) {
+    return (
+      <>
+        <ExamAgreementDialog
+          open={showAgreement}
+          onAgree={handleAgreeToTerms}
+          examTitle={jadwal.namaUjian}
+        />
+        {/* Show loading skeleton behind dialog */}
+        <div className="min-h-screen bg-gray-50 blur-sm">
+          <div className="container mx-auto p-4">
+            <div className="text-center py-20">
+              <p className="text-gray-500">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </>
+    )
   }
 
   if (loading) {
@@ -354,32 +498,44 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Timer */}
-      <div className="bg-white border-b shadow-sm sticky top-0 z-10 pt-14 lg:pt-0">
+      <div className="bg-white border-b shadow-sm sticky top-0 z-10">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">{jadwal.namaUjian}</h1>
-              <div className="flex items-center gap-3">
-                <p className="text-sm text-gray-600">Soal {currentSoalIndex + 1} dari {totalSoal}</p>
+          <div className="flex justify-between items-center gap-4">
+            {/* Left: Title & Progress */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-base lg:text-lg font-bold text-gray-800 truncate">{jadwal.namaUjian}</h1>
+              <div className="flex items-center gap-2 lg:gap-3 mt-0.5">
+                <p className="text-xs lg:text-sm text-gray-600">Soal {currentSoalIndex + 1}/{totalSoal}</p>
+                
+                {/* Auto-save indicator */}
                 {saving && (
                   <span className="text-xs text-blue-600 flex items-center gap-1">
-                    <span className="animate-pulse">●</span> Menyimpan...
+                    <span className="animate-pulse">●</span> 
+                    <span className="hidden sm:inline">Menyimpan</span>
                   </span>
                 )}
-                {lastSaved && !saving && (
-                  <span className="text-xs text-green-600 flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" />
-                    Tersimpan {new Date().getTime() - lastSaved.getTime() < 60000 ? 'baru saja' : ''}
+                
+                {/* Security status - only show if there's a warning */}
+                {agreedToTerms && blurCount > 0 && (
+                  <span className={cn("text-xs font-medium flex items-center gap-1", blurCount >= 3 ? "text-red-600" : "text-orange-600")}>
+                    <Shield className="h-3 w-3" />
+                    <span className="hidden sm:inline">Peringatan</span> {blurCount}/5
                   </span>
                 )}
               </div>
             </div>
-            <div className="text-right">
-              <div className={cn("text-2xl font-bold flex items-center gap-2", getTimeColor())}>
-                <Clock className="h-6 w-6" />
-                {formatTime(timeLeft)}
+
+            {/* Right: Timer - Compact Card */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-md px-3 py-2 lg:px-4 lg:py-2.5 border border-blue-100 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Clock className={cn("h-4 w-4 lg:h-5 lg:w-5", getTimeColor())} />
+                <div>
+                  <div className={cn("text-lg lg:text-2xl font-bold leading-none", getTimeColor())}>
+                    {formatTime(timeLeft)}
+                  </div>
+                  <p className="text-[10px] lg:text-xs text-gray-500 mt-0.5">Waktu tersisa</p>
+                </div>
               </div>
-              <p className="text-xs text-gray-600">Waktu tersisa</p>
             </div>
           </div>
         </div>
@@ -390,11 +546,21 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
           {/* Main Content - Soal */}
           <div className="space-y-4">
             {/* Warning minimum time */}
-            {jadwal.minimumPengerjaan && (
+            {jadwal.minimumPengerjaan && !timeExpired && (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
                   Anda harus mengerjakan minimal {jadwal.minimumPengerjaan} menit sebelum submit
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Warning time expired */}
+            {timeExpired && (
+              <Alert variant="destructive" className="animate-pulse">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  ⏰ Waktu ujian telah habis! Silakan submit jawaban Anda sekarang.
                 </AlertDescription>
               </Alert>
             )}
@@ -501,11 +667,17 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
                   {currentSoalIndex === totalSoal - 1 ? (
                     <Button
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className={cn(
+                        "text-white",
+                        timeExpired 
+                          ? "bg-red-600 hover:bg-red-700 animate-pulse" 
+                          : "bg-green-600 hover:bg-green-700"
+                      )}
                       onClick={() => setShowSubmitDialog(true)}
+                      disabled={submitting}
                     >
                       <Send className="h-4 w-4 mr-2" />
-                      Submit Ujian
+                      {timeExpired ? 'Submit Sekarang!' : 'Submit Ujian'}
                     </Button>
                   ) : (
                     <Button

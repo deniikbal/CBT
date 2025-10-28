@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
         password: peserta.password,
         kelasId: peserta.kelasId,
         jurusanId: peserta.jurusanId,
+        isActive: peserta.isActive,
         kelas: {
           id: kelas.id,
           name: kelas.name,
@@ -44,6 +45,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Nomor ujian atau password salah' },
         { status: 401 }
+      );
+    }
+
+    // Check if account is active (if isActive field exists)
+    if (pesertaData.isActive === false) {
+      return NextResponse.json(
+        { error: 'Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.' },
+        { status: 403 }
       );
     }
 

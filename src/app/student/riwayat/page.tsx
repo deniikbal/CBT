@@ -105,7 +105,7 @@ export default function RiwayatUjianPage() {
 
   if (loading) {
     return (
-      <div className="pt-16 pb-4 px-4 lg:pt-20 lg:px-8 lg:pb-8 space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div>
           <Skeleton className="h-10 w-64" />
           <Skeleton className="h-5 w-96 mt-2" />
@@ -146,7 +146,7 @@ export default function RiwayatUjianPage() {
   }
 
   return (
-    <div className="pt-16 pb-4 px-4 lg:pt-20 lg:px-8 lg:pb-8 space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Riwayat Ujian</h1>

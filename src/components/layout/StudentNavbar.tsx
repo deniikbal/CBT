@@ -14,9 +14,10 @@ import {
 
 interface StudentNavbarProps {
   onMenuClick: () => void
+  isSidebarOpen: boolean
 }
 
-export default function StudentNavbar({ onMenuClick }: StudentNavbarProps) {
+export default function StudentNavbar({ onMenuClick, isSidebarOpen }: StudentNavbarProps) {
   const router = useRouter()
   const [peserta, setPeserta] = useState<any>(null)
 
@@ -35,8 +36,8 @@ export default function StudentNavbar({ onMenuClick }: StudentNavbarProps) {
   return (
     <>
     {/* Mobile Navbar */}
-    <nav className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between px-4 py-3">
+    <nav className="lg:hidden fixed top-0 left-0 right-0 z-50 h-16 bg-white border-b border-gray-200 shadow-sm">
+      <div className="h-full flex items-center justify-between px-4">
         {/* Left: Hamburger Menu */}
         <button
           onClick={onMenuClick}
@@ -92,9 +93,18 @@ export default function StudentNavbar({ onMenuClick }: StudentNavbarProps) {
     </nav>
 
     {/* Desktop Navbar - Top bar only */}
-    <nav className="hidden lg:block fixed top-0 right-0 left-64 z-30 bg-white border-b border-gray-200">
-      <div className="flex items-center justify-end px-6 py-3">
-        {/* User Dropdown */}
+    <nav className="hidden lg:block sticky top-0 z-30 h-16 bg-white border-b border-gray-200">
+      <div className="h-full flex items-center justify-between px-6">
+        {/* Left: Hamburger Menu */}
+        <button
+          onClick={onMenuClick}
+          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          aria-label="Toggle sidebar"
+        >
+          <Menu className="h-6 w-6 text-gray-700" />
+        </button>
+
+        {/* Right: User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">

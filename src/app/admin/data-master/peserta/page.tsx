@@ -29,6 +29,7 @@ interface Peserta {
   noUjian: string
   kelasId: string
   jurusanId: string
+  isActive: boolean
   createdAt: string
   kelas: {
     id: string
@@ -48,6 +49,8 @@ export default function PesertaPage() {
   const [filteredKelas, setFilteredKelas] = useState<Kelas[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<{ id: string; enable: boolean } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -167,6 +170,40 @@ export default function PesertaPage() {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Terjadi kesalahan saat menghapus data')
+    }
+  }
+
+  const handleToggleStatus = (id: string, enable: boolean) => {
+    setConfirmAction({ id, enable })
+    setIsConfirmOpen(true)
+  }
+
+  const confirmToggleStatus = async () => {
+    if (!confirmAction) return
+
+    const { id, enable } = confirmAction
+    const action = enable ? 'mengaktifkan' : 'menonaktifkan'
+
+    try {
+      const endpoint = enable ? `/api/peserta/${id}/enable` : `/api/peserta/${id}/disable`
+      const response = await fetch(endpoint, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      const data = await response.json()
+      
+      if (response.ok) {
+        await fetchPeserta()
+        toast.success(`Akun peserta berhasil di${action}`)
+      } else {
+        toast.error(data.error || `Gagal ${action} akun peserta`)
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Terjadi kesalahan saat mengubah status akun')
+    } finally {
+      setIsConfirmOpen(false)
+      setConfirmAction(null)
     }
   }
 
@@ -302,13 +339,14 @@ export default function PesertaPage() {
                 <TableHead>Nama Peserta</TableHead>
                 <TableHead>Kelas</TableHead>
                 <TableHead>Jurusan</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {pesertaList.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500">
+                  <TableCell colSpan={7} className="text-center text-gray-500">
                     Belum ada data peserta
                   </TableCell>
                 </TableRow>
@@ -322,8 +360,39 @@ export default function PesertaPage() {
                     <TableCell>
                       <span className="text-sm">{peserta.jurusan?.kodeJurusan || '-'}</span>
                     </TableCell>
+                    <TableCell>
+                      {peserta.isActive !== false ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          Aktif
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Nonaktif
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
+                        {peserta.isActive === false && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleToggleStatus(peserta.id, true)}
+                            title="Aktifkan Akun"
+                          >
+                            <span className="text-green-600 text-xs font-medium">Aktifkan</span>
+                          </Button>
+                        )}
+                        {peserta.isActive !== false && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleToggleStatus(peserta.id, false)}
+                            title="Nonaktifkan Akun"
+                          >
+                            <span className="text-orange-600 text-xs font-medium">Nonaktifkan</span>
+                          </Button>
+                        )}
                         <Button variant="ghost" size="sm" onClick={() => handleEdit(peserta)}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -339,6 +408,40 @@ export default function PesertaPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Confirm Status Change Dialog */}
+      <Dialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Perubahan Status</DialogTitle>
+            <DialogDescription>
+              {confirmAction?.enable 
+                ? 'Apakah Anda yakin ingin mengaktifkan akun peserta ini? Peserta akan dapat login kembali.' 
+                : 'Apakah Anda yakin ingin menonaktifkan akun peserta ini? Peserta tidak akan dapat login.'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsConfirmOpen(false)
+                setConfirmAction(null)
+              }}
+            >
+              Batal
+            </Button>
+            <Button 
+              type="button" 
+              variant={confirmAction?.enable ? 'default' : 'destructive'}
+              onClick={confirmToggleStatus}
+            >
+              {confirmAction?.enable ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -10,9 +10,13 @@ export async function POST(
 ) {
   try {
     const { jadwalId } = await params;
-    const { pesertaId, jawaban, hasilId } = await request.json();
+    const body = await request.json();
+    const { pesertaId, jawaban, hasilId } = body;
+
+    console.log('Submit request:', { jadwalId, pesertaId, hasilId, jawabanCount: Object.keys(jawaban || {}).length });
 
     if (!pesertaId || !jawaban || !hasilId) {
+      console.error('Data tidak lengkap:', { pesertaId, jawaban: !!jawaban, hasilId });
       return NextResponse.json(
         { error: 'Data tidak lengkap' },
         { status: 400 }
@@ -40,6 +44,7 @@ export async function POST(
     }
 
     if (hasil.status === 'submitted') {
+      console.log('Ujian sudah disubmit sebelumnya');
       return NextResponse.json(
         { error: 'Ujian sudah disubmit sebelumnya' },
         { status: 400 }
@@ -60,16 +65,33 @@ export async function POST(
       );
     }
 
-    // Check minimum time
+    // Check minimum time (only if ujian time not expired yet)
     const now = new Date();
     const waktuMulai = new Date(hasil.waktuMulai);
+    const waktuBerakhir = new Date(waktuMulai.getTime() + jadwal.durasi * 60000);
     const durasiPengerjaan = Math.floor((now.getTime() - waktuMulai.getTime()) / 60000); // in minutes
+    const ujianExpired = now > waktuBerakhir;
 
-    if (jadwal.minimumPengerjaan && durasiPengerjaan < jadwal.minimumPengerjaan) {
+    console.log('Durasi pengerjaan:', { 
+      durasiPengerjaan, 
+      minimumPengerjaan: jadwal.minimumPengerjaan,
+      ujianExpired,
+      waktuBerakhir: waktuBerakhir.toISOString(),
+      now: now.toISOString()
+    });
+
+    // Only check minimum time if ujian is NOT expired
+    // If expired, allow submit regardless of minimum time
+    if (!ujianExpired && jadwal.minimumPengerjaan && durasiPengerjaan < jadwal.minimumPengerjaan) {
+      console.log('Durasi kurang dari minimum (dan ujian belum expired)');
       return NextResponse.json(
         { error: `Anda harus mengerjakan minimal ${jadwal.minimumPengerjaan} menit` },
         { status: 400 }
       );
+    }
+    
+    if (ujianExpired) {
+      console.log('Ujian sudah expired, mengabaikan validasi minimum waktu');
     }
 
     // Get all soal for grading

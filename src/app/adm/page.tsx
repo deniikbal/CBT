@@ -64,11 +64,11 @@ export default function AdminLoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
+          <a href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
             <div className="bg-slate-800 p-3 rounded-full">
               <Shield className="h-8 w-8 text-white" />
             </div>
-          </div>
+          </a>
           <CardTitle className="text-2xl font-bold">Login Admin</CardTitle>
           <CardDescription>
             Masukkan email dan password untuk mengakses panel admin

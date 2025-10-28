@@ -44,10 +44,16 @@ export default function StudentSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }
 
   const isActive = (href: string) => pathname === href
 
-  // Close mobile menu when route changes
+  // Close sidebar when route changes on mobile only
   useEffect(() => {
-    setIsMobileMenuOpen(false)
-  }, [pathname])
+    // Only auto-close on mobile
+    const handleRouteChange = () => {
+      if (window.innerWidth < 1024) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    handleRouteChange()
+  }, [pathname, setIsMobileMenuOpen])
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -63,23 +69,29 @@ export default function StudentSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }
 
   return (
     <>
-      {/* Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
-          onClick={() => setIsMobileMenuOpen(false)}
-        />
-      )}
+      {/* Overlay - only on mobile when sidebar is open */}
+      <div
+        className={cn(
+          "lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity duration-300",
+          isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setIsMobileMenuOpen(false)}
+      />
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed lg:static inset-y-0 left-0 z-40 w-64 min-h-screen bg-white border-r border-gray-200 flex flex-col transition-transform duration-300 ease-in-out shadow-lg lg:shadow-none",
-        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        "fixed lg:sticky inset-y-0 lg:inset-y-auto left-0 top-0 z-50 w-64 h-screen bg-white border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out shadow-lg lg:shadow-none overflow-y-auto",
+        // Mobile: always use translate
+        // Desktop: use width/margin approach
+        isMobileMenuOpen 
+          ? "translate-x-0 lg:translate-x-0" 
+          : "-translate-x-full lg:translate-x-0 lg:w-0 lg:min-w-0 lg:border-0 lg:opacity-0"
       )}>
       {/* Logo/Header */}
-      <div className="p-6 border-b border-gray-200 mt-14 lg:mt-0">
-        <h1 className="text-xl font-bold text-gray-800">CBT Student</h1>
-        <p className="text-sm text-gray-600 mt-1">Computer Based Test</p>
+      <div className="h-16 px-6 border-b border-gray-200 mt-16 lg:mt-0 flex items-center shrink-0">
+        <div>
+          <h1 className="text-lg font-bold text-gray-800">Computer Based Test</h1>
+        </div>
       </div>
 
       {/* Menu Items */}

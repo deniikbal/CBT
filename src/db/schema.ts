@@ -91,6 +91,7 @@ export const peserta = pgTable('peserta', {
   password: text('password').notNull(),
   kelasId: text('kelas_id').notNull().references(() => kelas.id, { onDelete: 'cascade' }),
   jurusanId: text('jurusan_id').notNull().references(() => jurusan.id, { onDelete: 'cascade' }),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });
@@ -167,8 +168,35 @@ export const hasilUjianPeserta = pgTable('hasil_ujian_peserta', {
   skor: integer('skor'),
   skorMaksimal: integer('skor_maksimal'),
   status: text('status').notNull().default('in_progress'), // in_progress, submitted
+  sessionId: text('session_id'), // untuk single session lock
+  ipAddress: text('ip_address'), // IP address saat mulai
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+// Activity Log Table
+export const activityLogEnum = pgEnum('activity_type', [
+  'TAB_BLUR',
+  'EXIT_FULLSCREEN', 
+  'ATTEMPTED_DEVTOOLS',
+  'SCREENSHOT_ATTEMPT',
+  'PAGE_REFRESH',
+  'ANSWER_CHANGE',
+  'RIGHT_CLICK',
+  'COPY_ATTEMPT',
+  'PASTE_ATTEMPT',
+  'SESSION_VIOLATION',
+  'FORCE_SUBMIT'
+]);
+
+export const activityLog = pgTable('activity_log', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  hasilUjianId: text('hasil_ujian_id').notNull().references(() => hasilUjianPeserta.id, { onDelete: 'cascade' }),
+  pesertaId: text('peserta_id').notNull().references(() => peserta.id, { onDelete: 'cascade' }),
+  activityType: activityLogEnum('activity_type').notNull(),
+  count: integer('count').default(1), // jumlah kejadian (untuk blur, dll)
+  metadata: text('metadata'), // JSON string untuk data tambahan
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
 });
 
 // Relations
@@ -278,13 +306,25 @@ export const jadwalUjianPesertaRelations = relations(jadwalUjianPeserta, ({ one 
   }),
 }));
 
-export const hasilUjianPesertaRelations = relations(hasilUjianPeserta, ({ one }) => ({
+export const hasilUjianPesertaRelations = relations(hasilUjianPeserta, ({ one, many }) => ({
   jadwalUjian: one(jadwalUjian, {
     fields: [hasilUjianPeserta.jadwalUjianId],
     references: [jadwalUjian.id],
   }),
   peserta: one(peserta, {
     fields: [hasilUjianPeserta.pesertaId],
+    references: [peserta.id],
+  }),
+  activityLogs: many(activityLog),
+}));
+
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
+  hasilUjian: one(hasilUjianPeserta, {
+    fields: [activityLog.hasilUjianId],
+    references: [hasilUjianPeserta.id],
+  }),
+  peserta: one(peserta, {
+    fields: [activityLog.pesertaId],
     references: [peserta.id],
   }),
 }));
@@ -331,3 +371,6 @@ export type NewJadwalUjianPeserta = typeof jadwalUjianPeserta.$inferInsert;
 
 export type HasilUjianPeserta = typeof hasilUjianPeserta.$inferSelect;
 export type NewHasilUjianPeserta = typeof hasilUjianPeserta.$inferInsert;
+
+export type ActivityLog = typeof activityLog.$inferSelect;
+export type NewActivityLog = typeof activityLog.$inferInsert;

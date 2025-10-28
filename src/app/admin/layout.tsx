@@ -1,4 +1,8 @@
+'use client'
+
+import { useState, useEffect } from 'react'
 import AdminSidebar from '@/components/layout/AdminSidebar'
+import AdminNavbar from '@/components/layout/AdminNavbar'
 import { Toaster } from 'sonner'
 
 export default function AdminLayout({
@@ -6,14 +10,30 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+
+  // Set initial state based on screen size
+  useEffect(() => {
+    // Set initial state on mount
+    if (window.innerWidth >= 1024) {
+      setIsSidebarOpen(true)
+    }
+  }, [])
+
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          {children}
-        </div>
-      </main>
+    <div className="flex min-h-screen max-h-screen bg-gray-50 overflow-hidden">
+      <AdminSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <AdminNavbar 
+          onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
+          isSidebarOpen={isSidebarOpen}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-8">
+            {children}
+          </div>
+        </main>
+      </div>
       <Toaster position="top-right" richColors />
     </div>
   )

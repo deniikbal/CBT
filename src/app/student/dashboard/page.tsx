@@ -85,7 +85,7 @@ export default function StudentDashboard() {
 
   if (loading) {
     return (
-      <div className="pt-16 pb-4 px-4 lg:pt-20 lg:px-8 lg:pb-8 space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <div>
           <Skeleton className="h-10 w-48" />
           <Skeleton className="h-5 w-64 mt-2" />
@@ -137,8 +137,8 @@ export default function StudentDashboard() {
         {/* Ujian Cards Skeleton */}
         <div>
           <Skeleton className="h-8 w-48 mb-4" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[1, 2].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map((i) => (
               <Card key={i}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -161,7 +161,7 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="pt-16 pb-4 px-4 lg:pt-20 lg:px-8 lg:pb-8 space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Dashboard</h1>
@@ -251,7 +251,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {jadwalList.filter(j => !j.sudahDikerjakan).map((jadwal) => {
               const isActive = isUjianActive(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               
@@ -304,7 +304,7 @@ export default function StudentDashboard() {
       {jadwalList.filter(j => j.sudahDikerjakan).length > 0 && (
         <div>
           <h2 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4">Ujian Sudah Selesai</h2>
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {jadwalList.filter(j => j.sudahDikerjakan).map((jadwal) => (
               <Card key={jadwal.id} className="border-green-200 bg-green-50/30 opacity-75">
                 <CardHeader>

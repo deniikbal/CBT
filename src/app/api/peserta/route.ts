@@ -13,6 +13,7 @@ export async function GET() {
       noUjian: peserta.noUjian,
       kelasId: peserta.kelasId,
       jurusanId: peserta.jurusanId,
+      isActive: peserta.isActive,
       createdAt: peserta.createdAt,
       updatedAt: peserta.updatedAt,
       kelas: {
