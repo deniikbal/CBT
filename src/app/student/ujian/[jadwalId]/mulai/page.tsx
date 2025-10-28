@@ -56,6 +56,8 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   const [showAgreement, setShowAgreement] = useState(true)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [pesertaId, setPesertaId] = useState<string>('')
+  const [showMinTimeDialog, setShowMinTimeDialog] = useState(false)
+  const [minTimeMessage, setMinTimeMessage] = useState('')
 
   // Exam Security Hooks - must be called before any conditional returns
   const { blurCount, isFullscreen, logActivity, requestFullscreen } = useExamSecurity({
@@ -464,20 +466,10 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         console.error('Submit failed:', data)
         const errorMessage = data.error || 'Gagal submit ujian'
         
-        // Special handling for minimum time error - show in center with custom style
+        // Special handling for minimum time error - show dialog in center
         if (errorMessage.includes('harus mengerjakan minimal')) {
-          toast.error(errorMessage, {
-            duration: 8000,
-            position: 'top-center',
-            className: 'text-center font-semibold text-lg',
-            description: 'Silakan kerjakan ujian lebih lama sebelum submit',
-            style: {
-              minWidth: '400px',
-              maxWidth: '600px',
-              padding: '20px',
-              fontSize: '16px',
-            }
-          })
+          setMinTimeMessage(errorMessage)
+          setShowMinTimeDialog(true)
         } else {
           // Regular error toast
           toast.error(errorMessage, { 
