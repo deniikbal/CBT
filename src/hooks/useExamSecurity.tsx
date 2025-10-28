@@ -20,8 +20,24 @@ export function useExamSecurity({
   const router = useRouter()
   const [blurCount, setBlurCount] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const sessionId = useRef<string>(crypto.randomUUID())
   const sessionCheckInterval = useRef<NodeJS.Timeout>()
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      const smallScreen = window.innerWidth < 768
+      setIsMobile(mobile || smallScreen)
+      console.log('Device detection:', { mobile, smallScreen, isMobile: mobile || smallScreen })
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Log activity function with useCallback to avoid recreation
   const logActivity = useCallback(async (
@@ -228,9 +244,9 @@ export function useExamSecurity({
     }
   }, [hasilUjianId, pesertaId, maxBlurCount, blurCount])
 
-  // Fullscreen enforcement
+  // Fullscreen enforcement - disabled on mobile
   useEffect(() => {
-    if (!enableFullscreen) return
+    if (!enableFullscreen || isMobile) return
 
     const handleFullscreenChange = () => {
       const isNowFullscreen = !!document.fullscreenElement
@@ -252,20 +268,7 @@ export function useExamSecurity({
         document.exitFullscreen().catch(() => {})
       }
     }
-  }, [enableFullscreen, isFullscreen])
-
-  // Expose function to trigger fullscreen
-  const requestFullscreen = async () => {
-    try {
-      await document.documentElement.requestFullscreen()
-      setIsFullscreen(true)
-      return true
-    } catch (error) {
-      console.log('Fullscreen request failed:', error)
-      toast.info('Mode fullscreen tidak didukung atau diblokir browser', { duration: 3000 })
-      return false
-    }
-  }
+  }, [enableFullscreen, isFullscreen, isMobile])
 
   // Disable right-click and keyboard shortcuts
   useEffect(() => {
@@ -371,6 +374,27 @@ export function useExamSecurity({
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [hasilUjianId, pesertaId])
+
+  // Fullscreen request function (manual) - disabled on mobile
+  const requestFullscreen = async (): Promise<boolean> => {
+    if (!enableFullscreen || isMobile) {
+      console.log('Fullscreen skipped:', { enableFullscreen, isMobile })
+      return false
+    }
+
+    try {
+      const elem = document.documentElement
+      if (elem.requestFullscreen) {
+        await elem.requestFullscreen()
+        console.log('Fullscreen activated successfully')
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Fullscreen request error:', error)
+      return false
+    }
+  }
 
   return {
     blurCount,

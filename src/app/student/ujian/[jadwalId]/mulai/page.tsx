@@ -361,12 +361,14 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   }
 
   const handleSubmit = async () => {
+    // Close dialog first
+    setShowSubmitDialog(false)
     setSubmitting(true)
 
     try {
       const storedPeserta = localStorage.getItem('peserta')
       if (!storedPeserta) {
-        toast.error('Data peserta tidak ditemukan')
+        toast.error('Data peserta tidak ditemukan', { duration: 5000 })
         setSubmitting(false)
         return
       }
@@ -397,16 +399,24 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       if (response.ok) {
         // Clear localStorage setelah submit berhasil
         localStorage.removeItem(`ujian_${jadwalId}_jawaban`)
-        toast.success('Ujian berhasil disubmit!')
+        toast.success('Ujian berhasil disubmit!', { duration: 3000 })
         router.push(`/student/ujian/${jadwalId}/hasil?skor=${data.skor}&maksimal=${data.skorMaksimal}&tampilkan=${data.tampilkanNilai}`)
       } else {
         console.error('Submit failed:', data)
-        toast.error(data.error || 'Gagal submit ujian')
+        // Display error message to user with toast
+        const errorMessage = data.error || 'Gagal submit ujian'
+        toast.error(errorMessage, { 
+          duration: 7000,
+          description: data.details || undefined 
+        })
         setSubmitting(false)
       }
     } catch (error) {
       console.error('Error submitting:', error)
-      toast.error('Terjadi kesalahan saat submit')
+      toast.error('Terjadi kesalahan saat submit ujian', { 
+        duration: 5000,
+        description: error instanceof Error ? error.message : 'Silakan coba lagi'
+      })
       setSubmitting(false)
     }
   }
@@ -424,14 +434,20 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   const handleAgreeToTerms = async () => {
     console.log('Agreement accepted, starting exam...')
     
-    // Request fullscreen (user interaction context)
-    if (requestFullscreen) {
+    // Detect if mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+    
+    // Request fullscreen only on desktop
+    if (requestFullscreen && !isMobile) {
+      console.log('Requesting fullscreen (desktop)...')
       const success = await requestFullscreen()
       if (success) {
         console.log('Fullscreen mode activated')
       } else {
         console.log('Fullscreen not activated, continuing without it')
       }
+    } else {
+      console.log('Skipping fullscreen (mobile device)')
     }
     
     setShowAgreement(false)

@@ -59,13 +59,22 @@ export default function MonitoringPage() {
   // Fetch active exams
   const fetchActiveExams = async () => {
     try {
+      console.log('[Monitoring Page] Fetching active exams...')
       const response = await fetch('/api/admin/monitoring/active-exams')
+      
+      console.log('[Monitoring Page] Response status:', response.status)
+      
       if (response.ok) {
         const data = await response.json()
+        console.log('[Monitoring Page] Received data:', data.length, 'exams')
         setActiveExams(data)
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('[Monitoring Page] API error:', errorData)
       }
     } catch (error) {
-      console.error('Failed to fetch active exams:', error)
+      console.error('[Monitoring Page] Failed to fetch active exams:', error)
+      console.error('[Monitoring Page] Error details:', error instanceof Error ? error.message : String(error))
     } finally {
       setLoading(false)
     }
