@@ -101,7 +101,7 @@ export async function POST(
       );
     }
 
-    // Check if ujian is active
+    // Check if already started or submitted
     const now = new Date();
     const ujianDate = new Date(jadwal.tanggalUjian);
     const [hours, minutes] = jadwal.jamMulai.split(':').map(Number);
@@ -109,20 +109,6 @@ export async function POST(
     
     const ujianEnd = new Date(ujianDate);
     ujianEnd.setMinutes(ujianEnd.getMinutes() + jadwal.durasi);
-    
-    if (now < ujianDate) {
-      return NextResponse.json(
-        { error: 'Ujian belum dimulai' },
-        { status: 400 }
-      );
-    }
-    
-    if (now > ujianEnd) {
-      return NextResponse.json(
-        { error: 'Ujian sudah berakhir' },
-        { status: 400 }
-      );
-    }
 
     // Check if already started
     const [existingHasil] = await db
@@ -136,12 +122,33 @@ export async function POST(
       )
       .limit(1);
 
+    // If already submitted, cannot start again
     if (existingHasil && existingHasil.status === 'submitted') {
       return NextResponse.json(
         { error: 'Anda sudah menyelesaikan ujian ini' },
         { status: 400 }
       );
     }
+
+    // If not started yet, check if ujian time is valid
+    if (!existingHasil) {
+      if (now < ujianDate) {
+        return NextResponse.json(
+          { error: 'Ujian belum dimulai' },
+          { status: 400 }
+        );
+      }
+      
+      if (now > ujianEnd) {
+        return NextResponse.json(
+          { error: 'Ujian sudah berakhir' },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // If already started (existingHasil exists), allow access even if time expired
+    // This allows students to submit their answers after time runs out
 
     // Get soal from bank soal
     const soalList = await db

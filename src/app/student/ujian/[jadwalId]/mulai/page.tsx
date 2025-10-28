@@ -70,11 +70,25 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
     if (!storedPeserta) {
+      console.log('No peserta data in localStorage, redirecting to login')
       router.push('/login')
       return
     }
 
     const pesertaData = JSON.parse(storedPeserta)
+    console.log('Peserta data from localStorage:', pesertaData)
+    
+    // Check if account is active
+    if (pesertaData.isActive === false) {
+      console.log('Account is not active')
+      toast.error('Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.')
+      setTimeout(() => {
+        localStorage.removeItem('peserta')
+        router.push('/login')
+      }, 3000)
+      return
+    }
+    
     console.log('Setting pesertaId:', pesertaData.id)
     setPesertaId(pesertaData.id)
   }, [router])
@@ -94,7 +108,14 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     
   // Start exam after agreement
   useEffect(() => {
-    console.log('Checking start exam conditions:', { agreedToTerms, hasilId, pesertaId, jadwalId })
+    console.log('=== START EXAM USEEFFECT ===')
+    console.log('Checking start exam conditions:', { 
+      agreedToTerms, 
+      hasilId, 
+      pesertaId, 
+      jadwalId,
+      loading 
+    })
     
     if (!agreedToTerms) {
       console.log('Waiting for agreement...')
@@ -116,11 +137,20 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       return
     }
     
+    if (loading) {
+      console.log('Already loading, skip...')
+      return
+    }
+    
     console.log('All conditions met, starting ujian...')
     const storedPeserta = localStorage.getItem('peserta')
     if (storedPeserta) {
       const pesertaData = JSON.parse(storedPeserta)
       startUjian(pesertaData.id)
+    } else {
+      console.error('No peserta in localStorage when trying to start')
+      toast.error('Sesi berakhir, silakan login kembali')
+      router.push('/login')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agreedToTerms, pesertaId, hasilId])
@@ -200,14 +230,36 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         body: JSON.stringify({ pesertaId })
       })
 
+      console.log('Start ujian response:', response.status)
+
       if (!response.ok) {
         const data = await response.json()
-        toast.error(data.error || 'Gagal memulai ujian')
-        router.push('/student/ujian')
+        console.error('Failed to start ujian:', data)
+        toast.error(data.error || 'Gagal memulai ujian', { duration: 5000 })
+        
+        // Don't redirect immediately, let user see the error
+        setTimeout(() => {
+          router.push('/student/ujian')
+        }, 3000)
         return
       }
 
       const data = await response.json()
+      console.log('Start ujian data:', { 
+        hasilId: data.hasilId, 
+        soalCount: data.soal?.length,
+        jadwalNama: data.jadwal?.namaUjian 
+      })
+
+      if (!data.hasilId || !data.soal || !data.jadwal) {
+        console.error('Invalid response data:', data)
+        toast.error('Data ujian tidak lengkap')
+        setTimeout(() => {
+          router.push('/student/ujian')
+        }, 3000)
+        return
+      }
+
       setJadwal(data.jadwal)
       setSoalList(data.soal)
       setHasilId(data.hasilId)
@@ -247,10 +299,17 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       
       setTimeLeft(secondsLeft)
       setLoading(false)
+      
+      console.log('Ujian started successfully')
     } catch (error) {
       console.error('Error starting ujian:', error)
-      toast.error('Terjadi kesalahan saat memulai ujian')
-      router.push('/student/ujian')
+      toast.error('Terjadi kesalahan saat memulai ujian', { duration: 5000 })
+      setLoading(false)
+      
+      // Don't redirect immediately
+      setTimeout(() => {
+        router.push('/student/ujian')
+      }, 3000)
     }
   }
 
