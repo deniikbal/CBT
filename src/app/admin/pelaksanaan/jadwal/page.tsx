@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -14,6 +13,7 @@ import { Plus, Edit, Trash2, Calendar, Clock, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface BankSoal {
   id: string
@@ -289,70 +289,98 @@ export default function JadwalUjianPage() {
       {/* Jadwal List */}
       <Card>
         <CardContent className="pt-6">
-          {jadwalList.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <Calendar className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg font-medium">Belum ada jadwal ujian</p>
-              <p className="text-sm mt-1">Klik tombol "Buat Jadwal" untuk membuat jadwal baru</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nama Ujian</TableHead>
-                  <TableHead>Bank Soal</TableHead>
-                  <TableHead>Kelas</TableHead>
-                  <TableHead>Tanggal & Waktu</TableHead>
-                  <TableHead>Durasi</TableHead>
-                  <TableHead>Pengaturan</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {jadwalList.map((jadwal) => (
-                  <TableRow key={jadwal.id}>
-                    <TableCell className="font-medium">{jadwal.namaUjian}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {jadwal.bankSoal?.kodeBankSoal || '-'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{jadwal.kelas?.name || 'Semua Kelas'}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(jadwal.tanggalUjian), 'dd MMM yyyy', { locale: localeId })}
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-gray-600">
-                          <Clock className="h-3 w-3" />
-                          {jadwal.jamMulai}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{jadwal.durasi} menit</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1 text-xs">
-                        {jadwal.acakSoal && <Badge variant="outline" className="w-fit">Acak Soal</Badge>}
-                        {jadwal.acakOpsi && <Badge variant="outline" className="w-fit">Acak Opsi</Badge>}
-                        {jadwal.tampilkanNilai && <Badge variant="outline" className="w-fit">Tampilkan Nilai</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(jadwal)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(jadwal.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable
+            data={jadwalList}
+            columns={[
+              {
+                header: 'Nama Ujian',
+                accessor: 'namaUjian',
+                cell: (row) => <span className="font-medium">{row.namaUjian}</span>,
+              },
+              {
+                header: 'Bank Soal',
+                accessor: 'bankSoalId',
+                cell: (row) => (
+                  <Badge variant="secondary">
+                    {row.bankSoal?.kodeBankSoal || '-'}
+                  </Badge>
+                ),
+              },
+              {
+                header: 'Kelas',
+                accessor: 'kelasId',
+                cell: (row) => row.kelas?.name || 'Semua Kelas',
+              },
+              {
+                header: 'Tanggal & Waktu',
+                accessor: 'tanggalUjian',
+                cell: (row) => (
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-1 text-sm">
+                      <Calendar className="h-3 w-3" />
+                      {format(new Date(row.tanggalUjian), 'dd MMM yyyy', { locale: localeId })}
+                    </div>
+                    <div className="flex items-center gap-1 text-sm text-gray-600">
+                      <Clock className="h-3 w-3" />
+                      {row.jamMulai}
+                    </div>
+                  </div>
+                ),
+              },
+              {
+                header: 'Durasi',
+                accessor: 'durasi',
+                cell: (row) => `${row.durasi} menit`,
+              },
+              {
+                header: 'Pengaturan',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex flex-col gap-1 text-xs">
+                    {row.acakSoal && <Badge variant="outline" className="w-fit">Acak Soal</Badge>}
+                    {row.acakOpsi && <Badge variant="outline" className="w-fit">Acak Opsi</Badge>}
+                    {row.tampilkanNilai && <Badge variant="outline" className="w-fit">Tampilkan Nilai</Badge>}
+                  </div>
+                ),
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'text-right',
+              },
+            ]}
+            searchPlaceholder="Cari jadwal ujian..."
+            searchKeys={['namaUjian']}
+            filters={[
+              {
+                key: 'bankSoalId',
+                label: 'Bank Soal',
+                options: bankSoalList.map(b => ({ value: b.id, label: b.kodeBankSoal })),
+              },
+              {
+                key: 'kelasId',
+                label: 'Kelas',
+                options: kelasList.map(k => ({ value: k.id, label: k.name })),
+              },
+            ]}
+            emptyMessage={
+              <div className="text-center py-12 text-gray-500">
+                <Calendar className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-lg font-medium">Belum ada jadwal ujian</p>
+                <p className="text-sm mt-1">Klik tombol "Buat Jadwal" untuk membuat jadwal baru</p>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
 

@@ -6,11 +6,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Edit, Trash2, BookOpen, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface MataPelajaran {
   id: string
@@ -245,86 +245,102 @@ export default function BankSoalPage() {
           <CardDescription>Total: {bankSoalList.length} bank soal</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>Kode Bank Soal</TableHead>
-                <TableHead>Mata Pelajaran</TableHead>
-                <TableHead>Target Soal</TableHead>
-                <TableHead>Soal Terbuat</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {bankSoalList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500">
-                    <div className="flex flex-col items-center py-8">
-                      <BookOpen className="h-12 w-12 text-gray-400 mb-2" />
-                      <p>Belum ada data bank soal</p>
-                      <p className="text-sm">Tambahkan bank soal untuk memulai</p>
+          <DataTable
+            data={bankSoalList}
+            columns={[
+              {
+                header: 'No',
+                accessor: 'id',
+                cell: (row, index) => index + 1,
+                className: 'w-16',
+              },
+              {
+                header: 'Kode Bank Soal',
+                accessor: 'kodeBankSoal',
+                cell: (row) => <span className="font-medium">{row.kodeBankSoal}</span>,
+              },
+              {
+                header: 'Mata Pelajaran',
+                accessor: 'matpelId',
+                cell: (row) => (
+                  row.mataPelajaran ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                        {row.mataPelajaran.kodeMatpel}
+                      </span>
+                      <span>{row.mataPelajaran.name}</span>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                bankSoalList.map((bankSoal, index) => {
-                  const soalCount = bankSoal.soalCount || 0
-                  const targetSoal = bankSoal.jumlahSoal
-                  const percentage = targetSoal > 0 ? Math.round((soalCount / targetSoal) * 100) : 0
-                  
-                  return (
-                    <TableRow key={bankSoal.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell className="font-medium">{bankSoal.kodeBankSoal}</TableCell>
-                      <TableCell>
-                        {bankSoal.mataPelajaran ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              {bankSoal.mataPelajaran.kodeMatpel}
-                            </span>
-                            <span>{bankSoal.mataPelajaran.name}</span>
-                          </div>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-semibold">{targetSoal}</span> soal
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className={`font-semibold ${soalCount >= targetSoal ? 'text-green-600' : 'text-orange-600'}`}>
-                            {soalCount}/{targetSoal}
-                          </span>
-                          <span className="text-xs text-gray-500">({percentage}%)</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoal.id}/soal`)}
-                            className="gap-1"
-                          >
-                            <FileText className="h-4 w-4" />
-                            Kelola Soal
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(bankSoal)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleDelete(bankSoal.id)}>
-                            <Trash2 className="h-4 w-4 text-red-600" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                  ) : (
+                    <span className="text-gray-400">-</span>
                   )
-                })
-              )}
-            </TableBody>
-          </Table>
+                ),
+              },
+              {
+                header: 'Target Soal',
+                accessor: 'jumlahSoal',
+                cell: (row) => (
+                  <span><span className="font-semibold">{row.jumlahSoal}</span> soal</span>
+                ),
+              },
+              {
+                header: 'Soal Terbuat',
+                accessor: 'soalCount',
+                cell: (row) => {
+                  const soalCount = row.soalCount || 0
+                  const targetSoal = row.jumlahSoal
+                  const percentage = targetSoal > 0 ? Math.round((soalCount / targetSoal) * 100) : 0
+                  return (
+                    <div className="flex items-center gap-2">
+                      <span className={`font-semibold ${soalCount >= targetSoal ? 'text-green-600' : 'text-orange-600'}`}>
+                        {soalCount}/{targetSoal}
+                      </span>
+                      <span className="text-xs text-gray-500">({percentage}%)</span>
+                    </div>
+                  )
+                },
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => router.push(`/admin/persiapan/bank-soal/${row.id}/soal`)}
+                      className="gap-1"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Kelola Soal
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'text-right',
+              },
+            ]}
+            searchPlaceholder="Cari bank soal..."
+            searchKeys={['kodeBankSoal']}
+            filters={[
+              {
+                key: 'matpelId',
+                label: 'Mata Pelajaran',
+                options: matpelList.map(m => ({ value: m.id, label: `${m.kodeMatpel} - ${m.name}` })),
+              },
+            ]}
+            emptyMessage={
+              <div className="flex flex-col items-center py-8">
+                <BookOpen className="h-12 w-12 text-gray-400 mb-2" />
+                <p>Belum ada data bank soal</p>
+                <p className="text-sm text-gray-500">Tambahkan bank soal untuk memulai</p>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
     </div>

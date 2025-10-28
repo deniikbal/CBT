@@ -2,17 +2,12 @@
 
 import { useState, useEffect, use } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Plus, Edit, Trash2, ArrowLeft, FileText, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface BankSoal {
   id: string
@@ -45,20 +40,6 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
   const [bankSoal, setBankSoal] = useState<BankSoal | null>(null)
   const [soalList, setSoalList] = useState<Soal[]>([])
   const [loading, setLoading] = useState(true)
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  
-  const [formData, setFormData] = useState({
-    nomorSoal: 0,
-    soal: '',
-    pilihanA: '',
-    pilihanB: '',
-    pilihanC: '',
-    pilihanD: '',
-    pilihanE: '',
-    jawabanBenar: 'A' as 'A' | 'B' | 'C' | 'D' | 'E',
-    pembahasan: ''
-  })
 
   useEffect(() => {
     fetchBankSoal()
@@ -95,51 +76,9 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    try {
-      const url = editingId 
-        ? `/api/bank-soal/${bankSoalId}/soal/${editingId}` 
-        : `/api/bank-soal/${bankSoalId}/soal`
-      const method = editingId ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        await fetchSoal()
-        setIsDialogOpen(false)
-        resetForm()
-        toast.success(editingId ? 'Soal berhasil diupdate' : 'Soal berhasil ditambahkan')
-      } else {
-        toast.error(data.error || 'Terjadi kesalahan saat menyimpan soal')
-      }
-    } catch (error) {
-      console.error('Error:', error)
-      toast.error('Terjadi kesalahan. Silakan coba lagi.')
-    }
-  }
-
   const handleEdit = (soal: Soal) => {
-    setEditingId(soal.id)
-    setFormData({
-      nomorSoal: soal.nomorSoal,
-      soal: soal.soal,
-      pilihanA: soal.pilihanA,
-      pilihanB: soal.pilihanB,
-      pilihanC: soal.pilihanC,
-      pilihanD: soal.pilihanD,
-      pilihanE: soal.pilihanE || '',
-      jawabanBenar: soal.jawabanBenar,
-      pembahasan: soal.pembahasan || ''
-    })
-    setIsDialogOpen(true)
+    // Navigate to edit page with soal data
+    router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/${soal.id}/edit`)
   }
 
   const handleDelete = async (id: string) => {
@@ -161,31 +100,6 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
       console.error('Error:', error)
       toast.error('Terjadi kesalahan saat menghapus soal')
     }
-  }
-
-  const resetForm = () => {
-    setEditingId(null)
-    setFormData({
-      nomorSoal: 0,
-      soal: '',
-      pilihanA: '',
-      pilihanB: '',
-      pilihanC: '',
-      pilihanD: '',
-      pilihanE: '',
-      jawabanBenar: 'A',
-      pembahasan: ''
-    })
-  }
-
-  const handleOpenDialog = () => {
-    resetForm()
-    // Auto set nomor soal
-    const nextNomor = soalList.length > 0 
-      ? Math.max(...soalList.map(s => s.nomorSoal)) + 1 
-      : 1
-    setFormData(prev => ({ ...prev, nomorSoal: nextNomor }))
-    setIsDialogOpen(true)
   }
 
   if (loading || !bankSoal) {
@@ -263,7 +177,7 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
       {/* Action Button */}
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-semibold">Daftar Soal</h2>
-        <Button onClick={handleOpenDialog} className="gap-2">
+        <Button onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/tambah`)} className="gap-2">
           <Plus className="h-4 w-4" />
           Tambah Soal
         </Button>
@@ -272,186 +186,62 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
       {/* Soal List */}
       <Card>
         <CardContent className="pt-6">
-          {soalList.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
-              <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-lg font-medium">Belum ada soal</p>
-              <p className="text-sm mt-1">Klik tombol "Tambah Soal" untuk membuat soal baru</p>
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">No</TableHead>
-                  <TableHead>Soal</TableHead>
-                  <TableHead className="w-24">Jawaban</TableHead>
-                  <TableHead className="w-32 text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {soalList.map((soal) => (
-                  <TableRow key={soal.id}>
-                    <TableCell className="font-medium">{soal.nomorSoal}</TableCell>
-                    <TableCell>
-                      <div className="max-w-2xl">
-                        <p className="text-sm line-clamp-2">{soal.soal}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-bold">
-                        {soal.jawabanBenar}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(soal)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(soal.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable
+            data={soalList}
+            columns={[
+              {
+                header: 'No',
+                accessor: 'nomorSoal',
+                cell: (row) => <span className="font-medium">{row.nomorSoal}</span>,
+                className: 'w-16',
+              },
+              {
+                header: 'Soal',
+                accessor: 'soal',
+                cell: (row) => (
+                  <div className="max-w-2xl">
+                    <p className="text-sm line-clamp-2">{row.soal}</p>
+                  </div>
+                ),
+              },
+              {
+                header: 'Jawaban',
+                accessor: 'jawabanBenar',
+                cell: (row) => (
+                  <Badge variant="outline" className="font-bold">
+                    {row.jawabanBenar}
+                  </Badge>
+                ),
+                className: 'w-24',
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'w-32 text-right',
+              },
+            ]}
+            searchPlaceholder="Cari soal..."
+            searchKeys={['soal', 'nomorSoal']}
+            emptyMessage={
+              <div className="text-center py-12 text-gray-500">
+                <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                <p className="text-lg font-medium">Belum ada soal</p>
+                <p className="text-sm mt-1">Klik tombol "Tambah Soal" untuk membuat soal baru</p>
+              </div>
+            }
+          />
         </CardContent>
       </Card>
-
-      {/* Dialog Form */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? 'Edit Soal' : 'Tambah Soal Baru'}
-            </DialogTitle>
-            <DialogDescription>
-              Isi form di bawah untuk {editingId ? 'mengupdate' : 'menambah'} soal
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nomor Soal */}
-            <div className="space-y-2">
-              <Label htmlFor="nomorSoal">Nomor Soal</Label>
-              <Input
-                id="nomorSoal"
-                type="number"
-                min="1"
-                value={formData.nomorSoal}
-                onChange={(e) => setFormData({ ...formData, nomorSoal: parseInt(e.target.value) || 1 })}
-                required
-              />
-            </div>
-
-            {/* Soal */}
-            <div className="space-y-2">
-              <Label htmlFor="soal">Soal / Pertanyaan *</Label>
-              <Textarea
-                id="soal"
-                placeholder="Tulis soal atau pertanyaan di sini..."
-                value={formData.soal}
-                onChange={(e) => setFormData({ ...formData, soal: e.target.value })}
-                rows={4}
-                required
-              />
-            </div>
-
-            {/* Pilihan Jawaban dan Jawaban Benar */}
-            <div className="space-y-3">
-              <Label>Pilihan Jawaban (Pilih jawaban benar dengan radio button) *</Label>
-              
-              <RadioGroup 
-                value={formData.jawabanBenar} 
-                onValueChange={(value: any) => setFormData({ ...formData, jawabanBenar: value })}
-                className="space-y-2"
-              >
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="A" id="jawaban-a" className="mt-2" />
-                  <Label htmlFor="jawaban-a" className="font-semibold mt-2 cursor-pointer">A.</Label>
-                  <Input
-                    placeholder="Pilihan A"
-                    value={formData.pilihanA}
-                    onChange={(e) => setFormData({ ...formData, pilihanA: e.target.value })}
-                    required
-                    className="flex-1"
-                  />
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="B" id="jawaban-b" className="mt-2" />
-                  <Label htmlFor="jawaban-b" className="font-semibold mt-2 cursor-pointer">B.</Label>
-                  <Input
-                    placeholder="Pilihan B"
-                    value={formData.pilihanB}
-                    onChange={(e) => setFormData({ ...formData, pilihanB: e.target.value })}
-                    required
-                    className="flex-1"
-                  />
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="C" id="jawaban-c" className="mt-2" />
-                  <Label htmlFor="jawaban-c" className="font-semibold mt-2 cursor-pointer">C.</Label>
-                  <Input
-                    placeholder="Pilihan C"
-                    value={formData.pilihanC}
-                    onChange={(e) => setFormData({ ...formData, pilihanC: e.target.value })}
-                    required
-                    className="flex-1"
-                  />
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="D" id="jawaban-d" className="mt-2" />
-                  <Label htmlFor="jawaban-d" className="font-semibold mt-2 cursor-pointer">D.</Label>
-                  <Input
-                    placeholder="Pilihan D"
-                    value={formData.pilihanD}
-                    onChange={(e) => setFormData({ ...formData, pilihanD: e.target.value })}
-                    required
-                    className="flex-1"
-                  />
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <RadioGroupItem value="E" id="jawaban-e" className="mt-2" />
-                  <Label htmlFor="jawaban-e" className="font-semibold mt-2 cursor-pointer">E.</Label>
-                  <Input
-                    placeholder="Pilihan E (opsional)"
-                    value={formData.pilihanE}
-                    onChange={(e) => setFormData({ ...formData, pilihanE: e.target.value })}
-                    className="flex-1"
-                  />
-                </div>
-              </RadioGroup>
-            </div>
-
-            {/* Pembahasan */}
-            <div className="space-y-2">
-              <Label htmlFor="pembahasan">Pembahasan (opsional)</Label>
-              <Textarea
-                id="pembahasan"
-                placeholder="Tulis pembahasan atau penjelasan jawaban..."
-                value={formData.pembahasan}
-                onChange={(e) => setFormData({ ...formData, pembahasan: e.target.value })}
-                rows={3}
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Batal
-              </Button>
-              <Button type="submit">
-                {editingId ? 'Update Soal' : 'Simpan Soal'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

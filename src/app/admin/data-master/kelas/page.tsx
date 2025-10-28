@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface Jurusan {
   id: string
@@ -204,51 +204,60 @@ export default function KelasPage() {
           <CardDescription>Total: {kelasList.length} kelas</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>Nama Kelas</TableHead>
-                <TableHead>Jurusan</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {kelasList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500">
-                    Belum ada data kelas
-                  </TableCell>
-                </TableRow>
-              ) : (
-                kelasList.map((kelas, index) => (
-                  <TableRow key={kelas.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{kelas.name}</TableCell>
-                    <TableCell>
-                      {kelas.jurusan ? (
-                        <span className="text-sm">
-                          {kelas.jurusan.kodeJurusan} - {kelas.jurusan.name}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(kelas)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(kelas.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            data={kelasList}
+            columns={[
+              {
+                header: 'No',
+                accessor: 'id',
+                cell: (row, index) => index + 1,
+                className: 'w-16',
+              },
+              {
+                header: 'Nama Kelas',
+                accessor: 'name',
+                cell: (row) => <span className="font-medium">{row.name}</span>,
+              },
+              {
+                header: 'Jurusan',
+                accessor: 'jurusanId',
+                cell: (row) => (
+                  row.jurusan ? (
+                    <span className="text-sm">
+                      {row.jurusan.kodeJurusan} - {row.jurusan.name}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">-</span>
+                  )
+                ),
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'text-right',
+              },
+            ]}
+            searchPlaceholder="Cari kelas..."
+            searchKeys={['name']}
+            filters={[
+              {
+                key: 'jurusanId',
+                label: 'Jurusan',
+                options: jurusanList.map(j => ({ value: j.id, label: `${j.kodeJurusan} - ${j.name}` })),
+              },
+            ]}
+            emptyMessage="Belum ada data kelas"
+          />
         </CardContent>
       </Card>
     </div>

@@ -47,27 +47,50 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
-    // Get activity counts for each exam
-    const examsWithActivity = await Promise.all(
-      activeExams.map(async (exam, index) => {
+    // Get ALL activity counts in a single query (optimized)
+    const examIds = activeExams.map(e => e.id);
+    let allActivities: Array<{
+      hasilUjianId: string;
+      activityType: string;
+      totalCount: number;
+    }> = [];
+    
+    try {
+      console.log('[Monitoring API] Fetching all activities in batch...');
+      allActivities = await db
+        .select({
+          hasilUjianId: activityLog.hasilUjianId,
+          activityType: activityLog.activityType,
+          totalCount: sql<number>`SUM(${activityLog.count})`.as('total_count'),
+        })
+        .from(activityLog)
+        .groupBy(activityLog.hasilUjianId, activityLog.activityType);
+      
+      console.log(`[Monitoring API] Fetched ${allActivities.length} activity records`);
+    } catch (activityError) {
+      console.error('[Monitoring API] Error fetching all activities:', activityError);
+      // Continue without activities if error
+    }
+
+    // Group activities by exam ID for fast lookup
+    const activitiesMap = new Map<string, Array<{ activityType: string; totalCount: number }>>();
+    allActivities.forEach(act => {
+      if (!activitiesMap.has(act.hasilUjianId)) {
+        activitiesMap.set(act.hasilUjianId, []);
+      }
+      activitiesMap.get(act.hasilUjianId)!.push({
+        activityType: act.activityType,
+        totalCount: act.totalCount,
+      });
+    });
+
+    // Process all exams with pre-fetched activities
+    const examsWithActivity = activeExams.map((exam, index) => {
         try {
           console.log(`[Monitoring API] Processing exam ${index + 1}/${activeExams.length}`);
           
-          // Count activities by type
-          let activities = [];
-          try {
-            activities = await db
-              .select({
-                activityType: activityLog.activityType,
-                totalCount: sql<number>`SUM(${activityLog.count})`.as('total_count'),
-              })
-              .from(activityLog)
-              .where(eq(activityLog.hasilUjianId, exam.id))
-              .groupBy(activityLog.activityType);
-          } catch (activityError) {
-            console.error(`[Monitoring API] Error fetching activities for exam ${exam.id}:`, activityError);
-            // Continue without activities if error
-          }
+          // Get activities from map (no DB query needed)
+          const activities = activitiesMap.get(exam.id) || [];
 
           // Parse jawaban to get progress
           let progress = 0;
@@ -141,8 +164,7 @@ export async function GET() {
             riskLevel: 'low' as const,
           };
         }
-      })
-    );
+      });
     
     console.log('[Monitoring API] Successfully processed all exams');
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname } from 'next/navigation'
 import { 
   ChevronDown, 
   Database, 
@@ -13,8 +13,6 @@ import {
   School,
   BookMarked,
   LayoutDashboard,
-  Settings,
-  LogOut,
   Calendar,
   ClipboardList
 } from 'lucide-react'
@@ -73,8 +71,7 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const [openMenus, setOpenMenus] = useState<string[]>(['Data Master', 'Persiapan', 'Pelaksanaan'])
+  const [openMenus, setOpenMenus] = useState<string[]>([])
 
   const toggleMenu = (title: string) => {
     setOpenMenus(prev => 
@@ -85,11 +82,6 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   }
 
   const isActive = (href: string) => pathname === href
-
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    router.push('/adm')
-  }
 
   // Close sidebar when route changes on mobile only
   useEffect(() => {
@@ -115,7 +107,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed lg:sticky inset-y-0 lg:inset-y-auto left-0 top-0 z-50 w-64 h-screen bg-slate-900 text-white flex flex-col transition-all duration-300 ease-in-out overflow-y-auto",
+        "fixed lg:sticky inset-y-0 lg:inset-y-auto left-0 top-0 z-50 w-64 h-screen bg-white text-gray-800 flex flex-col transition-all duration-300 ease-in-out border-r shadow-sm",
         // Mobile: always use translate
         // Desktop: use width/margin approach
         isOpen 
@@ -123,15 +115,15 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
           : "-translate-x-full lg:translate-x-0 lg:w-0 lg:min-w-0 lg:border-0 lg:opacity-0"
       )}>
         {/* Logo/Header */}
-        <div className="h-16 px-6 border-b border-slate-700 flex items-center shrink-0">
+        <div className="h-16 px-6 border-b border-gray-200 flex items-center shrink-0">
           <div>
-            <h1 className="text-lg font-bold">CBT Admin</h1>
-            <p className="text-xs text-slate-400">Computer Based Test</p>
+            <h1 className="text-lg font-bold text-gray-800">CBT Admin</h1>
+            <p className="text-xs text-gray-500">Computer Based Test</p>
           </div>
         </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 p-4 space-y-2">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
         {menuItems.map((item) => (
           <div key={item.title}>
             {item.href ? (
@@ -142,7 +134,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
                   'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                   isActive(item.href)
                     ? 'bg-blue-600 text-white'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
                 )}
               >
                 <item.icon className="h-5 w-5" />
@@ -153,7 +145,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
               <div>
                 <button
                   onClick={() => toggleMenu(item.title)}
-                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                  className="w-full flex items-center justify-between px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <item.icon className="h-5 w-5" />
@@ -178,7 +170,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
                           'flex items-center gap-3 px-4 py-2 rounded-lg text-sm transition-colors',
                           isActive(subItem.href)
                             ? 'bg-blue-600 text-white'
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                            : 'text-gray-600 hover:bg-gray-100'
                         )}
                       >
                         <subItem.icon className="h-4 w-4" />
@@ -192,21 +184,6 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
           </div>
         ))}
       </nav>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-700 space-y-2">
-          <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
-            <Settings className="h-5 w-5" />
-            <span>Pengaturan</span>
-          </button>
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-red-600 hover:text-white transition-colors"
-          >
-            <LogOut className="h-5 w-5" />
-            <span>Keluar</span>
-          </button>
-        </div>
       </div>
     </>
   )

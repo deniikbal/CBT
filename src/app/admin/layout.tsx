@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import AdminSidebar from '@/components/layout/AdminSidebar'
 import AdminNavbar from '@/components/layout/AdminNavbar'
-import { Toaster } from 'sonner'
 
 export default function AdminLayout({
   children,
@@ -34,7 +33,6 @@ export default function AdminLayout({
           </div>
         </main>
       </div>
-      <Toaster position="top-right" richColors />
     </div>
   )
 }

@@ -6,10 +6,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface Jurusan {
   id: string
@@ -331,81 +331,111 @@ export default function PesertaPage() {
           <CardDescription>Total: {pesertaList.length} peserta</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>No. Ujian</TableHead>
-                <TableHead>Nama Peserta</TableHead>
-                <TableHead>Kelas</TableHead>
-                <TableHead>Jurusan</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pesertaList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500">
-                    Belum ada data peserta
-                  </TableCell>
-                </TableRow>
-              ) : (
-                pesertaList.map((peserta, index) => (
-                  <TableRow key={peserta.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{peserta.noUjian}</TableCell>
-                    <TableCell>{peserta.name}</TableCell>
-                    <TableCell>{peserta.kelas?.name || '-'}</TableCell>
-                    <TableCell>
-                      <span className="text-sm">{peserta.jurusan?.kodeJurusan || '-'}</span>
-                    </TableCell>
-                    <TableCell>
-                      {peserta.isActive !== false ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Aktif
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                          Nonaktif
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {peserta.isActive === false && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleToggleStatus(peserta.id, true)}
-                            title="Aktifkan Akun"
-                          >
-                            <span className="text-green-600 text-xs font-medium">Aktifkan</span>
-                          </Button>
-                        )}
-                        {peserta.isActive !== false && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleToggleStatus(peserta.id, false)}
-                            title="Nonaktifkan Akun"
-                          >
-                            <span className="text-orange-600 text-xs font-medium">Nonaktifkan</span>
-                          </Button>
-                        )}
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(peserta)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(peserta.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            data={pesertaList}
+            columns={[
+              {
+                header: 'No',
+                accessor: 'id',
+                cell: (row, index) => index + 1,
+                className: 'w-16',
+              },
+              {
+                header: 'No. Ujian',
+                accessor: 'noUjian',
+                cell: (row) => <span className="font-medium">{row.noUjian}</span>,
+              },
+              {
+                header: 'Nama Peserta',
+                accessor: 'name',
+              },
+              {
+                header: 'Kelas',
+                accessor: 'kelasId',
+                cell: (row) => row.kelas?.name || '-',
+              },
+              {
+                header: 'Jurusan',
+                accessor: 'jurusanId',
+                cell: (row) => (
+                  <span className="text-sm">{row.jurusan?.kodeJurusan || '-'}</span>
+                ),
+              },
+              {
+                header: 'Status',
+                accessor: 'isActive',
+                cell: (row) => (
+                  row.isActive !== false ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Aktif
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      Nonaktif
+                    </span>
+                  )
+                ),
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    {row.isActive === false && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleToggleStatus(row.id, true)}
+                        title="Aktifkan Akun"
+                      >
+                        <span className="text-green-600 text-xs font-medium">Aktifkan</span>
+                      </Button>
+                    )}
+                    {row.isActive !== false && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleToggleStatus(row.id, false)}
+                        title="Nonaktifkan Akun"
+                      >
+                        <span className="text-orange-600 text-xs font-medium">Nonaktifkan</span>
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'text-right',
+              },
+            ]}
+            searchPlaceholder="Cari peserta..."
+            searchKeys={['name', 'noUjian']}
+            filters={[
+              {
+                key: 'jurusanId',
+                label: 'Jurusan',
+                options: jurusanList.map(j => ({ value: j.id, label: `${j.kodeJurusan} - ${j.name}` })),
+              },
+              {
+                key: 'kelasId',
+                label: 'Kelas',
+                options: kelasList.map(k => ({ value: k.id, label: k.name })),
+              },
+              {
+                key: 'isActive',
+                label: 'Status',
+                options: [
+                  { value: 'true', label: 'Aktif' },
+                  { value: 'false', label: 'Nonaktif' },
+                ],
+              },
+            ]}
+            emptyMessage="Belum ada data peserta"
+          />
         </CardContent>
       </Card>
 

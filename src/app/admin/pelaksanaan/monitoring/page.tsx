@@ -22,6 +22,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface ActiveExam {
   id: string
@@ -62,7 +63,7 @@ export default function MonitoringPage() {
       console.log('[Monitoring Page] Fetching active exams...')
       
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
       
       const response = await fetch('/api/admin/monitoring/active-exams', {
         signal: controller.signal,
@@ -88,7 +89,7 @@ export default function MonitoringPage() {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          console.error('[Monitoring Page] Request timeout after 10 seconds')
+          console.error('[Monitoring Page] Request timeout after 30 seconds')
         } else {
           console.error('[Monitoring Page] Failed to fetch active exams:', error.message)
         }
@@ -263,74 +264,55 @@ export default function MonitoringPage() {
         <CardContent>
           {loading ? (
             <div className="text-center py-12 text-gray-500">Loading...</div>
-          ) : activeExams.length === 0 ? (
-            <div className="text-center py-12">
-              <Shield className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-500">Tidak ada ujian yang sedang berlangsung</p>
-            </div>
           ) : (
-            <div className="space-y-3">
-              {activeExams.map((exam) => (
-                <div
-                  key={exam.id}
-                  className={`p-4 border rounded-lg hover:shadow-md transition-shadow ${
-                    exam.riskLevel === 'high' 
-                      ? 'border-red-300 bg-red-50' 
-                      : exam.riskLevel === 'medium'
-                      ? 'border-yellow-300 bg-yellow-50'
-                      : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-lg">{exam.pesertaName}</h3>
-                        {getRiskBadge(exam.riskLevel)}
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-gray-600 mb-3">
-                        <div>
-                          <span className="text-gray-500">No Ujian:</span>
-                          <p className="font-medium">{exam.pesertaNoUjian}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Ujian:</span>
-                          <p className="font-medium">{exam.namaUjian}</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Durasi:</span>
-                          <p className="font-medium">{exam.duration} menit</p>
-                        </div>
-                        <div>
-                          <span className="text-gray-500">Progress:</span>
-                          <p className="font-medium">{exam.progress} jawaban</p>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        {exam.activityCounts.TAB_BLUR > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            🔄 Keluar Tab: {exam.activityCounts.TAB_BLUR}x
-                          </Badge>
-                        )}
-                        {exam.activityCounts.ATTEMPTED_DEVTOOLS > 0 && (
-                          <Badge variant="outline" className="text-xs text-red-600">
-                            ⚠️ DevTools: {exam.activityCounts.ATTEMPTED_DEVTOOLS}x
-                          </Badge>
-                        )}
-                        {exam.activityCounts.SCREENSHOT_ATTEMPT > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            📸 Screenshot: {exam.activityCounts.SCREENSHOT_ATTEMPT}x
-                          </Badge>
-                        )}
-                        {exam.totalSuspicious === 0 && (
-                          <Badge variant="outline" className="text-xs text-green-600">
-                            ✓ Tidak Ada Aktivitas Mencurigakan
-                          </Badge>
-                        )}
-                      </div>
+            <DataTable
+              data={activeExams}
+              columns={[
+                {
+                  header: 'Peserta',
+                  accessor: 'pesertaName',
+                  cell: (exam) => (
+                    <div>
+                      <div className="font-semibold">{exam.pesertaName}</div>
+                      <div className="text-sm text-gray-500">{exam.pesertaNoUjian}</div>
                     </div>
-
+                  ),
+                },
+                {
+                  header: 'Ujian',
+                  accessor: 'namaUjian',
+                },
+                {
+                  header: 'Progress',
+                  accessor: 'progress',
+                  cell: (exam) => `${exam.progress} jawaban`,
+                },
+                {
+                  header: 'Risk Level',
+                  accessor: 'riskLevel',
+                  cell: (exam) => getRiskBadge(exam.riskLevel),
+                },
+                {
+                  header: 'Aktivitas Mencurigakan',
+                  accessor: 'totalSuspicious',
+                  cell: (exam) => (
+                    <div className="flex flex-wrap gap-1 text-xs">
+                      {exam.activityCounts.TAB_BLUR > 0 && (
+                        <Badge variant="outline">🔄 {exam.activityCounts.TAB_BLUR}x</Badge>
+                      )}
+                      {exam.activityCounts.ATTEMPTED_DEVTOOLS > 0 && (
+                        <Badge variant="outline" className="text-red-600">⚠️ {exam.activityCounts.ATTEMPTED_DEVTOOLS}x</Badge>
+                      )}
+                      {exam.totalSuspicious === 0 && (
+                        <Badge variant="outline" className="text-green-600">✓ Aman</Badge>
+                      )}
+                    </div>
+                  ),
+                },
+                {
+                  header: 'Aksi',
+                  accessor: () => null,
+                  cell: (exam) => (
                     <Button
                       variant="outline"
                       size="sm"
@@ -339,10 +321,30 @@ export default function MonitoringPage() {
                       <Eye className="h-4 w-4 mr-2" />
                       Detail
                     </Button>
-                  </div>
+                  ),
+                  className: 'text-right',
+                },
+              ]}
+              searchPlaceholder="Cari peserta..."
+              searchKeys={['pesertaName', 'pesertaNoUjian', 'namaUjian']}
+              filters={[
+                {
+                  key: 'riskLevel',
+                  label: 'Risk Level',
+                  options: [
+                    { value: 'low', label: 'Low' },
+                    { value: 'medium', label: 'Medium' },
+                    { value: 'high', label: 'High' },
+                  ],
+                },
+              ]}
+              emptyMessage={
+                <div className="text-center py-12">
+                  <Shield className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500">Tidak ada ujian yang sedang berlangsung</p>
                 </div>
-              ))}
-            </div>
+              }
+            />
           )}
         </CardContent>
       </Card>

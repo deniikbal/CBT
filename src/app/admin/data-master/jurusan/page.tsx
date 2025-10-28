@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface Jurusan {
   id: string
@@ -173,43 +173,44 @@ export default function JurusanPage() {
           <CardDescription>Total: {jurusanList.length} jurusan</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>Kode Jurusan</TableHead>
-                <TableHead>Nama Jurusan</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {jurusanList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500">
-                    Belum ada data jurusan
-                  </TableCell>
-                </TableRow>
-              ) : (
-                jurusanList.map((jurusan, index) => (
-                  <TableRow key={jurusan.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{jurusan.kodeJurusan}</TableCell>
-                    <TableCell>{jurusan.name}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(jurusan)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(jurusan.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            data={jurusanList}
+            columns={[
+              {
+                header: 'No',
+                accessor: 'id',
+                cell: (row, index) => index + 1,
+                className: 'w-16',
+              },
+              {
+                header: 'Kode Jurusan',
+                accessor: 'kodeJurusan',
+                cell: (row) => <span className="font-medium">{row.kodeJurusan}</span>,
+              },
+              {
+                header: 'Nama Jurusan',
+                accessor: 'name',
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'text-right',
+              },
+            ]}
+            searchPlaceholder="Cari jurusan..."
+            searchKeys={['name', 'kodeJurusan']}
+            emptyMessage="Belum ada data jurusan"
+          />
         </CardContent>
       </Card>
     </div>

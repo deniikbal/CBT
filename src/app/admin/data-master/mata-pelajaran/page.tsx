@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Plus, Edit, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { DataTable, Column } from '@/components/ui/data-table'
 
 interface MataPelajaran {
   id: string
@@ -170,43 +170,44 @@ export default function MataPelajaranPage() {
           <CardDescription>Total: {matpelList.length} mata pelajaran</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>No</TableHead>
-                <TableHead>Kode Matpel</TableHead>
-                <TableHead>Nama Mata Pelajaran</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {matpelList.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500">
-                    Belum ada data mata pelajaran
-                  </TableCell>
-                </TableRow>
-              ) : (
-                matpelList.map((matpel, index) => (
-                  <TableRow key={matpel.id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell className="font-medium">{matpel.kodeMatpel}</TableCell>
-                    <TableCell>{matpel.name}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(matpel)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(matpel.id)}>
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <DataTable
+            data={matpelList}
+            columns={[
+              {
+                header: 'No',
+                accessor: 'id',
+                cell: (row, index) => index + 1,
+                className: 'w-16',
+              },
+              {
+                header: 'Kode Matpel',
+                accessor: 'kodeMatpel',
+                cell: (row) => <span className="font-medium">{row.kodeMatpel}</span>,
+              },
+              {
+                header: 'Nama Mata Pelajaran',
+                accessor: 'name',
+              },
+              {
+                header: 'Aksi',
+                accessor: () => null,
+                cell: (row) => (
+                  <div className="flex justify-end gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                      <Trash2 className="h-4 w-4 text-red-600" />
+                    </Button>
+                  </div>
+                ),
+                className: 'text-right',
+              },
+            ]}
+            searchPlaceholder="Cari mata pelajaran..."
+            searchKeys={['name', 'kodeMatpel']}
+            emptyMessage="Belum ada data mata pelajaran"
+          />
         </CardContent>
       </Card>
     </div>
