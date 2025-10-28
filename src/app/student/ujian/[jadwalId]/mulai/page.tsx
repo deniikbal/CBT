@@ -698,16 +698,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         <div className="grid grid-cols-1 gap-6" style={{ gridTemplateColumns: showNavigasi ? '1fr auto' : '1fr' }}>
           {/* Main Content - Soal */}
           <div className="space-y-4">
-            {/* Warning minimum time */}
-            {jadwal.minimumPengerjaan && !timeExpired && (
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  Anda harus mengerjakan minimal {jadwal.minimumPengerjaan} menit sebelum submit
-                </AlertDescription>
-              </Alert>
-            )}
-
             {/* Warning time expired */}
             {timeExpired && (
               <Alert variant="destructive" className="animate-pulse">
@@ -1043,6 +1033,38 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
               disabled={submitting || totalSoal - getJumlahDijawab() > 0}
             >
               {submitting ? 'Mengirim...' : totalSoal - getJumlahDijawab() > 0 ? 'Belum Bisa Submit' : 'Ya, Submit Sekarang'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Minimum Time Error Dialog */}
+      <Dialog open={showMinTimeDialog} onOpenChange={setShowMinTimeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="rounded-full bg-red-100 p-3">
+                <Clock className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+            <DialogTitle className="text-center text-xl">
+              Waktu Pengerjaan Belum Cukup
+            </DialogTitle>
+            <DialogDescription className="text-center text-base pt-4">
+              <div className="font-semibold text-red-600 mb-3 text-lg">
+                {minTimeMessage}
+              </div>
+              <div className="text-gray-600">
+                Silakan kerjakan ujian lebih lama sebelum submit. Waktu minimum ini diberlakukan untuk memastikan Anda membaca soal dengan teliti.
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center mt-4">
+            <Button 
+              onClick={() => setShowMinTimeDialog(false)}
+              className="w-full sm:w-auto"
+            >
+              Mengerti, Lanjutkan Mengerjakan
             </Button>
           </DialogFooter>
         </DialogContent>
