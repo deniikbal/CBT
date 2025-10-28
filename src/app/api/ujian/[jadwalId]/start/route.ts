@@ -371,6 +371,12 @@ export async function POST(
       hasilId = newHasil.id;
     }
 
+    // Debug: Log soal order being returned
+    console.log('[START] Returning response with', processedSoal.length, 'soal');
+    console.log('[START] First 3 soal IDs:', processedSoal.slice(0, 3).map((s: any) => s.id.substring(0, 8)));
+    console.log('[START] Has existing hasil:', !!existingHasil);
+    console.log('[START] Loaded from saved order:', !!(existingHasil && existingHasil.soalOrder));
+
     return NextResponse.json({
       hasilId,
       jadwal: {
