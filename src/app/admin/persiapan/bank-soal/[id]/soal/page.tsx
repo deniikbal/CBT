@@ -4,6 +4,7 @@ import { useState, useEffect, use } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+
 import { Plus, Edit, Trash2, ArrowLeft, FileText, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
@@ -104,8 +105,8 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
 
   if (loading || !bankSoal) {
     return (
-      <div className="p-8">
-        <div>Loading...</div>
+      <div className="flex justify-center items-center p-8 md:p-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }

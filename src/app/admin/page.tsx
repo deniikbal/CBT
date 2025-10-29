@@ -1,9 +1,39 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Users, GraduationCap, BookOpen, FileText } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+
+interface DashboardStats {
+  totalPeserta: number
+  totalJurusan: number
+  totalBankSoal: number
+  totalJadwal: number
+}
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchStats()
+  }, [])
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admin/dashboard')
+      if (response.ok) {
+        const data = await response.json()
+        setStats(data)
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -20,8 +50,17 @@ export default function AdminDashboard() {
             <Users className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-gray-500 mt-1">Peserta terdaftar</p>
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.totalPeserta || 0}</div>
+                <p className="text-xs text-gray-500 mt-1">Peserta terdaftar</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -33,8 +72,17 @@ export default function AdminDashboard() {
             <GraduationCap className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-gray-500 mt-1">Jurusan tersedia</p>
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.totalJurusan || 0}</div>
+                <p className="text-xs text-gray-500 mt-1">Jurusan tersedia</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -46,8 +94,17 @@ export default function AdminDashboard() {
             <BookOpen className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-gray-500 mt-1">Bank soal aktif</p>
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.totalBankSoal || 0}</div>
+                <p className="text-xs text-gray-500 mt-1">Bank soal aktif</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -59,8 +116,17 @@ export default function AdminDashboard() {
             <FileText className="h-4 w-4 text-gray-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-gray-500 mt-1">Ujian tersedia</p>
+            {loading ? (
+              <div className="space-y-2">
+                <Skeleton className="h-8 w-12" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.totalJadwal || 0}</div>
+                <p className="text-xs text-gray-500 mt-1">Ujian tersedia</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

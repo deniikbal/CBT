@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useExamSecurity } from '@/hooks/useExamSecurity'
 import ExamAgreementDialog from '@/components/ExamAgreementDialog'
+import parse from 'html-react-parser'
 
 interface Soal {
   id: string
@@ -737,8 +738,8 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Question Text */}
-                <div className="prose max-w-none">
-                  <p className="text-base leading-relaxed whitespace-pre-wrap">{currentSoal.soal}</p>
+                <div className="prose max-w-none text-base leading-relaxed">
+                  {parse(currentSoal.soal || '')}
                 </div>
 
                 {/* Options */}
@@ -754,7 +755,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                       <RadioGroupItem value="A" id="option-a" className="mt-1" />
                       <Label htmlFor="option-a" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">A.</span>
-                        {currentSoal.pilihanA}
+                        <span className="inline">{parse(currentSoal.pilihanA || '')}</span>
                       </Label>
                     </div>
 
@@ -765,7 +766,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                       <RadioGroupItem value="B" id="option-b" className="mt-1" />
                       <Label htmlFor="option-b" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">B.</span>
-                        {currentSoal.pilihanB}
+                        <span className="inline">{parse(currentSoal.pilihanB || '')}</span>
                       </Label>
                     </div>
 
@@ -776,7 +777,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                       <RadioGroupItem value="C" id="option-c" className="mt-1" />
                       <Label htmlFor="option-c" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">C.</span>
-                        {currentSoal.pilihanC}
+                        <span className="inline">{parse(currentSoal.pilihanC || '')}</span>
                       </Label>
                     </div>
 
@@ -787,7 +788,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                       <RadioGroupItem value="D" id="option-d" className="mt-1" />
                       <Label htmlFor="option-d" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">D.</span>
-                        {currentSoal.pilihanD}
+                        <span className="inline">{parse(currentSoal.pilihanD || '')}</span>
                       </Label>
                     </div>
 
@@ -799,7 +800,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                         <RadioGroupItem value="E" id="option-e" className="mt-1" />
                         <Label htmlFor="option-e" className="flex-1 cursor-pointer">
                           <span className="font-semibold mr-2">E.</span>
-                          {currentSoal.pilihanE}
+                          <span className="inline">{parse(currentSoal.pilihanE || '')}</span>
                         </Label>
                       </div>
                     )}

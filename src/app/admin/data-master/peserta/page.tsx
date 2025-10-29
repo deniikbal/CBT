@@ -224,7 +224,7 @@ export default function PesertaPage() {
     setEditingId(null)
   }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
 
@@ -234,18 +234,7 @@ export default function PesertaPage() {
     }
 
     setSelectedFile(file)
-    
-    // Read file to get total rows (optional preview)
-    try {
-      const XLSX = await import('xlsx')
-      const buffer = await file.arrayBuffer()
-      const workbook = XLSX.read(buffer, { type: 'array' })
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
-      const data = XLSX.utils.sheet_to_json(firstSheet)
-      setTotalRows(data.length)
-    } catch (error) {
-      console.error('Error reading file:', error)
-    }
+    setTotalRows(0)
   }
 
   const handleImport = async () => {

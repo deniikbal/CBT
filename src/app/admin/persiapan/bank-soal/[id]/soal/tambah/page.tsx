@@ -203,6 +203,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
               {/* Soal */}
               <div>
                 <MathEditor
+                  key={`soal-${formData.nomorSoal}`}
                   label="Pertanyaan"
                   value={formData.soal}
                   onChange={(value) => setFormData({ ...formData, soal: value })}
@@ -231,6 +232,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                     <Label htmlFor="jawaban-a" className="font-medium cursor-pointer">A.</Label>
                   </div>
                   <MathEditor
+                    key={`pilihanA-${formData.nomorSoal}`}
                     value={formData.pilihanA}
                     onChange={(value) => setFormData({ ...formData, pilihanA: value })}
                     placeholder="Pilihan A"
@@ -246,6 +248,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                     <Label htmlFor="jawaban-b" className="font-medium cursor-pointer">B.</Label>
                   </div>
                   <MathEditor
+                    key={`pilihanB-${formData.nomorSoal}`}
                     value={formData.pilihanB}
                     onChange={(value) => setFormData({ ...formData, pilihanB: value })}
                     placeholder="Pilihan B"
@@ -261,6 +264,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                     <Label htmlFor="jawaban-c" className="font-medium cursor-pointer">C.</Label>
                   </div>
                   <MathEditor
+                    key={`pilihanC-${formData.nomorSoal}`}
                     value={formData.pilihanC}
                     onChange={(value) => setFormData({ ...formData, pilihanC: value })}
                     placeholder="Pilihan C"
@@ -276,6 +280,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                     <Label htmlFor="jawaban-d" className="font-medium cursor-pointer">D.</Label>
                   </div>
                   <MathEditor
+                    key={`pilihanD-${formData.nomorSoal}`}
                     value={formData.pilihanD}
                     onChange={(value) => setFormData({ ...formData, pilihanD: value })}
                     placeholder="Pilihan D"
@@ -322,6 +327,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                       </Button>
                     </div>
                     <MathEditor
+                      key={`pilihanE-${formData.nomorSoal}`}
                       value={formData.pilihanE}
                       onChange={(value) => setFormData({ ...formData, pilihanE: value })}
                       placeholder="Pilihan E (opsional)"
@@ -335,6 +341,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
               {/* Pembahasan */}
               <div>
                 <MathEditor
+                  key={`pembahasan-${formData.nomorSoal}`}
                   label="Pembahasan (Opsional)"
                   value={formData.pembahasan}
                   onChange={(value) => setFormData({ ...formData, pembahasan: value })}
