@@ -20,15 +20,15 @@ export default function AdminLayout({
   }, [])
 
   return (
-    <div className="flex min-h-screen max-h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50">
       <AdminSidebar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0">
         <AdminNavbar 
           onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
           isSidebarOpen={isSidebarOpen}
         />
         <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
+          <div className="p-4 sm:p-6 md:p-8">
             {children}
           </div>
         </main>

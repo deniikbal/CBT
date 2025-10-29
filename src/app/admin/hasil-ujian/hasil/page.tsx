@@ -120,10 +120,10 @@ export default function HasilUjianPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Hasil Ujian</h1>
-          <p className="text-gray-600 mt-1">Lihat hasil ujian siswa yang sudah selesai</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Hasil Ujian</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Lihat hasil ujian siswa yang sudah selesai</p>
         </div>
       </div>
 
@@ -245,7 +245,9 @@ export default function HasilUjianPage() {
           </DialogHeader>
 
           {loadingDetail ? (
-            <div className="text-center py-8 text-gray-500">Memuat detail jawaban...</div>
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
           ) : errorDetail ? (
             <div className="text-center py-8 p-4 bg-red-50 border border-red-200 rounded text-red-600">
               {errorDetail}

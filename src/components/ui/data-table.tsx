@@ -5,13 +5,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 export interface Column<T> {
-  header: string
+  header: string | (() => React.ReactNode)
   accessor: keyof T | ((row: T, index: number) => React.ReactNode)
   cell?: (row: T, index: number) => React.ReactNode
   className?: string
+  sortable?: boolean
+  sortKey?: keyof T
+  sortLabel?: string
+  customSort?: (a: T, b: T, direction: 'asc' | 'desc') => number
 }
 
 export interface FilterOption {
@@ -43,8 +47,10 @@ export function DataTable<T extends Record<string, any>>({
   const [itemsPerPage, setItemsPerPage] = useState(itemsPerPageOptions[0])
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
+  const [sortColumn, setSortColumn] = useState<keyof T | null>(null)
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
-  // Filter and search logic
+  // Filter, search, and sort logic
   const filteredData = useMemo(() => {
     let result = [...data]
 
@@ -67,8 +73,39 @@ export function DataTable<T extends Record<string, any>>({
       }
     })
 
+    // Apply sorting
+    if (sortColumn) {
+      const column = columns.find(col => {
+        if (typeof col.accessor === 'string') {
+          return col.sortKey === sortColumn || col.accessor === sortColumn
+        }
+        return col.sortKey === sortColumn
+      })
+
+      result.sort((a, b) => {
+        if (column?.customSort) {
+          return column.customSort(a, b, sortDirection)
+        }
+
+        const aValue = a[sortColumn]
+        const bValue = b[sortColumn]
+
+        if (aValue === null || aValue === undefined) return 1
+        if (bValue === null || bValue === undefined) return -1
+
+        const aStr = String(aValue).toLowerCase()
+        const bStr = String(bValue).toLowerCase()
+
+        if (sortDirection === 'asc') {
+          return aStr.localeCompare(bStr)
+        } else {
+          return bStr.localeCompare(aStr)
+        }
+      })
+    }
+
     return result
-  }, [data, searchQuery, searchKeys, activeFilters])
+  }, [data, searchQuery, searchKeys, activeFilters, sortColumn, sortDirection, columns])
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
@@ -92,9 +129,44 @@ export function DataTable<T extends Record<string, any>>({
   const clearAllFilters = () => {
     setSearchQuery('')
     setActiveFilters({})
+    setSortColumn(null)
+    setSortDirection('asc')
   }
 
-  const hasActiveFilters = searchQuery || Object.values(activeFilters).some((v) => v && v !== 'all')
+  const handleSort = (column: Column<T>) => {
+    if (!column.sortable) return
+
+    const key = column.sortKey || (typeof column.accessor === 'string' ? column.accessor as keyof T : null)
+    if (!key) return
+
+    if (sortColumn === key) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc')
+      } else {
+        setSortColumn(null)
+        setSortDirection('asc')
+      }
+    } else {
+      setSortColumn(key)
+      setSortDirection('asc')
+    }
+  }
+
+  const getSortIcon = (column: Column<T>) => {
+    if (!column.sortable) return null
+
+    const key = column.sortKey || (typeof column.accessor === 'string' ? column.accessor as keyof T : null)
+    
+    if (sortColumn === key) {
+      return sortDirection === 'asc' ? 
+        <ArrowUp className="h-4 w-4" /> : 
+        <ArrowDown className="h-4 w-4" />
+    }
+    
+    return <ArrowUpDown className="h-4 w-4 text-gray-400" />
+  }
+
+  const hasActiveFilters = searchQuery || Object.values(activeFilters).some((v) => v && v !== 'all') || sortColumn !== null
 
   return (
     <div className="space-y-4">
@@ -156,7 +228,18 @@ export function DataTable<T extends Record<string, any>>({
             <TableRow className="bg-gray-50">
               {columns.map((column, index) => (
                 <TableHead key={index} className={column.className}>
-                  {column.header}
+                  {column.sortable ? (
+                    <button
+                      onClick={() => handleSort(column)}
+                      className="flex items-center gap-2 hover:text-blue-600 transition-colors font-medium"
+                      title={`Sort by ${column.sortLabel || (typeof column.header === 'string' ? column.header : 'column')}`}
+                    >
+                      {typeof column.header === 'function' ? column.header() : column.header}
+                      {getSortIcon(column)}
+                    </button>
+                  ) : (
+                    typeof column.header === 'function' ? column.header() : column.header
+                  )}
                 </TableHead>
               ))}
             </TableRow>

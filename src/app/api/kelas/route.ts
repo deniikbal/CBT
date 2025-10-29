@@ -10,6 +10,7 @@ export async function GET() {
       id: kelas.id,
       name: kelas.name,
       jurusanId: kelas.jurusanId,
+      teacher: kelas.teacher,
       createdAt: kelas.createdAt,
       updatedAt: kelas.updatedAt,
       jurusan: {
@@ -35,7 +36,7 @@ export async function GET() {
 // POST - Tambah kelas baru
 export async function POST(request: NextRequest) {
   try {
-    const { name, jurusanId } = await request.json()
+    const { name, jurusanId, teacher } = await request.json()
 
     if (!name || !jurusanId) {
       return NextResponse.json(
@@ -56,7 +57,8 @@ export async function POST(request: NextRequest) {
 
     const [newKelas] = await db.insert(kelas).values({
       name,
-      jurusanId
+      jurusanId,
+      teacher: teacher || null
     }).returning()
 
     return NextResponse.json(newKelas, { status: 201 })

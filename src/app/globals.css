@@ -116,6 +116,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html, body {
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -129,5 +134,19 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;  /* Chrome, Safari and Opera */
+  }
+  
+  /* Shimmer animation for progress bar */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
   }
 }

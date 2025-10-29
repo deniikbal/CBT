@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2 } from 'lucide-react'
+import { Plus, Edit, Trash2, Upload, Loader2, Trash } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTable, Column } from '@/components/ui/data-table'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface Jurusan {
   id: string
@@ -49,9 +50,20 @@ export default function PesertaPage() {
   const [filteredKelas, setFilteredKelas] = useState<Kelas[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
   const [confirmAction, setConfirmAction] = useState<{ id: string; enable: boolean } | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isImporting, setIsImporting] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [importProgress, setImportProgress] = useState(0)
+  const [importedCount, setImportedCount] = useState(0)
+  const [totalRows, setTotalRows] = useState(0)
+  const [importStatus, setImportStatus] = useState<'preparing' | 'importing' | 'finalizing' | 'done'>('preparing')
+  const [selectedPeserta, setSelectedPeserta] = useState<string[]>([])
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({ 
     name: '', 
     noUjian: '', 
@@ -212,28 +224,383 @@ export default function PesertaPage() {
     setEditingId(null)
   }
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      toast.error('File harus berformat Excel (.xlsx atau .xls)')
+      return
+    }
+
+    setSelectedFile(file)
+    
+    // Read file to get total rows (optional preview)
+    try {
+      const XLSX = await import('xlsx')
+      const buffer = await file.arrayBuffer()
+      const workbook = XLSX.read(buffer, { type: 'array' })
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+      const data = XLSX.utils.sheet_to_json(firstSheet)
+      setTotalRows(data.length)
+    } catch (error) {
+      console.error('Error reading file:', error)
+    }
+  }
+
+  const handleImport = async () => {
+    if (!selectedFile) {
+      toast.error('Silakan pilih file terlebih dahulu')
+      return
+    }
+
+    setIsImporting(true)
+    setImportProgress(0)
+    setImportedCount(0)
+    setImportStatus('preparing')
+    
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+
+    // Simulate realistic progress with phases
+    const progressInterval = setInterval(() => {
+      setImportProgress(prev => {
+        if (prev < 15) {
+          setImportStatus('preparing')
+          return prev + 5
+        } else if (prev < 85) {
+          setImportStatus('importing')
+          // Simulate imported count proportionally
+          const progressInImportPhase = (prev - 15) / 70 // 0 to 1
+          const expectedCount = Math.floor(progressInImportPhase * (totalRows || 10))
+          setImportedCount(expectedCount)
+          return prev + 5
+        } else if (prev < 98) {
+          setImportStatus('finalizing')
+          // Set to near total during finalization
+          setImportedCount(Math.floor((totalRows || 10) * 0.95))
+          return prev + 2
+        }
+        return prev
+      })
+    }, 100)
+
+    try {
+      const response = await fetch('/api/peserta/import', {
+        method: 'POST',
+        body: formData
+      })
+
+      const data = await response.json()
+      clearInterval(progressInterval)
+      
+      setImportStatus('done')
+      setImportProgress(100)
+      setImportedCount(data.count || 0)
+
+      if (response.ok) {
+        await fetchPeserta()
+        setTimeout(() => {
+          if (data.errors && data.errors.length > 0) {
+            toast.success(`Berhasil import ${data.count} peserta. ${data.errors.length} baris gagal.`, {
+              description: 'Lihat console untuk detail error'
+            })
+            console.warn('Import errors:', data.errors)
+          } else {
+            toast.success(`Berhasil import ${data.count} peserta!`, {
+              description: 'Semua data berhasil ditambahkan'
+            })
+          }
+          setIsImportDialogOpen(false)
+          setSelectedFile(null)
+          setTotalRows(0)
+          setImportProgress(0)
+          setImportedCount(0)
+          setImportStatus('preparing')
+          if (fileInputRef.current) {
+            fileInputRef.current.value = ''
+          }
+        }, 800)
+      } else {
+        toast.error(data.error || 'Gagal import data', {
+          description: data.details ? data.details.slice(0, 2).join(', ') : undefined
+        })
+        setImportProgress(0)
+        setImportedCount(0)
+        setImportStatus('preparing')
+      }
+    } catch (error) {
+      clearInterval(progressInterval)
+      console.error('Error importing:', error)
+      toast.error('Terjadi kesalahan saat import data')
+      setImportProgress(0)
+      setImportedCount(0)
+      setImportStatus('preparing')
+    } finally {
+      setIsImporting(false)
+    }
+  }
+
+  const handleCancelImport = () => {
+    setIsImportDialogOpen(false)
+    setSelectedFile(null)
+    setTotalRows(0)
+    setImportProgress(0)
+    setImportedCount(0)
+    setImportStatus('preparing')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const downloadTemplate = () => {
+    const link = document.createElement('a')
+    link.href = '/templates/template-peserta.xlsx'
+    link.download = 'template-peserta.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedPeserta(pesertaList.map(p => p.id))
+    } else {
+      setSelectedPeserta([])
+    }
+  }
+
+  const handleSelectOne = (id: string, checked: boolean) => {
+    if (checked) {
+      setSelectedPeserta([...selectedPeserta, id])
+    } else {
+      setSelectedPeserta(selectedPeserta.filter(pid => pid !== id))
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedPeserta.length === 0) {
+      toast.error('Pilih peserta yang ingin dihapus')
+      return
+    }
+
+    setIsDeleting(true)
+
+    try {
+      const response = await fetch('/api/peserta/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedPeserta })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        await fetchPeserta()
+        setSelectedPeserta([])
+        setIsBulkDeleteOpen(false)
+        toast.success(`Berhasil menghapus ${data.count} peserta`, {
+          description: 'Data peserta telah dihapus dari sistem'
+        })
+      } else {
+        toast.error(data.error || 'Gagal menghapus peserta')
+      }
+    } catch (error) {
+      console.error('Error bulk delete:', error)
+      toast.error('Terjadi kesalahan saat menghapus data')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (loading) {
-    return <div className="flex justify-center p-8">Memuat...</div>
+    return (
+      <div className="flex justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">Data Peserta</h1>
-          <p className="text-gray-600 mt-2">Kelola data peserta ujian</p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Data Peserta</h1>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola data peserta ujian</p>
+      </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Peserta
-            </Button>
-          </DialogTrigger>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div>
+              <CardTitle>Daftar Peserta</CardTitle>
+              <CardDescription>Total: {pesertaList.length} peserta</CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {selectedPeserta.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setIsBulkDeleteOpen(true)}
+                  className="border-red-600 text-red-600 hover:bg-red-50 w-full sm:w-auto text-xs sm:text-sm"
+                >
+                  <Trash className="h-4 w-4 mr-2" />
+                  <span>Hapus Terpilih ({selectedPeserta.length})</span>
+                </Button>
+              )}
+              
+              <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
+                if (!open) handleCancelImport()
+                setIsImportDialogOpen(open)
+              }}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="border-blue-600 text-blue-600 hover:bg-blue-50 w-full sm:w-auto text-xs sm:text-sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    <span>Import Excel</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Import Peserta dari Excel</DialogTitle>
+                    <DialogDescription>
+                      Upload file Excel untuk import data peserta secara batch
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center w-full">
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          <Upload className="w-8 h-8 mb-2 text-blue-500" />
+                          <p className="mb-2 text-sm text-blue-600">
+                            <span className="font-semibold">Click to upload</span> atau drag and drop
+                          </p>
+                          <p className="text-xs text-blue-500">Excel file (.xlsx atau .xls)</p>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".xlsx,.xls"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          disabled={isImporting}
+                        />
+                      </label>
+                    </div>
+                    
+                    {selectedFile && !isImporting && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-blue-700">
+                              <span className="font-semibold">File dipilih:</span> {selectedFile.name}
+                            </p>
+                            {totalRows > 0 && (
+                              <p className="text-xs text-blue-600 mt-1">
+                                Total: {totalRows} baris data
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {isImporting && (
+                      <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {/* Status and Progress */}
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                            <span className="text-blue-700 font-medium">
+                              {importStatus === 'preparing' && 'Mempersiapkan data...'}
+                              {importStatus === 'importing' && 'Mengimport data...'}
+                              {importStatus === 'finalizing' && 'Menyelesaikan...'}
+                              {importStatus === 'done' && 'Selesai!'}
+                            </span>
+                          </div>
+                          <span className="text-blue-600 font-semibold">{importProgress}%</span>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="w-full bg-blue-100 rounded-full h-3 overflow-hidden shadow-inner">
+                          <div 
+                            className="bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 h-3 rounded-full transition-all duration-300 ease-out relative"
+                            style={{ width: `${importProgress}%` }}
+                          >
+                            <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-shimmer"></div>
+                          </div>
+                        </div>
+
+                        {/* Import Counter */}
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-1">
+                              <p className="text-xs text-blue-600 font-medium">Data Diimport</p>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-bold text-blue-700 animate-in zoom-in duration-200">
+                                  {importedCount}
+                                </span>
+                                {totalRows > 0 && (
+                                  <span className="text-sm text-blue-500">/ {totalRows}</span>
+                                )}
+                                <span className="text-xs text-blue-600">peserta</span>
+                              </div>
+                            </div>
+                            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                              <Upload className="h-6 w-6 text-blue-600 animate-bounce" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-center">
+                      <Button 
+                        variant="link" 
+                        onClick={downloadTemplate}
+                        className="p-0 h-auto text-blue-600 hover:text-blue-800 font-semibold"
+                      >
+                        Download Template Excel
+                      </Button>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={handleCancelImport}
+                        disabled={isImporting}
+                      >
+                        Batal
+                      </Button>
+                      <Button 
+                        onClick={handleImport}
+                        disabled={!selectedFile || isImporting}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {isImporting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Importing...
+                          </>
+                        ) : (
+                          'Import'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                setIsDialogOpen(open)
+                if (!open) resetForm()
+              }}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Tambah Peserta
+                  </Button>
+                </DialogTrigger>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{editingId ? 'Edit Peserta' : 'Tambah Peserta'}</DialogTitle>
@@ -316,7 +683,7 @@ export default function PesertaPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                   {editingId ? 'Update' : 'Simpan'}
                 </Button>
               </div>
@@ -324,16 +691,30 @@ export default function PesertaPage() {
           </DialogContent>
         </Dialog>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Peserta</CardTitle>
-          <CardDescription>Total: {pesertaList.length} peserta</CardDescription>
-        </CardHeader>
+    </div>
+  </CardHeader>
         <CardContent>
           <DataTable
             data={pesertaList}
             columns={[
+              {
+                header: () => (
+                  <Checkbox
+                    checked={selectedPeserta.length === pesertaList.length && pesertaList.length > 0}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                    aria-label="Select all"
+                  />
+                ),
+                accessor: 'id',
+                cell: (row) => (
+                  <Checkbox
+                    checked={selectedPeserta.includes(row.id)}
+                    onCheckedChange={(checked) => handleSelectOne(row.id, checked as boolean)}
+                    aria-label={`Select ${row.name}`}
+                  />
+                ),
+                className: 'w-12',
+              },
               {
                 header: 'No',
                 accessor: 'id',
@@ -353,6 +734,19 @@ export default function PesertaPage() {
                 header: 'Kelas',
                 accessor: 'kelasId',
                 cell: (row) => row.kelas?.name || '-',
+                sortable: true,
+                sortKey: 'kelasId',
+                sortLabel: 'Alfabet',
+                customSort: (a, b, direction) => {
+                  const aName = a.kelas?.name || ''
+                  const bName = b.kelas?.name || ''
+                  
+                  if (direction === 'asc') {
+                    return aName.localeCompare(bName, 'id', { numeric: true })
+                  } else {
+                    return bName.localeCompare(aName, 'id', { numeric: true })
+                  }
+                },
               },
               {
                 header: 'Jurusan',
@@ -401,11 +795,21 @@ export default function PesertaPage() {
                         <span className="text-orange-600 text-xs font-medium">Nonaktifkan</span>
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEdit(row)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDelete(row.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ),
@@ -468,6 +872,79 @@ export default function PesertaPage() {
               onClick={confirmToggleStatus}
             >
               {confirmAction?.enable ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center animate-in zoom-in duration-300">
+                <Trash className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Hapus Peserta Terpilih?</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Tindakan ini tidak dapat dibatalkan
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <p className="text-sm text-red-800 font-medium mb-2">
+                Anda akan menghapus <span className="font-bold">{selectedPeserta.length} peserta</span>
+              </p>
+              <ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
+                <li>Data peserta akan dihapus permanen</li>
+                <li>Riwayat ujian akan ikut terhapus</li>
+                <li>Aksi ini tidak dapat dibatalkan</li>
+              </ul>
+            </div>
+
+            {isDeleting && (
+              <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-red-700 font-medium">Menghapus data...</span>
+                </div>
+                <div className="w-full bg-red-100 rounded-full h-2 overflow-hidden">
+                  <div className="bg-gradient-to-r from-red-500 to-red-600 h-2 rounded-full animate-pulse w-full"></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsBulkDeleteOpen(false)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button 
+              type="button" 
+              variant="destructive"
+              onClick={handleBulkDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash className="h-4 w-4 mr-2" />
+                  Ya, Hapus Semua
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>

@@ -11,6 +11,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { ArrowLeft, Plus, X, Save, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
+
+const MathEditor = dynamic(() => import('@/components/MathEditor'), { ssr: false })
 
 interface BankSoal {
   id: string
@@ -149,39 +152,38 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4">
+    <div className="w-full py-4">
       <div className="container mx-auto max-w-5xl px-4">
         {/* Header with Back Button */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal`)}
-              className="gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </Button>
-            <div className="border-l pl-3">
-              <h1 className="text-xl font-bold">Tambah Soal Baru</h1>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <span>{bankSoal.kodeBankSoal}</span>
-                {bankSoal.mataPelajaran && (
-                  <>
-                    <span>•</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {bankSoal.mataPelajaran.kodeMatpel}
-                    </Badge>
-                  </>
-                )}
-              </div>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal`)}
+            className="gap-2 w-full sm:w-auto text-xs sm:text-sm"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Kembali</span>
+          </Button>
+          <div className="border-l-0 sm:border-l pl-0 sm:pl-3">
+            <h1 className="text-lg sm:text-xl font-bold">Tambah Soal Baru</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+              <span>{bankSoal.kodeBankSoal}</span>
+              {bankSoal.mataPelajaran && (
+                <>
+                  <span className="hidden sm:block">•</span>
+                  <Badge variant="secondary" className="text-xs w-fit">
+                    {bankSoal.mataPelajaran.kodeMatpel}
+                  </Badge>
+                  <span className="hidden sm:inline">{bankSoal.mataPelajaran.name}</span>
+                </>
+              )}
             </div>
           </div>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="mt-4 mb-8">
           <Card>
             <CardContent className="pt-6 space-y-5">
               {/* Nomor Soal */}
@@ -200,15 +202,13 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
 
               {/* Soal */}
               <div>
-                <Label htmlFor="soal" className="text-sm font-medium">Pertanyaan <span className="text-red-500">*</span></Label>
-                <Textarea
-                  id="soal"
-                  placeholder="Tulis soal atau pertanyaan di sini..."
+                <MathEditor
+                  label="Pertanyaan"
                   value={formData.soal}
-                  onChange={(e) => setFormData({ ...formData, soal: e.target.value })}
-                  rows={4}
+                  onChange={(value) => setFormData({ ...formData, soal: value })}
+                  placeholder="Tulis soal atau pertanyaan di sini... (Support simbol matematika)"
+                  height="250px"
                   required
-                  className="resize-none mt-1.5"
                 />
               </div>
 
@@ -222,57 +222,65 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                 key={`radio-${formData.nomorSoal}`}
                 value={formData.jawabanBenar || undefined} 
                 onValueChange={(value: any) => setFormData({ ...formData, jawabanBenar: value })}
-                className="space-y-2.5"
+                className="space-y-4"
               >
                 {/* Option A */}
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="A" id="jawaban-a" />
-                  <Label htmlFor="jawaban-a" className="font-medium cursor-pointer w-8">A.</Label>
-                  <Input
-                    placeholder="Pilihan A"
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="A" id="jawaban-a" />
+                    <Label htmlFor="jawaban-a" className="font-medium cursor-pointer">A.</Label>
+                  </div>
+                  <MathEditor
                     value={formData.pilihanA}
-                    onChange={(e) => setFormData({ ...formData, pilihanA: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, pilihanA: value })}
+                    placeholder="Pilihan A"
+                    height="50px"
                     required
-                    className="flex-1"
                   />
                 </div>
 
                 {/* Option B */}
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="B" id="jawaban-b" />
-                  <Label htmlFor="jawaban-b" className="font-medium cursor-pointer w-8">B.</Label>
-                  <Input
-                    placeholder="Pilihan B"
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="B" id="jawaban-b" />
+                    <Label htmlFor="jawaban-b" className="font-medium cursor-pointer">B.</Label>
+                  </div>
+                  <MathEditor
                     value={formData.pilihanB}
-                    onChange={(e) => setFormData({ ...formData, pilihanB: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, pilihanB: value })}
+                    placeholder="Pilihan B"
+                    height="50px"
                     required
-                    className="flex-1"
                   />
                 </div>
 
                 {/* Option C */}
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="C" id="jawaban-c" />
-                  <Label htmlFor="jawaban-c" className="font-medium cursor-pointer w-8">C.</Label>
-                  <Input
-                    placeholder="Pilihan C"
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="C" id="jawaban-c" />
+                    <Label htmlFor="jawaban-c" className="font-medium cursor-pointer">C.</Label>
+                  </div>
+                  <MathEditor
                     value={formData.pilihanC}
-                    onChange={(e) => setFormData({ ...formData, pilihanC: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, pilihanC: value })}
+                    placeholder="Pilihan C"
+                    height="50px"
                     required
-                    className="flex-1"
                   />
                 </div>
 
                 {/* Option D */}
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="D" id="jawaban-d" />
-                  <Label htmlFor="jawaban-d" className="font-medium cursor-pointer w-8">D.</Label>
-                  <Input
-                    placeholder="Pilihan D"
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="D" id="jawaban-d" />
+                    <Label htmlFor="jawaban-d" className="font-medium cursor-pointer">D.</Label>
+                  </div>
+                  <MathEditor
                     value={formData.pilihanD}
-                    onChange={(e) => setFormData({ ...formData, pilihanD: e.target.value })}
+                    onChange={(value) => setFormData({ ...formData, pilihanD: value })}
+                    placeholder="Pilihan D"
+                    height="50px"
                     required
-                    className="flex-1"
                   />
                 </div>
 
@@ -294,27 +302,31 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
 
                 {/* Option E (Optional) */}
                 {hasOptionE && (
-                  <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
-                    <RadioGroupItem value="E" id="jawaban-e" />
-                    <Label htmlFor="jawaban-e" className="font-medium cursor-pointer w-8">E.</Label>
-                    <Input
-                      placeholder="Pilihan E (opsional)"
+                  <div className="space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <RadioGroupItem value="E" id="jawaban-e" />
+                        <Label htmlFor="jawaban-e" className="font-medium cursor-pointer">E.</Label>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setHasOptionE(false)
+                          setFormData({ ...formData, pilihanE: '', jawabanBenar: formData.jawabanBenar === 'E' ? '' : formData.jawabanBenar })
+                        }}
+                        className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-100"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <MathEditor
                       value={formData.pilihanE}
-                      onChange={(e) => setFormData({ ...formData, pilihanE: e.target.value })}
-                      className="flex-1"
+                      onChange={(value) => setFormData({ ...formData, pilihanE: value })}
+                      placeholder="Pilihan E (opsional)"
+                      height="50px"
                     />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setHasOptionE(false)
-                        setFormData({ ...formData, pilihanE: '', jawabanBenar: formData.jawabanBenar === 'E' ? '' : formData.jawabanBenar })
-                      }}
-                      className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-100"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
                   </div>
                 )}
               </RadioGroup>
@@ -322,14 +334,12 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
 
               {/* Pembahasan */}
               <div>
-                <Label htmlFor="pembahasan" className="text-sm font-medium">Pembahasan (Opsional)</Label>
-                <Textarea
-                  id="pembahasan"
-                  placeholder="Tulis pembahasan atau penjelasan jawaban yang benar..."
+                <MathEditor
+                  label="Pembahasan (Opsional)"
                   value={formData.pembahasan}
-                  onChange={(e) => setFormData({ ...formData, pembahasan: e.target.value })}
-                  rows={3}
-                  className="resize-none mt-1.5"
+                  onChange={(value) => setFormData({ ...formData, pembahasan: value })}
+                  placeholder="Tulis pembahasan atau penjelasan jawaban yang benar..."
+                  height="200px"
                 />
               </div>
 

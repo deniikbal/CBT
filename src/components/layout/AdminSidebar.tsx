@@ -131,7 +131,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
         </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 p-4 space-y-2 overflow-hidden">
         {menuItems.map((item) => (
           <div key={item.title}>
             {item.href ? (

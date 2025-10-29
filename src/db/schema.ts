@@ -79,6 +79,7 @@ export const kelas = pgTable('kelas', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   jurusanId: text('jurusan_id').notNull().references(() => jurusan.id, { onDelete: 'cascade' }),
+  teacher: text('teacher'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });

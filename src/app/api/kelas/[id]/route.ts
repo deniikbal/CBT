@@ -6,15 +6,16 @@ import { eq } from 'drizzle-orm'
 // GET - Ambil kelas by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
     
     const [data] = await db.select({
       id: kelas.id,
       name: kelas.name,
       jurusanId: kelas.jurusanId,
+      teacher: kelas.teacher,
       createdAt: kelas.createdAt,
       updatedAt: kelas.updatedAt,
       jurusan: {
@@ -48,11 +49,11 @@ export async function GET(
 // PUT - Update kelas
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
-    const { name, jurusanId } = await request.json()
+    const { id } = await params
+    const { name, jurusanId, teacher } = await request.json()
 
     if (!name || !jurusanId) {
       return NextResponse.json(
@@ -72,7 +73,7 @@ export async function PUT(
     }
 
     const [updated] = await db.update(kelas)
-      .set({ name, jurusanId, updatedAt: new Date() })
+      .set({ name, jurusanId, teacher: teacher || null, updatedAt: new Date() })
       .where(eq(kelas.id, id))
       .returning()
 
@@ -96,10 +97,10 @@ export async function PUT(
 // DELETE - Hapus kelas
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const [deleted] = await db.delete(kelas)
       .where(eq(kelas.id, id))

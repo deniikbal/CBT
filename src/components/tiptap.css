@@ -1,0 +1,84 @@
+/* TipTap Editor Styles */
+
+.tiptap-editor {
+  overflow: visible !important;
+  width: 100%;
+  display: block;
+  height: auto;
+}
+
+.tiptap-editor .ProseMirror {
+  outline: none;
+  overflow: visible !important;
+  width: 100%;
+  height: auto;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  display: block;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.tiptap-editor .ProseMirror p {
+  margin: 0.5rem 0;
+}
+
+.tiptap-editor .ProseMirror p:first-child {
+  margin-top: 0;
+}
+
+.tiptap-editor .ProseMirror p:last-child {
+  margin-bottom: 0;
+}
+
+.tiptap-editor .ProseMirror ul,
+.tiptap-editor .ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.tiptap-editor .ProseMirror li {
+  margin: 0.25rem 0;
+}
+
+.tiptap-editor .ProseMirror strong {
+  font-weight: bold;
+}
+
+.tiptap-editor .ProseMirror em {
+  font-style: italic;
+}
+
+.tiptap-editor .ProseMirror u {
+  text-decoration: underline;
+}
+
+.tiptap-editor .ProseMirror:focus {
+  outline: none;
+}
+
+/* Placeholder */
+.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #adb5bd;
+  pointer-events: none;
+  height: 0;
+}
+
+/* Text alignment */
+.tiptap-editor .ProseMirror [style*="text-align: left"] {
+  text-align: left;
+}
+
+.tiptap-editor .ProseMirror [style*="text-align: center"] {
+  text-align: center;
+}
+
+.tiptap-editor .ProseMirror [style*="text-align: right"] {
+  text-align: right;
+}
+
+.tiptap-editor .ProseMirror [style*="text-align: justify"] {
+  text-align: justify;
+}

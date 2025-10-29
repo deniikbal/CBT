@@ -102,15 +102,19 @@ export default function MataPelajaranPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center p-8">Memuat...</div>
+    return (
+      <div className="flex justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Data Mata Pelajaran</h1>
-          <p className="text-gray-600 mt-2">Kelola data mata pelajaran</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Data Mata Pelajaran</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola data mata pelajaran</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -118,7 +122,7 @@ export default function MataPelajaranPage() {
           if (!open) resetForm()
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Tambah Mata Pelajaran
             </Button>

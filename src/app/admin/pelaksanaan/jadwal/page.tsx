@@ -4,20 +4,27 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Calendar, Clock, Users } from 'lucide-react'
+import { Plus, Edit, Trash2, Calendar, Clock, Users, Loader2, AlertTriangle } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { DataTable, Column } from '@/components/ui/data-table'
 
+interface MataPelajaran {
+  id: string
+  name: string
+  kodeMatpel: string
+}
+
 interface BankSoal {
   id: string
   kodeBankSoal: string
+  matpelId: string
 }
 
 interface Kelas {
@@ -58,15 +65,26 @@ interface JadwalUjian {
 export default function JadwalUjianPage() {
   const [jadwalList, setJadwalList] = useState<JadwalUjian[]>([])
   const [bankSoalList, setBankSoalList] = useState<BankSoal[]>([])
+  const [filteredBankSoal, setFilteredBankSoal] = useState<BankSoal[]>([])
+  const [matpelList, setMatpelList] = useState<MataPelajaran[]>([])
   const [kelasList, setKelasList] = useState<Kelas[]>([])
   const [pesertaList, setPesertaList] = useState<Peserta[]>([])
   const [filteredPeserta, setFilteredPeserta] = useState<Peserta[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [filterKelas, setFilterKelas] = useState<string>('all')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   
   const [formData, setFormData] = useState({
     namaUjian: '',
+    matpelId: '',
     bankSoalId: '',
     kelasId: '',
     pesertaIds: [] as string[],
@@ -82,18 +100,28 @@ export default function JadwalUjianPage() {
   useEffect(() => {
     fetchJadwal()
     fetchBankSoal()
+    fetchMataPelajaran()
     fetchKelas()
     fetchPeserta()
   }, [])
 
   useEffect(() => {
-    if (formData.kelasId) {
-      const filtered = pesertaList.filter(p => p.kelasId === formData.kelasId)
+    if (filterKelas && filterKelas !== 'all') {
+      const filtered = pesertaList.filter(p => p.kelasId === filterKelas)
       setFilteredPeserta(filtered)
     } else {
       setFilteredPeserta(pesertaList)
     }
-  }, [formData.kelasId, pesertaList])
+  }, [filterKelas, pesertaList])
+
+  useEffect(() => {
+    if (formData.matpelId) {
+      const filtered = bankSoalList.filter(b => b.matpelId === formData.matpelId)
+      setFilteredBankSoal(filtered)
+    } else {
+      setFilteredBankSoal(bankSoalList)
+    }
+  }, [formData.matpelId, bankSoalList])
 
   const fetchJadwal = async () => {
     try {
@@ -118,6 +146,18 @@ export default function JadwalUjianPage() {
       }
     } catch (error) {
       console.error('Error fetching bank soal:', error)
+    }
+  }
+
+  const fetchMataPelajaran = async () => {
+    try {
+      const response = await fetch('/api/mata-pelajaran')
+      if (response.ok) {
+        const data = await response.json()
+        setMatpelList(data)
+      }
+    } catch (error) {
+      console.error('Error fetching mata pelajaran:', error)
     }
   }
 
@@ -153,6 +193,8 @@ export default function JadwalUjianPage() {
       return
     }
 
+    setIsSubmitting(true)
+
     try {
       const url = editingId ? `/api/jadwal-ujian/${editingId}` : '/api/jadwal-ujian'
       const method = editingId ? 'PUT' : 'POST'
@@ -176,6 +218,8 @@ export default function JadwalUjianPage() {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Terjadi kesalahan. Silakan coba lagi.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -186,8 +230,14 @@ export default function JadwalUjianPage() {
     const response = await fetch(`/api/jadwal-ujian/${jadwal.id}`)
     if (response.ok) {
       const data = await response.json()
+      
+      // Find matpelId from selected bank soal
+      const selectedBankSoal = bankSoalList.find(b => b.id === jadwal.bankSoalId)
+      const matpelId = selectedBankSoal?.matpelId || ''
+      
       setFormData({
         namaUjian: jadwal.namaUjian,
+        matpelId: matpelId,
         bankSoalId: jadwal.bankSoalId,
         kelasId: jadwal.kelasId || '',
         pesertaIds: data.peserta?.map((p: Peserta) => p.id) || [],
@@ -203,15 +253,74 @@ export default function JadwalUjianPage() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus jadwal ujian ini?')) return
+  const handleDelete = (id: string) => {
+    setDeleteId(id)
+    setIsDeleteDialogOpen(true)
+  }
+
+  const toggleSelectJadwal = (id: string) => {
+    setSelectedIds(prev =>
+      prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === jadwalList.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(jadwalList.map(j => j.id))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    if (selectedIds.length === 0) {
+      toast.error('Pilih minimal 1 jadwal untuk dihapus')
+      return
+    }
+    setIsBulkDeleteDialogOpen(true)
+  }
+
+  const confirmBulkDelete = async () => {
+    setIsBulkDeleting(true)
 
     try {
-      const response = await fetch(`/api/jadwal-ujian/${id}`, { method: 'DELETE' })
+      const response = await fetch('/api/jadwal-ujian/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      })
+
       const data = await response.json()
 
       if (response.ok) {
         await fetchJadwal()
+        setIsBulkDeleteDialogOpen(false)
+        setSelectedIds([])
+        toast.success(`${data.count} jadwal berhasil dihapus`)
+      } else {
+        toast.error(data.error || 'Gagal menghapus jadwal')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Terjadi kesalahan saat menghapus jadwal')
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteId) return
+
+    setIsDeleting(true)
+
+    try {
+      const response = await fetch(`/api/jadwal-ujian/${deleteId}`, { method: 'DELETE' })
+      const data = await response.json()
+
+      if (response.ok) {
+        await fetchJadwal()
+        setIsDeleteDialogOpen(false)
+        setDeleteId(null)
         toast.success('Jadwal ujian berhasil dihapus')
       } else {
         toast.error(data.error || 'Gagal menghapus jadwal ujian')
@@ -219,6 +328,8 @@ export default function JadwalUjianPage() {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Terjadi kesalahan saat menghapus jadwal ujian')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -226,6 +337,7 @@ export default function JadwalUjianPage() {
     setEditingId(null)
     setFormData({
       namaUjian: '',
+      matpelId: '',
       bankSoalId: '',
       kelasId: '',
       pesertaIds: [],
@@ -241,6 +353,7 @@ export default function JadwalUjianPage() {
 
   const handleOpenDialog = () => {
     resetForm()
+    setFilterKelas('all')
     setIsDialogOpen(true)
   }
 
@@ -266,21 +379,21 @@ export default function JadwalUjianPage() {
 
   if (loading) {
     return (
-      <div className="p-8">
-        <div>Loading...</div>
+      <div className="flex justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
   }
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Jadwal Ujian</h1>
-          <p className="text-gray-600 mt-1">Kelola jadwal dan pengaturan ujian</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Jadwal Ujian</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Kelola jadwal dan pengaturan ujian</p>
         </div>
-        <Button onClick={handleOpenDialog} className="gap-2">
+        <Button onClick={handleOpenDialog} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Buat Jadwal
         </Button>
@@ -288,10 +401,47 @@ export default function JadwalUjianPage() {
 
       {/* Jadwal List */}
       <Card>
-        <CardContent className="pt-6">
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle>Daftar Jadwal Ujian</CardTitle>
+            <CardDescription>Kelola jadwal ujian yang telah dibuat</CardDescription>
+          </div>
+          {selectedIds.length > 0 && (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleBulkDelete}
+              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto text-xs sm:text-sm"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              <span>Hapus Terpilih ({selectedIds.length})</span>
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
           <DataTable
             data={jadwalList}
             columns={[
+              {
+                header: () => (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.length === jadwalList.length && jadwalList.length > 0}
+                    onChange={toggleSelectAll}
+                    className="rounded border-gray-300"
+                  />
+                ),
+                accessor: () => null,
+                cell: (row) => (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.includes(row.id)}
+                    onChange={() => toggleSelectJadwal(row.id)}
+                    className="rounded border-gray-300"
+                  />
+                ),
+                className: 'w-12',
+              },
               {
                 header: 'Nama Ujian',
                 accessor: 'namaUjian',
@@ -386,7 +536,7 @@ export default function JadwalUjianPage() {
 
       {/* Dialog Form */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl sm:max-w-5xl md:max-w-5xl lg:max-w-6xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingId ? 'Edit Jadwal Ujian' : 'Buat Jadwal Ujian Baru'}
@@ -395,10 +545,11 @@ export default function JadwalUjianPage() {
               Isi form di bawah untuk {editingId ? 'mengupdate' : 'membuat'} jadwal ujian
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Grid 2 Kolom untuk Form */}
+            <div className="grid grid-cols-2 gap-x-8 gap-y-3">
               {/* Nama Ujian */}
-              <div className="col-span-2 space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="namaUjian">Nama Ujian *</Label>
                 <Input
                   id="namaUjian"
@@ -406,7 +557,31 @@ export default function JadwalUjianPage() {
                   onChange={(e) => setFormData({ ...formData, namaUjian: e.target.value })}
                   placeholder="Contoh: Ujian Tengah Semester Matematika"
                   required
+                  className="w-full"
                 />
+              </div>
+
+              {/* Mata Pelajaran */}
+              <div className="space-y-2">
+                <Label htmlFor="matpel">Mata Pelajaran *</Label>
+                <Select
+                  value={formData.matpelId}
+                  onValueChange={(value) => {
+                    setFormData({ ...formData, matpelId: value, bankSoalId: '' })
+                  }}
+                  required
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Pilih mata pelajaran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {matpelList.map((matpel) => (
+                      <SelectItem key={matpel.id} value={matpel.id}>
+                        {matpel.kodeMatpel} - {matpel.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Bank Soal */}
@@ -416,16 +591,23 @@ export default function JadwalUjianPage() {
                   value={formData.bankSoalId}
                   onValueChange={(value) => setFormData({ ...formData, bankSoalId: value })}
                   required
+                  disabled={!formData.matpelId}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih bank soal" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={formData.matpelId ? "Pilih bank soal" : "Pilih mata pelajaran dulu"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {bankSoalList.map((bank) => (
-                      <SelectItem key={bank.id} value={bank.id}>
-                        {bank.kodeBankSoal}
-                      </SelectItem>
-                    ))}
+                    {filteredBankSoal.length > 0 ? (
+                      filteredBankSoal.map((bank) => (
+                        <SelectItem key={bank.id} value={bank.id}>
+                          {bank.kodeBankSoal}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="p-2 text-sm text-gray-500 text-center">
+                        Tidak ada bank soal untuk mata pelajaran ini
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -433,34 +615,21 @@ export default function JadwalUjianPage() {
               {/* Kelas */}
               <div className="space-y-2">
                 <Label htmlFor="kelas">Kelas (Opsional)</Label>
-                <div className="space-y-2">
-                  <Select
-                    value={formData.kelasId || undefined}
-                    onValueChange={(value) => setFormData({ ...formData, kelasId: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Semua kelas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {kelasList.map((kls) => (
-                        <SelectItem key={kls.id} value={kls.id}>
-                          {kls.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {formData.kelasId && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setFormData({ ...formData, kelasId: '' })}
-                      className="h-8 text-xs"
-                    >
-                      Hapus filter kelas
-                    </Button>
-                  )}
-                </div>
+                <Select
+                  value={formData.kelasId || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, kelasId: value })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Semua kelas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {kelasList.map((kls) => (
+                      <SelectItem key={kls.id} value={kls.id}>
+                        {kls.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Tanggal Ujian */}
@@ -472,6 +641,7 @@ export default function JadwalUjianPage() {
                   value={formData.tanggalUjian}
                   onChange={(e) => setFormData({ ...formData, tanggalUjian: e.target.value })}
                   required
+                  className="w-full"
                 />
               </div>
 
@@ -484,6 +654,7 @@ export default function JadwalUjianPage() {
                   value={formData.jamMulai}
                   onChange={(e) => setFormData({ ...formData, jamMulai: e.target.value })}
                   required
+                  className="w-full"
                 />
               </div>
 
@@ -497,12 +668,13 @@ export default function JadwalUjianPage() {
                   value={formData.durasi}
                   onChange={(e) => setFormData({ ...formData, durasi: parseInt(e.target.value) || 60 })}
                   required
+                  className="w-full"
                 />
               </div>
 
               {/* Minimum Pengerjaan */}
               <div className="space-y-2">
-                <Label htmlFor="minimumPengerjaan">Minimum Pengerjaan (menit, opsional)</Label>
+                <Label htmlFor="minimumPengerjaan">Minimum Pengerjaan (menit)</Label>
                 <Input
                   id="minimumPengerjaan"
                   type="number"
@@ -510,126 +682,251 @@ export default function JadwalUjianPage() {
                   value={formData.minimumPengerjaan || ''}
                   onChange={(e) => setFormData({ ...formData, minimumPengerjaan: e.target.value ? parseInt(e.target.value) : null })}
                   placeholder="Kosongkan jika tidak ada"
+                  className="w-full"
                 />
               </div>
             </div>
 
             {/* Peserta */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <Label>Peserta Ujian *</Label>
-                <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={selectAllPeserta}>
-                    Pilih Semua
-                  </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={deselectAllPeserta}>
-                    Hapus Semua
-                  </Button>
+            <div className="border-t pt-4">
+              <div className="grid grid-cols-12 gap-4 items-start">
+                {/* Left: Filter */}
+                <div className="col-span-3 space-y-3">
+                  <Label className="text-base font-semibold">Filter Kelas</Label>
+                  <Select
+                    value={filterKelas || 'all'}
+                    onValueChange={(value) => setFilterKelas(value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Semua Kelas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Kelas</SelectItem>
+                      {kelasList.map((kls) => (
+                        <SelectItem key={kls.id} value={kls.id}>
+                          {kls.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex flex-col gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={selectAllPeserta} className="w-full">
+                      Pilih Semua
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={deselectAllPeserta} className="w-full">
+                      Hapus Semua
+                    </Button>
+                  </div>
+                  <p className="text-xs text-blue-600 font-medium pt-2">
+                    {formData.pesertaIds.length} / {filteredPeserta.length} dipilih
+                  </p>
+                </div>
+
+                {/* Right: Peserta List */}
+                <div className="col-span-9 space-y-2">
+                  <Label className="text-base font-semibold">Peserta Ujian *</Label>
+                  <div className="border rounded-md p-3 max-h-48 overflow-y-auto bg-gray-50">
+                    {filteredPeserta.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        Tidak ada peserta{filterKelas && filterKelas !== 'all' ? ' di kelas ini' : ''}
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-3 gap-2">
+                        {filteredPeserta.map((peserta) => (
+                          <label key={peserta.id} className="flex items-center gap-2 cursor-pointer hover:bg-white p-2 rounded border border-transparent hover:border-blue-200 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={formData.pesertaIds.includes(peserta.id)}
+                              onChange={() => togglePeserta(peserta.id)}
+                              className="rounded border-gray-300"
+                            />
+                            <span className="text-sm truncate">
+                              {peserta.name} ({peserta.noUjian})
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
-                {filteredPeserta.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    Tidak ada peserta{formData.kelasId ? ' di kelas ini' : ''}
-                  </p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {filteredPeserta.map((peserta) => (
-                      <label key={peserta.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
-                        <input
-                          type="checkbox"
-                          checked={formData.pesertaIds.includes(peserta.id)}
-                          onChange={() => togglePeserta(peserta.id)}
-                          className="rounded"
-                        />
-                        <span className="text-sm">
-                          {peserta.name} ({peserta.noUjian})
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-gray-500">
-                {formData.pesertaIds.length} peserta dipilih
-              </p>
             </div>
 
             {/* Pengaturan */}
-            <div className="space-y-3 border-t pt-4">
-              <Label className="text-base font-semibold">Pengaturan Ujian</Label>
-              
-              {/* Acak Soal */}
-              <div className="space-y-2">
-                <Label>Acak Soal</Label>
-                <RadioGroup
-                  value={formData.acakSoal ? 'true' : 'false'}
-                  onValueChange={(value) => setFormData({ ...formData, acakSoal: value === 'true' })}
-                >
-                  <div className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="true" id="acak-soal-ya" />
-                      <Label htmlFor="acak-soal-ya" className="cursor-pointer font-normal">Ya</Label>
+            <div className="border-t pt-3">
+              <Label className="text-base font-semibold mb-3 block">Pengaturan Ujian</Label>
+              <div className="grid grid-cols-3 gap-8">
+                {/* Acak Soal */}
+                <div className="space-y-2">
+                  <Label>Acak Soal</Label>
+                  <RadioGroup
+                    value={formData.acakSoal ? 'true' : 'false'}
+                    onValueChange={(value) => setFormData({ ...formData, acakSoal: value === 'true' })}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="acak-soal-ya" />
+                        <Label htmlFor="acak-soal-ya" className="cursor-pointer font-normal">Ya</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="acak-soal-tidak" />
+                        <Label htmlFor="acak-soal-tidak" className="cursor-pointer font-normal">Tidak</Label>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="false" id="acak-soal-tidak" />
-                      <Label htmlFor="acak-soal-tidak" className="cursor-pointer font-normal">Tidak</Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
+                  </RadioGroup>
+                </div>
 
-              {/* Acak Opsi */}
-              <div className="space-y-2">
-                <Label>Acak Opsi Jawaban</Label>
-                <RadioGroup
-                  value={formData.acakOpsi ? 'true' : 'false'}
-                  onValueChange={(value) => setFormData({ ...formData, acakOpsi: value === 'true' })}
-                >
-                  <div className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="true" id="acak-opsi-ya" />
-                      <Label htmlFor="acak-opsi-ya" className="cursor-pointer font-normal">Ya</Label>
+                {/* Acak Opsi */}
+                <div className="space-y-2">
+                  <Label>Acak Opsi Jawaban</Label>
+                  <RadioGroup
+                    value={formData.acakOpsi ? 'true' : 'false'}
+                    onValueChange={(value) => setFormData({ ...formData, acakOpsi: value === 'true' })}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="acak-opsi-ya" />
+                        <Label htmlFor="acak-opsi-ya" className="cursor-pointer font-normal">Ya</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="acak-opsi-tidak" />
+                        <Label htmlFor="acak-opsi-tidak" className="cursor-pointer font-normal">Tidak</Label>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="false" id="acak-opsi-tidak" />
-                      <Label htmlFor="acak-opsi-tidak" className="cursor-pointer font-normal">Tidak</Label>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
+                  </RadioGroup>
+                </div>
 
-              {/* Tampilkan Nilai Siswa */}
-              <div className="space-y-2">
-                <Label>Tampilkan Nilai ke Siswa</Label>
-                <RadioGroup
-                  value={formData.tampilkanNilai ? 'true' : 'false'}
-                  onValueChange={(value) => setFormData({ ...formData, tampilkanNilai: value === 'true' })}
-                >
-                  <div className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="true" id="tampilkan-nilai-ya" />
-                      <Label htmlFor="tampilkan-nilai-ya" className="cursor-pointer font-normal">Ya</Label>
+                {/* Tampilkan Nilai Siswa */}
+                <div className="space-y-2">
+                  <Label>Tampilkan Nilai ke Siswa</Label>
+                  <RadioGroup
+                    value={formData.tampilkanNilai ? 'true' : 'false'}
+                    onValueChange={(value) => setFormData({ ...formData, tampilkanNilai: value === 'true' })}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="tampilkan-nilai-ya" />
+                        <Label htmlFor="tampilkan-nilai-ya" className="cursor-pointer font-normal">Ya</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="tampilkan-nilai-tidak" />
+                        <Label htmlFor="tampilkan-nilai-tidak" className="cursor-pointer font-normal">Tidak</Label>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="false" id="tampilkan-nilai-tidak" />
-                      <Label htmlFor="tampilkan-nilai-tidak" className="cursor-pointer font-normal">Tidak</Label>
-                    </div>
-                  </div>
-                </RadioGroup>
+                  </RadioGroup>
+                </div>
               </div>
             </div>
 
             {/* Buttons */}
-            <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <div className="flex justify-end gap-2 pt-3 border-t">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
                 Batal
               </Button>
-              <Button type="submit">
-                {editingId ? 'Update Jadwal' : 'Buat Jadwal'}
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    {editingId ? 'Mengupdate...' : 'Membuat...'}
+                  </>
+                ) : (
+                  editingId ? 'Update Jadwal' : 'Buat Jadwal'
+                )}
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Hapus Jadwal Ujian
+            </DialogTitle>
+            <DialogDescription className="pt-3">
+              Apakah Anda yakin ingin menghapus jadwal ujian ini?
+              <br />
+              <span className="text-red-600 font-medium">Tindakan ini tidak dapat dibatalkan.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <Dialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Hapus {selectedIds.length} Jadwal Ujian
+            </DialogTitle>
+            <DialogDescription className="pt-3">
+              Apakah Anda yakin ingin menghapus {selectedIds.length} jadwal ujian yang dipilih?
+              <br />
+              <span className="text-red-600 font-medium">Tindakan ini tidak dapat dibatalkan.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsBulkDeleteDialogOpen(false)}
+              disabled={isBulkDeleting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmBulkDelete}
+              disabled={isBulkDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isBulkDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Hapus Semua
+                </>
+              )}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

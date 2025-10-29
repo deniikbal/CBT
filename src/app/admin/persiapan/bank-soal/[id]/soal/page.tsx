@@ -115,34 +115,34 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
   const percentage = targetSoal > 0 ? Math.round((soalCount / targetSoal) * 100) : 0
 
   return (
-    <div className="p-8 space-y-6">
+    <div className="space-y-6">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => router.push('/admin/persiapan/bank-soal')}
-          className="gap-2"
+          className="gap-2 text-xs sm:text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
-          Kembali ke Bank Soal
+          <span>Kembali</span>
         </Button>
       </div>
 
       {/* Header Info */}
       <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
         <CardHeader>
-          <CardTitle className="text-2xl">Kelola Soal</CardTitle>
+          <CardTitle className="text-xl sm:text-2xl">Kelola Soal</CardTitle>
           <CardDescription>
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center gap-2">
+            <div className="mt-2 space-y-1 text-xs sm:text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="font-semibold text-gray-700">Bank Soal:</span>
-                <span className="text-lg font-bold text-blue-600">{bankSoal.kodeBankSoal}</span>
+                <span className="text-base sm:text-lg font-bold text-blue-600">{bankSoal.kodeBankSoal}</span>
               </div>
               {bankSoal.mataPelajaran && (
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                   <span className="font-semibold text-gray-700">Mata Pelajaran:</span>
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="w-fit">
                     {bankSoal.mataPelajaran.kodeMatpel}
                   </Badge>
                   <span className="text-gray-700">{bankSoal.mataPelajaran.name}</span>
@@ -152,21 +152,21 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-sm text-gray-600">Target Soal</div>
-              <div className="text-3xl font-bold text-gray-800">{targetSoal}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Target Soal</div>
+              <div className="text-2xl sm:text-3xl font-bold text-gray-800">{targetSoal}</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-sm text-gray-600">Soal Terbuat</div>
-              <div className="text-3xl font-bold text-blue-600">{soalCount}</div>
+              <div className="text-xs sm:text-sm text-gray-600">Soal Terbuat</div>
+              <div className="text-2xl sm:text-3xl font-bold text-blue-600">{soalCount}</div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-sm text-gray-600">Progress</div>
+              <div className="text-xs sm:text-sm text-gray-600">Progress</div>
               <div className="flex items-end gap-2">
-                <div className="text-3xl font-bold text-green-600">{percentage}%</div>
+                <div className="text-2xl sm:text-3xl font-bold text-green-600">{percentage}%</div>
                 {percentage >= 100 && (
-                  <CheckCircle2 className="h-6 w-6 text-green-600 mb-1" />
+                  <CheckCircle2 className="h-5 sm:h-6 w-5 sm:w-6 text-green-600 mb-1" />
                 )}
               </div>
             </div>
@@ -175,11 +175,11 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
       </Card>
 
       {/* Action Button */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Daftar Soal</h2>
-        <Button onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/tambah`)} className="gap-2">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <h2 className="text-lg sm:text-xl font-semibold">Daftar Soal</h2>
+        <Button onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/tambah`)} className="gap-2 w-full sm:w-auto text-xs sm:text-sm">
           <Plus className="h-4 w-4" />
-          Tambah Soal
+          <span>Tambah Soal</span>
         </Button>
       </div>
 

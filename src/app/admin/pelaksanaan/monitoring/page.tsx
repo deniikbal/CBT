@@ -174,16 +174,17 @@ export default function MonitoringPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Monitoring Ujian</h1>
-          <p className="text-gray-600 mt-1">Monitor aktivitas peserta secara real-time</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Monitoring Ujian</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Monitor aktivitas peserta secara real-time</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           <Button
             variant={autoRefresh ? "default" : "outline"}
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
             {autoRefresh ? 'Auto Refresh' : 'Refresh Off'}
@@ -192,6 +193,7 @@ export default function MonitoringPage() {
             variant="outline"
             size="sm"
             onClick={() => fetchActiveExams()}
+            className="w-full sm:w-auto text-xs sm:text-sm"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Manual

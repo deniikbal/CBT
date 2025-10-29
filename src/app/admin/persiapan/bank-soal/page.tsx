@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, BookOpen, FileText } from 'lucide-react'
+import { Plus, Edit, Trash2, BookOpen, FileText, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { DataTable, Column } from '@/components/ui/data-table'
@@ -39,6 +39,7 @@ export default function BankSoalPage() {
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({ 
     kodeBankSoal: '', 
     matpelId: '', 
@@ -96,6 +97,8 @@ export default function BankSoalPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    setIsSubmitting(true)
+
     try {
       const url = editingId ? `/api/bank-soal/${editingId}` : '/api/bank-soal'
       const method = editingId ? 'PUT' : 'POST'
@@ -119,6 +122,8 @@ export default function BankSoalPage() {
     } catch (error) {
       console.error('Error:', error)
       toast.error('Terjadi kesalahan. Silakan coba lagi.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -157,15 +162,19 @@ export default function BankSoalPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center p-8">Memuat...</div>
+    return (
+      <div className="flex justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Bank Soal</h1>
-          <p className="text-gray-600 mt-2">Kelola bank soal ujian</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Bank Soal</h1>
+          <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola bank soal ujian</p>
         </div>
 
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
@@ -173,7 +182,7 @@ export default function BankSoalPage() {
           if (!open) resetForm()
         }}>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Tambah Bank Soal
             </Button>
@@ -187,22 +196,23 @@ export default function BankSoalPage() {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="kodeBankSoal">Kode Bank Soal</Label>
+                <Label htmlFor="kodeBankSoal">Kode Bank Soal *</Label>
                 <Input
                   id="kodeBankSoal"
                   placeholder="Contoh: BS-MTK-001"
                   value={formData.kodeBankSoal}
                   onChange={(e) => setFormData({ ...formData, kodeBankSoal: e.target.value })}
                   required
+                  className="w-full"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="matpelId">Mata Pelajaran</Label>
+                <Label htmlFor="matpelId">Mata Pelajaran *</Label>
                 <Select 
                   value={formData.matpelId} 
                   onValueChange={(value) => setFormData({ ...formData, matpelId: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih mata pelajaran" />
                   </SelectTrigger>
                   <SelectContent>
@@ -215,7 +225,7 @@ export default function BankSoalPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="jumlahSoal">Jumlah Soal</Label>
+                <Label htmlFor="jumlahSoal">Jumlah Soal *</Label>
                 <Input
                   id="jumlahSoal"
                   type="number"
@@ -224,14 +234,22 @@ export default function BankSoalPage() {
                   value={formData.jumlahSoal}
                   onChange={(e) => setFormData({ ...formData, jumlahSoal: parseInt(e.target.value) || 0 })}
                   required
+                  className="w-full"
                 />
               </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
                   Batal
                 </Button>
-                <Button type="submit">
-                  {editingId ? 'Update' : 'Simpan'}
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingId ? 'Mengupdate...' : 'Menyimpan...'}
+                    </>
+                  ) : (
+                    editingId ? 'Update' : 'Simpan'
+                  )}
                 </Button>
               </div>
             </form>
