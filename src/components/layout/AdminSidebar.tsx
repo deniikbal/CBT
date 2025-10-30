@@ -45,7 +45,8 @@ const menuItems: MenuItem[] = [
       { title: 'Jurusan', href: '/admin/data-master/jurusan', icon: GraduationCap },
       { title: 'Kelas', href: '/admin/data-master/kelas', icon: School },
       { title: 'Mata Pelajaran', href: '/admin/data-master/mata-pelajaran', icon: BookMarked },
-      { title: 'Peserta', href: '/admin/data-master/peserta', icon: Users }
+      { title: 'Peserta', href: '/admin/data-master/peserta', icon: Users },
+      { title: 'User', href: '/admin/data-master/user', icon: Users }
     ]
   },
   {
