@@ -139,102 +139,28 @@ export default function UserPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Data User</h1>
-          <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola data user sistem</p>
-        </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah User
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit User' : 'Tambah User'}</DialogTitle>
-              <DialogDescription>
-                {editingId ? 'Edit data user' : 'Tambah user baru ke sistem'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="contoh@email.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="name">Nama</Label>
-                <Input
-                  id="name"
-                  placeholder="Nama lengkap"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">
-                  Password {editingId && <span className="text-xs text-gray-500">(biarkan kosong jika tidak ingin ubah)</span>}
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={editingId ? 'Biarkan kosong jika tidak diubah' : 'Masukkan password'}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    required={!editingId}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  >
-                    {showPassword ? '🙈' : '👁️'}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger id="role">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                    <SelectItem value="USER">User</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Batal
-                </Button>
-                <Button type="submit">
-                  {editingId ? 'Update' : 'Simpan'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Data User</h1>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola data user sistem</p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar User</CardTitle>
-          <CardDescription>Total: {userList.length} user</CardDescription>
-        </CardHeader>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open)
+        if (!open) resetForm()
+      }}>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <div>
+              <CardTitle>Daftar User</CardTitle>
+              <CardDescription>Total: {userList.length} user</CardDescription>
+            </div>
+            <DialogTrigger asChild>
+              <Button className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah User
+              </Button>
+            </DialogTrigger>
+          </CardHeader>
         <CardContent>
           <DataTable
             data={userList}
@@ -289,6 +215,80 @@ export default function UserPage() {
           />
         </CardContent>
       </Card>
+
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Edit User' : 'Tambah User'}</DialogTitle>
+            <DialogDescription>
+              {editingId ? 'Edit data user' : 'Tambah user baru ke sistem'}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="contoh@email.com"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Nama</Label>
+              <Input
+                id="name"
+                placeholder="Nama lengkap"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">
+                Password {editingId && <span className="text-xs text-gray-500">(biarkan kosong jika tidak ingin ubah)</span>}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder={editingId ? 'Biarkan kosong jika tidak diubah' : 'Masukkan password'}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required={!editingId}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <SelectTrigger id="role" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                Batal
+              </Button>
+              <Button type="submit">
+                {editingId ? 'Update' : 'Simpan'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
