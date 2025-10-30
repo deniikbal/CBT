@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { ArrowLeft, Plus, X, Save, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, Plus, Save, CheckCircle2, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -43,8 +43,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
     pilihanC: '',
     pilihanD: '',
     pilihanE: '',
-    jawabanBenar: '' as 'A' | 'B' | 'C' | 'D' | 'E' | '',
-    pembahasan: ''
+    jawabanBenar: '' as 'A' | 'B' | 'C' | 'D' | 'E' | ''
   })
 
   useEffect(() => {
@@ -125,8 +124,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
           pilihanC: '',
           pilihanD: '',
           pilihanE: '',
-          jawabanBenar: '',
-          pembahasan: ''
+          jawabanBenar: ''
         })
         setHasOptionE(false)
         
@@ -185,7 +183,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-4 mb-8">
           <Card>
-            <CardContent className="pt-6 space-y-5">
+            <CardContent className="pt-6 space-y-4">
               {/* Nomor Soal */}
               <div>
                 <Label htmlFor="nomorSoal" className="text-sm">Nomor Soal</Label>
@@ -208,7 +206,7 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                   value={formData.soal}
                   onChange={(value) => setFormData({ ...formData, soal: value })}
                   placeholder="Tulis soal atau pertanyaan di sini... (Support simbol matematika)"
-                  height="250px"
+                  height="72px"
                   required
                 />
               </div>
@@ -225,73 +223,54 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
                 onValueChange={(value: any) => setFormData({ ...formData, jawabanBenar: value })}
                 className="space-y-4"
               >
-                {/* Option A */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="A" id="jawaban-a" />
-                    <Label htmlFor="jawaban-a" className="font-medium cursor-pointer">A.</Label>
+                {([
+                  { key: 'A', label: 'A', value: formData.pilihanA, setter: (value: string) => setFormData({ ...formData, pilihanA: value }) },
+                  { key: 'B', label: 'B', value: formData.pilihanB, setter: (value: string) => setFormData({ ...formData, pilihanB: value }) },
+                  { key: 'C', label: 'C', value: formData.pilihanC, setter: (value: string) => setFormData({ ...formData, pilihanC: value }) },
+                  { key: 'D', label: 'D', value: formData.pilihanD, setter: (value: string) => setFormData({ ...formData, pilihanD: value }) },
+                ] as const).map((option) => (
+                  <div key={option.key} className="flex gap-3">
+                    <div className="flex flex-col items-center gap-2 pt-1">
+                      <RadioGroupItem value={option.key} id={`jawaban-${option.key.toLowerCase()}`} className="h-5 w-5" />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            [`pilihan${option.key}`]: '' as const,
+                            jawabanBenar: prev.jawabanBenar === option.key ? '' : prev.jawabanBenar,
+                          }))
+                        }}
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        aria-label={`Hapus pilihan ${option.label}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={`jawaban-${option.key.toLowerCase()}`}
+                        className="mb-2 inline-block cursor-pointer font-medium"
+                      >
+                        Pilihan {option.label}
+                      </Label>
+                      <MathEditor
+                        key={`pilihan${option.key}-${formData.nomorSoal}`}
+                        value={option.value}
+                        onChange={option.setter}
+                        placeholder={`Isi jawaban ${option.label}`}
+                        height="48px"
+                        required
+                      />
+                    </div>
                   </div>
-                  <MathEditor
-                    key={`pilihanA-${formData.nomorSoal}`}
-                    value={formData.pilihanA}
-                    onChange={(value) => setFormData({ ...formData, pilihanA: value })}
-                    placeholder="Pilihan A"
-                    height="50px"
-                    required
-                  />
-                </div>
-
-                {/* Option B */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="B" id="jawaban-b" />
-                    <Label htmlFor="jawaban-b" className="font-medium cursor-pointer">B.</Label>
-                  </div>
-                  <MathEditor
-                    key={`pilihanB-${formData.nomorSoal}`}
-                    value={formData.pilihanB}
-                    onChange={(value) => setFormData({ ...formData, pilihanB: value })}
-                    placeholder="Pilihan B"
-                    height="50px"
-                    required
-                  />
-                </div>
-
-                {/* Option C */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="C" id="jawaban-c" />
-                    <Label htmlFor="jawaban-c" className="font-medium cursor-pointer">C.</Label>
-                  </div>
-                  <MathEditor
-                    key={`pilihanC-${formData.nomorSoal}`}
-                    value={formData.pilihanC}
-                    onChange={(value) => setFormData({ ...formData, pilihanC: value })}
-                    placeholder="Pilihan C"
-                    height="50px"
-                    required
-                  />
-                </div>
-
-                {/* Option D */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <RadioGroupItem value="D" id="jawaban-d" />
-                    <Label htmlFor="jawaban-d" className="font-medium cursor-pointer">D.</Label>
-                  </div>
-                  <MathEditor
-                    key={`pilihanD-${formData.nomorSoal}`}
-                    value={formData.pilihanD}
-                    onChange={(value) => setFormData({ ...formData, pilihanD: value })}
-                    placeholder="Pilihan D"
-                    height="50px"
-                    required
-                  />
-                </div>
+                ))}
 
                 {/* Button Tambah Opsi E */}
                 {!hasOptionE && (
-                  <div className="pl-10">
+                  <div className="flex justify-end">
                     <Button
                       type="button"
                       variant="outline"
@@ -307,47 +286,42 @@ export default function TambahSoalPage({ params }: { params: Promise<{ id: strin
 
                 {/* Option E (Optional) */}
                 {hasOptionE && (
-                  <div className="space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <RadioGroupItem value="E" id="jawaban-e" />
-                        <Label htmlFor="jawaban-e" className="font-medium cursor-pointer">E.</Label>
-                      </div>
+                  <div className="flex gap-3 rounded border border-blue-200 bg-blue-50 p-3">
+                    <div className="flex flex-col items-center gap-2 pt-1">
+                      <RadioGroupItem value="E" id="jawaban-e" className="h-5 w-5" />
                       <Button
                         type="button"
                         variant="ghost"
-                        size="sm"
+                        size="icon"
                         onClick={() => {
                           setHasOptionE(false)
-                          setFormData({ ...formData, pilihanE: '', jawabanBenar: formData.jawabanBenar === 'E' ? '' : formData.jawabanBenar })
+                          setFormData(prev => ({
+                            ...prev,
+                            pilihanE: '',
+                            jawabanBenar: prev.jawabanBenar === 'E' ? '' : prev.jawabanBenar,
+                          }))
                         }}
-                        className="h-8 px-2 text-red-600 hover:text-red-700 hover:bg-red-100"
+                        className="h-8 w-8 text-red-500 hover:text-red-600"
+                        aria-label="Hapus pilihan E"
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
-                    <MathEditor
-                      key={`pilihanE-${formData.nomorSoal}`}
-                      value={formData.pilihanE}
-                      onChange={(value) => setFormData({ ...formData, pilihanE: value })}
-                      placeholder="Pilihan E (opsional)"
-                      height="50px"
-                    />
+                    <div className="flex-1">
+                      <Label htmlFor="jawaban-e" className="mb-2 inline-block cursor-pointer font-medium">
+                        Pilihan E (Opsional)
+                      </Label>
+                      <MathEditor
+                        key={`pilihanE-${formData.nomorSoal}`}
+                        value={formData.pilihanE}
+                        onChange={(value) => setFormData({ ...formData, pilihanE: value })}
+                        placeholder="Isi jawaban E (opsional)"
+                        height="48px"
+                      />
+                    </div>
                   </div>
                 )}
               </RadioGroup>
-              </div>
-
-              {/* Pembahasan */}
-              <div>
-                <MathEditor
-                  key={`pembahasan-${formData.nomorSoal}`}
-                  label="Pembahasan (Opsional)"
-                  value={formData.pembahasan}
-                  onChange={(value) => setFormData({ ...formData, pembahasan: value })}
-                  placeholder="Tulis pembahasan atau penjelasan jawaban yang benar..."
-                  height="200px"
-                />
               </div>
 
               {/* Action Buttons */}

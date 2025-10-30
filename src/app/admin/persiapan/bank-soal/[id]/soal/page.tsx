@@ -9,6 +9,7 @@ import { Plus, Edit, Trash2, ArrowLeft, FileText, CheckCircle2 } from 'lucide-re
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { DataTable, Column } from '@/components/ui/data-table'
+import parse from 'html-react-parser'
 
 interface BankSoal {
   id: string
@@ -31,7 +32,6 @@ interface Soal {
   pilihanD: string
   pilihanE: string | null
   jawabanBenar: 'A' | 'B' | 'C' | 'D' | 'E'
-  pembahasan: string | null
 }
 
 export default function KelolaSoalPage({ params }: { params: Promise<{ id: string }> }) {
@@ -200,8 +200,10 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
                 header: 'Soal',
                 accessor: 'soal',
                 cell: (row) => (
-                  <div className="max-w-2xl">
-                    <p className="text-sm line-clamp-2">{row.soal}</p>
+                  <div className="max-w-2xl max-h-32 overflow-hidden rounded border border-gray-200 bg-white p-3">
+                    <div className="text-sm text-gray-800 [&_*]:my-0 [&_p]:my-1 [&_ul]:my-2 [&_ol]:my-2 [&_li]:list-disc [&_ol>li]:list-decimal [&_li]:ml-4 [&_img]:max-h-24 [&_img]:object-contain">
+                      {row.soal ? parse(row.soal) : <span className="text-sm text-gray-500">(Soal kosong)</span>}
+                    </div>
                   </div>
                 ),
               },

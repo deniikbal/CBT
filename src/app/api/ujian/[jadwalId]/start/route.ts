@@ -281,7 +281,6 @@ export async function POST(
             pilihanD: reordered[3]?.value || soal.pilihanD,
             pilihanE: reordered[4]?.value || null,
             nomorSoal: index + 1,
-            pembahasan: undefined,
           };
         }
 
@@ -289,7 +288,6 @@ export async function POST(
         return {
           ...soal,
           nomorSoal: index + 1,
-          pembahasan: undefined,
         };
       });
       
@@ -346,7 +344,6 @@ export async function POST(
         return {
           ...shuffled,
           nomorSoal: index + 1,
-          pembahasan: undefined,
         };
       });
     }

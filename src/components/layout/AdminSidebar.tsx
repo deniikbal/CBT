@@ -115,12 +115,11 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed lg:sticky inset-y-0 lg:inset-y-auto left-0 top-0 z-50 w-64 h-screen bg-white text-gray-800 flex flex-col transition-all duration-300 ease-in-out border-r shadow-sm",
-        // Mobile: always use translate
-        // Desktop: use width/margin approach
-        isOpen 
-          ? "translate-x-0 lg:translate-x-0" 
-          : "-translate-x-full lg:translate-x-0 lg:w-0 lg:min-w-0 lg:border-0 lg:opacity-0"
+        "fixed inset-y-0 left-0 z-50 w-64 bg-white text-gray-800 flex flex-col border-r shadow-sm transition-transform duration-300 ease-in-out",
+        "lg:static lg:inset-auto lg:transform-none lg:w-64",
+        isOpen
+          ? "translate-x-0"
+          : "-translate-x-full lg:w-0 lg:min-w-0 lg:border-0 lg:opacity-0"
       )}>
         {/* Logo/Header */}
         <div className="h-16 px-6 border-b border-gray-200 flex items-center shrink-0">
@@ -131,7 +130,7 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
         </div>
 
       {/* Menu Items */}
-      <nav className="flex-1 p-4 space-y-2 overflow-hidden">
+      <nav className="flex-1 overflow-y-auto p-4 space-y-2">
         {menuItems.map((item) => (
           <div key={item.title}>
             {item.href ? (

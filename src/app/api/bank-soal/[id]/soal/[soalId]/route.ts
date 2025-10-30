@@ -50,8 +50,7 @@ export async function PUT(
       pilihanC,
       pilihanD,
       pilihanE,
-      jawabanBenar,
-      pembahasan
+      jawabanBenar
     } = body;
 
     // Validate required fields
@@ -73,7 +72,6 @@ export async function PUT(
         pilihanD,
         pilihanE: pilihanE || null,
         jawabanBenar,
-        pembahasan: pembahasan || null,
         updatedAt: new Date(),
       })
       .where(eq(soalBank.id, soalId))

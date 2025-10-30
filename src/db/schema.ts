@@ -128,7 +128,6 @@ export const soalBank = pgTable('soal_bank', {
   pilihanD: text('pilihan_d').notNull(),
   pilihanE: text('pilihan_e'),
   jawabanBenar: jawabanBenarEnum('jawaban_benar').notNull(),
-  pembahasan: text('pembahasan'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });

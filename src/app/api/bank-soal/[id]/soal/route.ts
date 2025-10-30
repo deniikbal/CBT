@@ -44,8 +44,7 @@ export async function POST(
       pilihanC,
       pilihanD,
       pilihanE,
-      jawabanBenar,
-      pembahasan
+      jawabanBenar
     } = body;
 
     // Validate required fields
@@ -79,7 +78,6 @@ export async function POST(
       pilihanD,
       pilihanE: pilihanE || null,
       jawabanBenar,
-      pembahasan: pembahasan || null,
     }).returning();
 
     return NextResponse.json(newSoal[0], { status: 201 });
