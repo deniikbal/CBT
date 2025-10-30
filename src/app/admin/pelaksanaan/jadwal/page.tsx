@@ -82,6 +82,7 @@ export default function JadwalUjianPage() {
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [loadingExport, setLoadingExport] = useState<Set<string>>(new Set())
   
   const [formData, setFormData] = useState({
     namaUjian: '',
@@ -240,7 +241,11 @@ export default function JadwalUjianPage() {
 
   const handleExportKartu = async (jadwalId: string, namaUjian: string) => {
     try {
+      // Set loading state
+      setLoadingExport(prev => new Set(prev).add(jadwalId))
+
       const response = await fetch(`/api/jadwal-ujian/${jadwalId}/export-kartu`)
+      
       if (response.ok) {
         const blob = await response.blob()
         const url = window.URL.createObjectURL(blob)
@@ -253,11 +258,19 @@ export default function JadwalUjianPage() {
         document.body.removeChild(a)
         toast.success('Kartu ujian berhasil diunduh')
       } else {
-        toast.error('Gagal mengunduh kartu ujian')
+        const errorData = await response.json().catch(() => ({}))
+        toast.error(errorData.error || 'Gagal mengunduh kartu ujian')
       }
     } catch (error) {
       console.error('Error:', error)
       toast.error('Terjadi kesalahan saat mengunduh kartu ujian')
+    } finally {
+      // Remove loading state
+      setLoadingExport(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(jadwalId)
+        return newSet
+      })
     }
   }
 
@@ -541,8 +554,14 @@ export default function JadwalUjianPage() {
                       size="sm" 
                       onClick={() => handleExportKartu(row.id, row.namaUjian)}
                       title="Export Kartu Ujian PDF"
+                      disabled={loadingExport.has(row.id)}
+                      className="relative"
                     >
-                      <Download className="h-4 w-4 text-blue-600" />
+                      {loadingExport.has(row.id) ? (
+                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 text-blue-600" />
+                      )}
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
                       <Edit className="h-4 w-4" />
