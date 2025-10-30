@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, bankSoal, mataPelajaran } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import PDFDocument from 'pdfkit';
+import { jsPDF } from 'jspdf';
 
 export async function GET(
   request: NextRequest,
@@ -35,18 +35,17 @@ export async function GET(
       );
     }
 
-    // Create PDF
-    const doc = new PDFDocument({
-      size: 'A4',
-      margin: 40,
+    // Create PDF using jsPDF
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
     });
 
-    // Set response headers
-    const filename = `Kartu-Ujian-${jadwal.namaUjian.replace(/\s+/g, '-')}.pdf`;
-    const headers = new Headers({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 15;
+    let yPosition = margin;
 
     // Format tanggal
     const tanggal = new Date(jadwal.tanggalUjian);
@@ -58,79 +57,117 @@ export async function GET(
     });
 
     // Header
-    doc.fontSize(16).font('Helvetica-Bold').text('KARTU UJIAN', { align: 'center' });
-    doc.fontSize(11).font('Helvetica').text('Sistem Ujian Berbasis Komputer (CBT)', { align: 'center' });
-    doc.moveTo(40, doc.y + 5).lineTo(555, doc.y).stroke();
-    doc.moveDown(1);
+    doc.setFontSize(16);
+    doc.setFont(undefined, 'bold');
+    doc.text('KARTU UJIAN', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 8;
 
-    // Content
-    doc.fontSize(10).font('Helvetica');
+    doc.setFontSize(10);
+    doc.setFont(undefined, 'normal');
+    doc.text('Sistem Ujian Berbasis Komputer (CBT)', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 8;
 
-    const addField = (label: string, value: string) => {
-      doc.font('Helvetica-Bold').text(label, { width: 140 });
-      doc.moveUp();
-      doc.font('Helvetica').text(value, 160, doc.y, { width: 350 });
-      doc.moveDown();
+    // Line separator
+    doc.setDrawColor(0);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 6;
+
+    // Content - Detail Ujian
+    const drawField = (label: string, value: string) => {
+      if (yPosition > pageHeight - 40) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(10);
+      doc.text(label, margin, yPosition);
+      
+      doc.setFont(undefined, 'normal');
+      const lines = doc.splitTextToSize(value, pageWidth - margin * 2 - 60);
+      doc.text(lines, margin + 60, yPosition);
+      
+      yPosition += Math.max(6, lines.length * 5);
     };
 
-    addField('Nama Ujian:', jadwal.namaUjian);
-    addField('Mata Pelajaran:', jadwal.matpelName || '-');
-    addField('Kode Bank Soal:', jadwal.bankSoalKode || '-');
-    addField('Tanggal:', formattedDate);
-    addField('Jam Mulai:', jadwal.jamMulai);
-    addField('Durasi:', `${jadwal.durasi} menit`);
+    drawField('Nama Ujian:', jadwal.namaUjian);
+    drawField('Mata Pelajaran:', jadwal.matpelName || '-');
+    drawField('Kode Bank Soal:', jadwal.bankSoalKode || '-');
+    drawField('Tanggal:', formattedDate);
+    drawField('Jam Mulai:', jadwal.jamMulai);
+    drawField('Durasi:', `${jadwal.durasi} menit`);
 
-    doc.moveDown(1);
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
-    doc.moveDown(1);
+    yPosition += 4;
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 8;
 
-    // Petunjuk
-    doc.fontSize(11).font('Helvetica-Bold').text('PETUNJUK MENGERJAKAN:', { underline: true });
-    doc.fontSize(9).font('Helvetica');
-    doc.list([
-      'Pastikan Anda login dengan akun yang sesuai sebelum mengerjakan ujian',
-      'Bacalah setiap soal dengan teliti sebelum menjawab',
-      'Waktu yang disediakan adalah durasi ujian yang telah ditentukan',
-      'Jangan meninggalkan ujian sebelum waktu berakhir kecuali telah selesai',
-      'Jawaban Anda akan otomatis tersimpan saat Anda memilih opsi jawaban',
-      'Pastikan koneksi internet stabil selama mengerjakan ujian',
-      'Dilarang menggunakan alat komunikasi atau mencari bantuan dari pihak lain',
-    ]);
+    // Petunjuk Mengerjakan
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(10);
+    doc.text('PETUNJUK MENGERJAKAN:', margin, yPosition);
+    yPosition += 7;
 
-    doc.moveDown(1);
-    doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke();
-    doc.moveDown(1);
+    const instructions = [
+      '1. Pastikan Anda login dengan akun yang sesuai sebelum mengerjakan ujian',
+      '2. Bacalah setiap soal dengan teliti sebelum menjawab',
+      '3. Waktu yang disediakan adalah durasi ujian yang telah ditentukan',
+      '4. Jangan meninggalkan ujian sebelum waktu berakhir kecuali telah selesai',
+      '5. Jawaban Anda akan otomatis tersimpan saat Anda memilih opsi jawaban',
+      '6. Pastikan koneksi internet stabil selama mengerjakan ujian',
+      '7. Dilarang menggunakan alat komunikasi atau mencari bantuan dari pihak lain',
+    ];
 
-    // Tanda tangan
-    doc.fontSize(10).font('Helvetica');
-    doc.text('Pengawas Ujian:', 80, doc.y);
-    doc.text('Peserta Ujian:', 350, doc.y - 25);
-
-    const signatureY = doc.y + 40;
-    doc.moveTo(60, signatureY).lineTo(150, signatureY).stroke();
-    doc.moveTo(330, signatureY).lineTo(420, signatureY).stroke();
-
-    doc.fontSize(8).text('(...........................)', 70, signatureY + 5);
-    doc.text('(...........................)', 340, signatureY + 5);
-
-    // Footer
-    doc.fontSize(7).text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, { align: 'center' });
-
-    // Send PDF
-    const responseStream = new ReadableStream({
-      start(controller) {
-        doc.on('data', (chunk) => {
-          controller.enqueue(chunk);
-        });
-        doc.on('end', () => {
-          controller.close();
-        });
-        doc.end();
-      },
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(9);
+    
+    instructions.forEach((instruction) => {
+      if (yPosition > pageHeight - 30) {
+        doc.addPage();
+        yPosition = margin;
+      }
+      const lines = doc.splitTextToSize(instruction, pageWidth - margin * 2 - 5);
+      doc.text(lines, margin + 2, yPosition);
+      yPosition += lines.length * 5 + 1;
     });
 
-    return new NextResponse(responseStream, {
-      headers,
+    yPosition += 4;
+    if (yPosition > pageHeight - 50) {
+      doc.addPage();
+      yPosition = margin;
+    }
+
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 8;
+
+    // Tanda Tangan
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(10);
+    doc.text('Pengawas Ujian:', margin, yPosition);
+    doc.text('Peserta Ujian:', pageWidth / 2 + 10, yPosition);
+
+    yPosition += 28;
+    // Lines for signature
+    doc.line(margin, yPosition, margin + 40, yPosition);
+    doc.line(pageWidth / 2 + 10, yPosition, pageWidth / 2 + 50, yPosition);
+
+    doc.setFontSize(8);
+    doc.text('(...........................)', margin + 3, yPosition + 3);
+    doc.text('(...........................)', pageWidth / 2 + 13, yPosition + 3);
+
+    // Footer
+    doc.setFontSize(7);
+    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+
+    // Generate PDF as buffer
+    const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
+    const filename = `Kartu-Ujian-${jadwal.namaUjian.replace(/\s+/g, '-')}.pdf`;
+
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': pdfBuffer.length.toString(),
+      },
     });
   } catch (error) {
     console.error('Error generating PDF:', error);
