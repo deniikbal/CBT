@@ -63,9 +63,9 @@ export async function GET(
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 8;
+    const margin = 6;
     const cardWidth = (pageWidth - margin * 3) / 2; // 2 cards per row
-    const cardHeight = 120; // height per card
+    const cardHeight = 40; // height per card - reduced for 6 rows
 
     // Format tanggal ujian
     const tanggal = new Date(jadwal.tanggalUjian);
@@ -77,7 +77,7 @@ export async function GET(
     const jamMulai = jadwal.jamMulai;
     const tahun = new Date().getFullYear();
 
-    // Draw card function
+    // Draw card function - compact for 6 rows per page
     const drawCard = (xPos: number, yPos: number, p: typeof pesertaList[0]) => {
       // Border
       doc.setDrawColor(0);
@@ -85,64 +85,52 @@ export async function GET(
 
       let y = yPos + 2;
 
-      // Title
+      // Title (compact)
       doc.setFont(undefined, 'bold');
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.text('KARTU UJIAN PESERTA', xPos + 2, y);
-      doc.text(`TAHUN ${tahun}`, xPos + 2, y + 3);
 
-      // Photo placeholder
+      // Photo placeholder - smaller
       doc.setDrawColor(150);
-      doc.rect(xPos + cardWidth - 22, yPos + 2, 20, 22);
-      doc.setFontSize(7);
-      doc.setFont(undefined, 'normal');
-      doc.text('Foto', xPos + cardWidth - 17, yPos + 15, { align: 'center' });
-
-      y += 8;
-
-      // "Kartu Ujian" label
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(9);
-      doc.text('Kartu Ujian', xPos + 2, y);
-
-      y += 6;
-
-      // Peserta info
-      doc.setFont(undefined, 'normal');
-      doc.setFontSize(7);
-      doc.text('No Ujian', xPos + 2, y);
-      doc.text(`: ${p.noUjian}`, xPos + 22, y);
+      const photoSize = 14;
+      doc.rect(xPos + cardWidth - photoSize - 2, yPos + 2, photoSize, photoSize);
 
       y += 3;
-      doc.text('Nama Peserta', xPos + 2, y);
-      const nameLines = doc.splitTextToSize(`: ${p.name}`, cardWidth - 24);
-      doc.text(nameLines, xPos + 22, y);
 
-      y += 3;
-      doc.text('Password', xPos + 2, y);
-      doc.text(`: ${p.password}`, xPos + 22, y);
-
-      y += 5;
-
-      // Table headers
-      doc.setFont(undefined, 'bold');
+      // Peserta info - compact
+      doc.setFont(undefined, 'normal');
       doc.setFontSize(6);
+      
+      doc.text(`No Ujian: ${p.noUjian}`, xPos + 2, y);
+      y += 2.5;
+      
+      const nameLines = doc.splitTextToSize(`Nama: ${p.name}`, cardWidth - 20);
+      doc.text(nameLines, xPos + 2, y);
+      y += nameLines.length * 2;
+      
+      doc.text(`Password: ${p.password}`, xPos + 2, y);
+
+      y += 2.5;
+
+      // Table headers - very compact
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(5);
       const colWidth = (cardWidth - 4) / 4;
       
-      doc.text('Tanggal', xPos + 2, y);
+      doc.text('Tgl', xPos + 2, y);
       doc.text('Waktu', xPos + 2 + colWidth, y);
       doc.text('Ujian', xPos + 2 + colWidth * 2, y);
-      doc.text('Sesi', xPos + 2 + colWidth * 3, y);
+      doc.text('S', xPos + 2 + colWidth * 3, y);
 
       // Table line
       doc.setDrawColor(0);
-      doc.line(xPos + 2, y + 0.5, xPos + cardWidth - 2, y + 0.5);
+      doc.line(xPos + 2, y + 0.3, xPos + cardWidth - 2, y + 0.3);
 
-      y += 3;
+      y += 2;
 
       // Table data
       doc.setFont(undefined, 'normal');
-      doc.setFontSize(6);
+      doc.setFontSize(5);
       doc.text(formattedDate, xPos + 2, y);
       doc.text(jamMulai, xPos + 2 + colWidth, y);
       const ujianLines = doc.splitTextToSize(jadwal.namaUjian, colWidth - 1);
@@ -150,16 +138,14 @@ export async function GET(
       doc.text('1', xPos + 2 + colWidth * 3, y);
     };
 
-    // Generate cards - 2 per page, vertical layout
+    // Generate cards - 12 per page (6 rows x 2 columns)
     let cardCount = 0;
-    let currentPage = 0;
 
     pesertaList.forEach((p) => {
-      const cardsPerPage = 4; // 2 columns x 2 rows
+      const cardsPerPage = 12; // 6 rows x 2 columns
 
       if (cardCount > 0 && cardCount % cardsPerPage === 0) {
         doc.addPage();
-        currentPage++;
       }
 
       const positionInPage = cardCount % cardsPerPage;
