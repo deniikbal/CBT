@@ -111,6 +111,7 @@ export const bankSoal = pgTable('bank_soal', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   kodeBankSoal: text('kode_banksoal').notNull().unique(),
   matpelId: text('matpel_id').notNull().references(() => mataPelajaran.id, { onDelete: 'cascade' }),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'cascade' }),
   jumlahSoal: integer('jumlah_soal').notNull().default(0),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
@@ -138,6 +139,7 @@ export const jadwalUjian = pgTable('jadwal_ujian', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
   namaUjian: text('nama_ujian').notNull(),
   bankSoalId: text('bank_soal_id').notNull().references(() => bankSoal.id, { onDelete: 'cascade' }),
+  createdBy: text('created_by').references(() => users.id, { onDelete: 'cascade' }),
   kelasId: text('kelas_id').references(() => kelas.id, { onDelete: 'set null' }),
   tanggalUjian: timestamp('tanggal_ujian').notNull(),
   jamMulai: text('jam_mulai').notNull(),
@@ -206,6 +208,8 @@ export const activityLog = pgTable('activity_log', {
 export const usersRelations = relations(users, ({ many }) => ({
   examResults: many(examResults),
   createdExams: many(exams),
+  createdBankSoal: many(bankSoal),
+  createdJadwalUjian: many(jadwalUjian),
 }));
 
 export const questionsRelations = relations(questions, ({ many }) => ({
@@ -272,6 +276,10 @@ export const mataPelajaranRelations = relations(mataPelajaran, ({ many }) => ({
 }));
 
 export const bankSoalRelations = relations(bankSoal, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [bankSoal.createdBy],
+    references: [users.id],
+  }),
   mataPelajaran: one(mataPelajaran, {
     fields: [bankSoal.matpelId],
     references: [mataPelajaran.id],
@@ -287,6 +295,10 @@ export const soalBankRelations = relations(soalBank, ({ one }) => ({
 }));
 
 export const jadwalUjianRelations = relations(jadwalUjian, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [jadwalUjian.createdBy],
+    references: [users.id],
+  }),
   bankSoal: one(bankSoal, {
     fields: [jadwalUjian.bankSoalId],
     references: [bankSoal.id],

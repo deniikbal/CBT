@@ -81,6 +81,7 @@ export default function JadwalUjianPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   
   const [formData, setFormData] = useState({
     namaUjian: '',
@@ -98,6 +99,10 @@ export default function JadwalUjianPage() {
   })
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser))
+    }
     fetchJadwal()
     fetchBankSoal()
     fetchMataPelajaran()
@@ -125,7 +130,9 @@ export default function JadwalUjianPage() {
 
   const fetchJadwal = async () => {
     try {
-      const response = await fetch('/api/jadwal-ujian')
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      const url = user.role === 'USER' ? `/api/jadwal-ujian?createdById=${user.id}` : '/api/jadwal-ujian'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setJadwalList(data)
@@ -139,7 +146,9 @@ export default function JadwalUjianPage() {
 
   const fetchBankSoal = async () => {
     try {
-      const response = await fetch('/api/bank-soal')
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      const url = user.role === 'USER' ? `/api/bank-soal?createdById=${user.id}` : '/api/bank-soal'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setBankSoalList(data)
@@ -198,11 +207,17 @@ export default function JadwalUjianPage() {
     try {
       const url = editingId ? `/api/jadwal-ujian/${editingId}` : '/api/jadwal-ujian'
       const method = editingId ? 'PUT' : 'POST'
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      
+      const payload = {
+        ...formData,
+        ...(method === 'POST' && { createdBy: user.id })
+      }
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()

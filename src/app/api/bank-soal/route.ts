@@ -4,12 +4,16 @@ import { bankSoal, mataPelajaran } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
 
 // GET - Ambil semua bank soal dengan data mata pelajaran
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const allBankSoal = await db.select({
+    const { searchParams } = new URL(request.url)
+    const createdById = searchParams.get('createdById')
+
+    let query = db.select({
       id: bankSoal.id,
       kodeBankSoal: bankSoal.kodeBankSoal,
       matpelId: bankSoal.matpelId,
+      createdBy: bankSoal.createdBy,
       jumlahSoal: bankSoal.jumlahSoal,
       createdAt: bankSoal.createdAt,
       updatedAt: bankSoal.updatedAt,
@@ -21,7 +25,13 @@ export async function GET() {
     })
     .from(bankSoal)
     .leftJoin(mataPelajaran, eq(bankSoal.matpelId, mataPelajaran.id))
-    .orderBy(desc(bankSoal.createdAt))
+
+    // Filter by createdBy if provided
+    if (createdById) {
+      query = query.where(eq(bankSoal.createdBy, createdById))
+    }
+
+    const allBankSoal = await query.orderBy(desc(bankSoal.createdAt))
 
     return NextResponse.json(allBankSoal)
   } catch (error) {
@@ -36,11 +46,11 @@ export async function GET() {
 // POST - Tambah bank soal baru
 export async function POST(request: NextRequest) {
   try {
-    const { kodeBankSoal, matpelId, jumlahSoal } = await request.json()
+    const { kodeBankSoal, matpelId, jumlahSoal, createdBy } = await request.json()
 
-    if (!kodeBankSoal || !matpelId) {
+    if (!kodeBankSoal || !matpelId || !createdBy) {
       return NextResponse.json(
-        { error: 'Kode bank soal dan mata pelajaran harus diisi' },
+        { error: 'Kode bank soal, mata pelajaran, dan userId harus diisi' },
         { status: 400 }
       )
     }
@@ -68,6 +78,7 @@ export async function POST(request: NextRequest) {
     const [newBankSoal] = await db.insert(bankSoal).values({
       kodeBankSoal,
       matpelId,
+      createdBy,
       jumlahSoal: jumlahSoal || 0
     }).returning()
 

@@ -40,6 +40,7 @@ export default function BankSoalPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
   const [formData, setFormData] = useState({ 
     kodeBankSoal: '', 
     matpelId: '', 
@@ -47,13 +48,19 @@ export default function BankSoalPage() {
   })
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser))
+    }
     fetchBankSoal()
     fetchMataPelajaran()
   }, [])
 
   const fetchBankSoal = async () => {
     try {
-      const response = await fetch('/api/bank-soal')
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      const url = user.role === 'USER' ? `/api/bank-soal?createdById=${user.id}` : '/api/bank-soal'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         
@@ -102,11 +109,17 @@ export default function BankSoalPage() {
     try {
       const url = editingId ? `/api/bank-soal/${editingId}` : '/api/bank-soal'
       const method = editingId ? 'PUT' : 'POST'
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      
+      const payload = {
+        ...formData,
+        ...(method === 'POST' && { createdBy: user.id })
+      }
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
