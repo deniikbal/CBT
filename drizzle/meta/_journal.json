@@ -71,6 +71,13 @@
       "when": 1761700760670,
       "tag": "0009_rapid_fallen_one",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1761792717448,
+      "tag": "0010_complete_avengers",
+      "breakpoints": true
     }
   ]
 }

@@ -96,7 +96,6 @@ export async function GET(
           pilihanD: soalBank.pilihanD,
           pilihanE: soalBank.pilihanE,
           jawabanBenar: soalBank.jawabanBenar,
-          pembahasan: soalBank.pembahasan,
         })
         .from(soalBank)
         .where(eq(soalBank.bankSoalId, bankSoalId));
@@ -141,7 +140,6 @@ export async function GET(
         pilihanE: s.pilihanE || null,
         jawabanBenar,
         jawabanSiswa: jawabanSiswaAns,
-        pembahasan: s.pembahasan || '',
         benar,
       };
     }).sort((a, b) => a.nomorSoal - b.nomorSoal);

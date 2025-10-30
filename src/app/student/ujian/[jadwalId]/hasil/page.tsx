@@ -42,7 +42,7 @@ export default function HasilUjianPage() {
   if (!tampilkan) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-20 lg:pt-4">
-        <Card className="max-w-lg w-full">
+        <Card className="rounded-md shadow-lg max-w-lg w-full">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
               <div className="bg-green-100 p-3 md:p-4 rounded-full">
@@ -86,7 +86,7 @@ export default function HasilUjianPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-20 lg:pt-4">
-      <Card className="max-w-2xl w-full">
+      <Card className="rounded-md shadow-lg max-w-2xl w-full">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
             <div className={cn(
@@ -124,23 +124,23 @@ export default function HasilUjianPage() {
           </div>
 
           {/* Statistics */}
-          <div className="grid grid-cols-3 gap-2 md:gap-4">
-            <Card>
-              <CardContent className="pt-4 md:pt-6 text-center">
+          <div className="grid grid-cols-3 gap-2 md:gap-3">
+            <Card className="rounded-md shadow-sm">
+              <CardContent className="pt-3 md:pt-4 text-center">
                 <CheckCircle className="h-6 md:h-8 w-6 md:w-8 mx-auto text-green-600 mb-2" />
                 <p className="text-lg md:text-2xl font-bold text-green-600">{skor}</p>
                 <p className="text-xs text-gray-600">Benar</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-4 md:pt-6 text-center">
+            <Card className="rounded-md shadow-sm">
+              <CardContent className="pt-3 md:pt-4 text-center">
                 <FileText className="h-6 md:h-8 w-6 md:w-8 mx-auto text-blue-600 mb-2" />
                 <p className="text-lg md:text-2xl font-bold text-blue-600">{maksimal}</p>
                 <p className="text-xs text-gray-600">Total</p>
               </CardContent>
             </Card>
-            <Card>
-              <CardContent className="pt-4 md:pt-6 text-center">
+            <Card className="rounded-md shadow-sm">
+              <CardContent className="pt-3 md:pt-4 text-center">
                 <TrendingUp className="h-6 md:h-8 w-6 md:w-8 mx-auto text-purple-600 mb-2" />
                 <p className="text-lg md:text-2xl font-bold text-purple-600">{persentase}%</p>
                 <p className="text-xs text-gray-600">Akurasi</p>

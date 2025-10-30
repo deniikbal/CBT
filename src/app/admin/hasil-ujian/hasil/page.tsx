@@ -39,7 +39,6 @@ interface JawabanDetail {
   pilihanE?: string
   jawabanBenar: string
   jawabanSiswa: string
-  pembahasan: string
   benar: boolean
 }
 
@@ -311,13 +310,6 @@ export default function HasilUjianPage() {
                       </div>
                     </div>
 
-                    {/* Pembahasan */}
-                    {jawaban.pembahasan && (
-                      <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                        <p className="font-semibold text-blue-900 text-sm mb-1">Pembahasan:</p>
-                        <p className="text-sm text-blue-800">{jawaban.pembahasan}</p>
-                      </div>
-                    )}
                   </div>
                 );
               })}

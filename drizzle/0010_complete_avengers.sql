@@ -1,0 +1,1 @@
+ALTER TABLE "soal_bank" DROP COLUMN "pembahasan";

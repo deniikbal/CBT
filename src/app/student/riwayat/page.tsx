@@ -146,20 +146,20 @@ export default function RiwayatUjianPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-3 md:space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Riwayat Ujian</h1>
-        <p className="text-sm md:text-base text-gray-600 mt-1">Lihat hasil dan performa ujian Anda</p>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Riwayat Ujian</h1>
+        <p className="text-xs md:text-sm text-gray-600 mt-1">Lihat hasil dan performa ujian Anda</p>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Ujian</CardTitle>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+        <Card className="rounded-md shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-gray-600">Total Ujian</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="py-3">
             <div className="flex items-center gap-2">
               <BookOpen className="h-6 w-6 text-blue-600" />
               <div>
@@ -170,9 +170,9 @@ export default function RiwayatUjianPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Rata-Rata</CardTitle>
+        <Card className="rounded-md shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-gray-600">Rata-Rata</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -185,9 +185,9 @@ export default function RiwayatUjianPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Nilai Tertinggi</CardTitle>
+        <Card className="rounded-md shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-gray-600">Nilai Tertinggi</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -200,9 +200,9 @@ export default function RiwayatUjianPage() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-600">Nilai Terendah</CardTitle>
+        <Card className="rounded-md shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-medium text-gray-600">Nilai Terendah</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-2">
@@ -217,9 +217,9 @@ export default function RiwayatUjianPage() {
       </div>
 
       {/* Riwayat Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg md:text-xl">Daftar Riwayat Ujian</CardTitle>
+      <Card className="rounded-md">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base md:text-lg">Daftar Riwayat Ujian</CardTitle>
           <CardDescription className="text-xs md:text-sm">Detail hasil ujian yang sudah Anda kerjakan</CardDescription>
         </CardHeader>
         <CardContent>
@@ -237,7 +237,7 @@ export default function RiwayatUjianPage() {
                 const badge = getGradeBadge(riwayat.persentase)
                 
                 return (
-                  <Card key={riwayat.id} className="border border-gray-200">
+                  <Card key={riwayat.id} className="rounded-md shadow-sm border border-gray-200">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">
