@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { jadwalUjian, bankSoal, mataPelajaran } from '@/db/schema';
+import { jadwalUjian, jadwalUjianPeserta, bankSoal, mataPelajaran, peserta } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { jsPDF } from 'jspdf';
 
@@ -35,6 +35,25 @@ export async function GET(
       );
     }
 
+    // Get peserta list for this jadwal
+    const pesertaList = await db
+      .select({
+        id: peserta.id,
+        name: peserta.name,
+        noUjian: peserta.noUjian,
+        password: peserta.password,
+      })
+      .from(jadwalUjianPeserta)
+      .innerJoin(peserta, eq(jadwalUjianPeserta.pesertaId, peserta.id))
+      .where(eq(jadwalUjianPeserta.jadwalUjianId, jadwalId));
+
+    if (pesertaList.length === 0) {
+      return NextResponse.json(
+        { error: 'Tidak ada peserta untuk jadwal ini' },
+        { status: 404 }
+      );
+    }
+
     // Create PDF using jsPDF
     const doc = new jsPDF({
       orientation: 'portrait',
@@ -44,119 +63,120 @@ export async function GET(
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
-    let yPosition = margin;
+    const margin = 8;
+    const cardWidth = (pageWidth - margin * 3) / 2; // 2 cards per row
+    const cardHeight = 120; // height per card
 
-    // Format tanggal
+    // Format tanggal ujian
     const tanggal = new Date(jadwal.tanggalUjian);
     const formattedDate = tanggal.toLocaleDateString('id-ID', {
-      weekday: 'long',
+      day: '2-digit',
+      month: '2-digit',
       year: 'numeric',
-      month: 'long',
-      day: 'numeric',
     });
+    const jamMulai = jadwal.jamMulai;
+    const tahun = new Date().getFullYear();
 
-    // Header
-    doc.setFontSize(16);
-    doc.setFont(undefined, 'bold');
-    doc.text('KARTU UJIAN', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 8;
+    // Draw card function
+    const drawCard = (xPos: number, yPos: number, p: typeof pesertaList[0]) => {
+      // Border
+      doc.setDrawColor(0);
+      doc.rect(xPos, yPos, cardWidth, cardHeight);
 
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
-    doc.text('Sistem Ujian Berbasis Komputer (CBT)', pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 8;
+      let y = yPos + 2;
 
-    // Line separator
-    doc.setDrawColor(0);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 6;
-
-    // Content - Detail Ujian
-    const drawField = (label: string, value: string) => {
-      if (yPosition > pageHeight - 40) {
-        doc.addPage();
-        yPosition = margin;
-      }
-      
+      // Title
       doc.setFont(undefined, 'bold');
-      doc.setFontSize(10);
-      doc.text(label, margin, yPosition);
-      
+      doc.setFontSize(8);
+      doc.text('KARTU UJIAN PESERTA', xPos + 2, y);
+      doc.text(`TAHUN ${tahun}`, xPos + 2, y + 3);
+
+      // Photo placeholder
+      doc.setDrawColor(150);
+      doc.rect(xPos + cardWidth - 22, yPos + 2, 20, 22);
+      doc.setFontSize(7);
       doc.setFont(undefined, 'normal');
-      const lines = doc.splitTextToSize(value, pageWidth - margin * 2 - 60);
-      doc.text(lines, margin + 60, yPosition);
+      doc.text('Foto', xPos + cardWidth - 17, yPos + 15, { align: 'center' });
+
+      y += 8;
+
+      // "Kartu Ujian" label
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(9);
+      doc.text('Kartu Ujian', xPos + 2, y);
+
+      y += 6;
+
+      // Peserta info
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(7);
+      doc.text('No Ujian', xPos + 2, y);
+      doc.text(`: ${p.noUjian}`, xPos + 22, y);
+
+      y += 3;
+      doc.text('Nama Peserta', xPos + 2, y);
+      const nameLines = doc.splitTextToSize(`: ${p.name}`, cardWidth - 24);
+      doc.text(nameLines, xPos + 22, y);
+
+      y += 3;
+      doc.text('Password', xPos + 2, y);
+      doc.text(`: ${p.password}`, xPos + 22, y);
+
+      y += 5;
+
+      // Table headers
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(6);
+      const colWidth = (cardWidth - 4) / 4;
       
-      yPosition += Math.max(6, lines.length * 5);
+      doc.text('Tanggal', xPos + 2, y);
+      doc.text('Waktu', xPos + 2 + colWidth, y);
+      doc.text('Ujian', xPos + 2 + colWidth * 2, y);
+      doc.text('Sesi', xPos + 2 + colWidth * 3, y);
+
+      // Table line
+      doc.setDrawColor(0);
+      doc.line(xPos + 2, y + 0.5, xPos + cardWidth - 2, y + 0.5);
+
+      y += 3;
+
+      // Table data
+      doc.setFont(undefined, 'normal');
+      doc.setFontSize(6);
+      doc.text(formattedDate, xPos + 2, y);
+      doc.text(jamMulai, xPos + 2 + colWidth, y);
+      const ujianLines = doc.splitTextToSize(jadwal.namaUjian, colWidth - 1);
+      doc.text(ujianLines, xPos + 2 + colWidth * 2, y);
+      doc.text('1', xPos + 2 + colWidth * 3, y);
     };
 
-    drawField('Nama Ujian:', jadwal.namaUjian);
-    drawField('Mata Pelajaran:', jadwal.matpelName || '-');
-    drawField('Kode Bank Soal:', jadwal.bankSoalKode || '-');
-    drawField('Tanggal:', formattedDate);
-    drawField('Jam Mulai:', jadwal.jamMulai);
-    drawField('Durasi:', `${jadwal.durasi} menit`);
+    // Generate cards - 2 per page, vertical layout
+    let cardCount = 0;
+    let currentPage = 0;
 
-    yPosition += 4;
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 8;
+    pesertaList.forEach((p) => {
+      const cardsPerPage = 4; // 2 columns x 2 rows
 
-    // Petunjuk Mengerjakan
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(10);
-    doc.text('PETUNJUK MENGERJAKAN:', margin, yPosition);
-    yPosition += 7;
-
-    const instructions = [
-      '1. Pastikan Anda login dengan akun yang sesuai sebelum mengerjakan ujian',
-      '2. Bacalah setiap soal dengan teliti sebelum menjawab',
-      '3. Waktu yang disediakan adalah durasi ujian yang telah ditentukan',
-      '4. Jangan meninggalkan ujian sebelum waktu berakhir kecuali telah selesai',
-      '5. Jawaban Anda akan otomatis tersimpan saat Anda memilih opsi jawaban',
-      '6. Pastikan koneksi internet stabil selama mengerjakan ujian',
-      '7. Dilarang menggunakan alat komunikasi atau mencari bantuan dari pihak lain',
-    ];
-
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(9);
-    
-    instructions.forEach((instruction) => {
-      if (yPosition > pageHeight - 30) {
+      if (cardCount > 0 && cardCount % cardsPerPage === 0) {
         doc.addPage();
-        yPosition = margin;
+        currentPage++;
       }
-      const lines = doc.splitTextToSize(instruction, pageWidth - margin * 2 - 5);
-      doc.text(lines, margin + 2, yPosition);
-      yPosition += lines.length * 5 + 1;
+
+      const positionInPage = cardCount % cardsPerPage;
+      const col = positionInPage % 2;
+      const row = Math.floor(positionInPage / 2);
+
+      const xPos = margin + col * (cardWidth + margin);
+      const yPos = margin + row * (cardHeight + margin);
+
+      drawCard(xPos, yPos, p);
+      cardCount++;
     });
 
-    yPosition += 4;
-    if (yPosition > pageHeight - 50) {
-      doc.addPage();
-      yPosition = margin;
-    }
-
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 8;
-
-    // Tanda Tangan
-    doc.setFont(undefined, 'normal');
-    doc.setFontSize(10);
-    doc.text('Pengawas Ujian:', margin, yPosition);
-    doc.text('Peserta Ujian:', pageWidth / 2 + 10, yPosition);
-
-    yPosition += 28;
-    // Lines for signature
-    doc.line(margin, yPosition, margin + 40, yPosition);
-    doc.line(pageWidth / 2 + 10, yPosition, pageWidth / 2 + 50, yPosition);
-
-    doc.setFontSize(8);
-    doc.text('(...........................)', margin + 3, yPosition + 3);
-    doc.text('(...........................)', pageWidth / 2 + 13, yPosition + 3);
-
     // Footer
-    doc.setFontSize(7);
-    doc.text(`Dicetak pada: ${new Date().toLocaleString('id-ID')}`, pageWidth / 2, pageHeight - 5, { align: 'center' });
+    doc.setFontSize(6);
+    doc.setFont(undefined, 'normal');
+    doc.text(`Dicetak: ${new Date().toLocaleString('id-ID')}`, pageWidth / 2, pageHeight - 3, { align: 'center' });
 
     // Generate PDF as buffer
     const pdfBuffer = Buffer.from(doc.output('arraybuffer'));
