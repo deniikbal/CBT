@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
     const storedUser = localStorage.getItem('user')
     if (storedUser) {
       const user = JSON.parse(storedUser)
-      if (user.role === 'ADMIN') {
+      if (user.role === 'ADMIN' || user.role === 'USER') {
         router.push('/admin')
       }
     }
@@ -44,7 +44,7 @@ export default function AdminLoginPage() {
       const data = await response.json()
 
       if (response.ok) {
-        if (data.user.role === 'ADMIN') {
+        if (data.user.role === 'ADMIN' || data.user.role === 'USER') {
           localStorage.setItem('user', JSON.stringify(data.user))
           router.push('/admin')
         } else {
@@ -71,7 +71,7 @@ export default function AdminLoginPage() {
           </a>
           <CardTitle className="text-2xl font-bold">Login Admin</CardTitle>
           <CardDescription>
-            Masukkan email dan password untuk mengakses panel admin
+            Masukkan email dan password untuk mengakses panel
           </CardDescription>
         </CardHeader>
         <CardContent>
