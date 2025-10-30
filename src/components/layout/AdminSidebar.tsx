@@ -32,46 +32,81 @@ interface MenuItem {
   href?: string
 }
 
-const menuItems: MenuItem[] = [
-  {
-    title: 'Dashboard',
-    icon: LayoutDashboard,
-    href: '/admin'
-  },
-  {
-    title: 'Data Master',
-    icon: Database,
-    submenu: [
-      { title: 'Jurusan', href: '/admin/data-master/jurusan', icon: GraduationCap },
-      { title: 'Kelas', href: '/admin/data-master/kelas', icon: School },
-      { title: 'Mata Pelajaran', href: '/admin/data-master/mata-pelajaran', icon: BookMarked },
-      { title: 'Peserta', href: '/admin/data-master/peserta', icon: Users },
-      { title: 'User', href: '/admin/data-master/user', icon: Users }
-    ]
-  },
-  {
-    title: 'Persiapan',
-    icon: FileText,
-    submenu: [
-      { title: 'Bank Soal', href: '/admin/persiapan/bank-soal', icon: BookOpen }
-    ]
-  },
-  {
-    title: 'Pelaksanaan',
-    icon: ClipboardList,
-    submenu: [
-      { title: 'Jadwal', href: '/admin/pelaksanaan/jadwal', icon: Calendar },
-      { title: 'Monitoring', href: '/admin/pelaksanaan/monitoring', icon: Users }
-    ]
-  },
-  {
-    title: 'Hasil Ujian',
-    icon: Award,
-    submenu: [
-      { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList }
+const getMenuItems = (role?: string): MenuItem[] => {
+  const baseMenuItems: MenuItem[] = [
+    {
+      title: 'Dashboard',
+      icon: LayoutDashboard,
+      href: '/admin'
+    }
+  ]
+
+  // Role ADMIN: akses semua menu
+  if (role === 'ADMIN') {
+    return [
+      ...baseMenuItems,
+      {
+        title: 'Data Master',
+        icon: Database,
+        submenu: [
+          { title: 'Jurusan', href: '/admin/data-master/jurusan', icon: GraduationCap },
+          { title: 'Kelas', href: '/admin/data-master/kelas', icon: School },
+          { title: 'Mata Pelajaran', href: '/admin/data-master/mata-pelajaran', icon: BookMarked },
+          { title: 'Peserta', href: '/admin/data-master/peserta', icon: Users },
+          { title: 'User', href: '/admin/data-master/user', icon: Users }
+        ]
+      },
+      {
+        title: 'Persiapan',
+        icon: FileText,
+        submenu: [
+          { title: 'Bank Soal', href: '/admin/persiapan/bank-soal', icon: BookOpen }
+        ]
+      },
+      {
+        title: 'Pelaksanaan',
+        icon: ClipboardList,
+        submenu: [
+          { title: 'Jadwal', href: '/admin/pelaksanaan/jadwal', icon: Calendar },
+          { title: 'Monitoring', href: '/admin/pelaksanaan/monitoring', icon: Users }
+        ]
+      },
+      {
+        title: 'Hasil Ujian',
+        icon: Award,
+        submenu: [
+          { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList }
+        ]
+      }
     ]
   }
-]
+
+  // Role USER: akses terbatas ke Bank Soal, Jadwal, dan Hasil Ujian
+  return [
+    ...baseMenuItems,
+    {
+      title: 'Persiapan',
+      icon: FileText,
+      submenu: [
+        { title: 'Bank Soal', href: '/admin/persiapan/bank-soal', icon: BookOpen }
+      ]
+    },
+    {
+      title: 'Pelaksanaan',
+      icon: ClipboardList,
+      submenu: [
+        { title: 'Jadwal', href: '/admin/pelaksanaan/jadwal', icon: Calendar }
+      ]
+    },
+    {
+      title: 'Hasil Ujian',
+      icon: Award,
+      submenu: [
+        { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList }
+      ]
+    }
+  ]
+}
 
 interface AdminSidebarProps {
   isOpen: boolean
@@ -81,6 +116,8 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   const pathname = usePathname()
   const [openMenus, setOpenMenus] = useState<string[]>([])
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
 
   const toggleMenu = (title: string) => {
     setOpenMenus(prev => 
@@ -91,6 +128,16 @@ export default function AdminSidebar({ isOpen, setIsOpen }: AdminSidebarProps) {
   }
 
   const isActive = (href: string) => pathname === href
+
+  // Load user and set menu items based on role
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      const user = JSON.parse(storedUser)
+      setCurrentUser(user)
+      setMenuItems(getMenuItems(user.role))
+    }
+  }, [])
 
   // Close sidebar when route changes on mobile only
   useEffect(() => {
