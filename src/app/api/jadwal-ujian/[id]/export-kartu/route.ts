@@ -54,6 +54,9 @@ export async function GET(
       );
     }
 
+    // Sort peserta by name (A-Z)
+    pesertaList.sort((a, b) => a.name.localeCompare(b.name, 'id-ID'));
+
     // Create PDF using jsPDF
     const doc = new jsPDF({
       orientation: 'portrait',
