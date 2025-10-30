@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Clock, AlertCircle, CheckCircle, Send, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react'
+import { Clock, AlertCircle, CheckCircle, CheckCircle2, Send, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useExamSecurity } from '@/hooks/useExamSecurity'
@@ -123,9 +123,21 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     console.log('pesertaId updated to:', pesertaId)
   }, [pesertaId])
 
+  // Check localStorage for existing agreement
+  useEffect(() => {
+    const agreementKey = `exam_agreement_${jadwalId}`
+    const hasAgreed = localStorage.getItem(agreementKey)
+    
+    if (hasAgreed === 'true') {
+      console.log('[AGREEMENT] Found existing agreement in localStorage')
+      setShowAgreement(false)
+      setAgreedToTerms(true)
+    }
+  }, [jadwalId])
+
   // Fetch jadwal info for agreement dialog
   useEffect(() => {
-    if (!jadwal && !agreedToTerms && jadwalId) {
+    if (!jadwal && jadwalId) {
       fetchJadwalInfo()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -512,6 +524,11 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   const handleAgreeToTerms = async () => {
     console.log('[AGREEMENT] Agreement accepted, starting exam...')
     
+    // Save agreement to localStorage
+    const agreementKey = `exam_agreement_${jadwalId}`
+    localStorage.setItem(agreementKey, 'true')
+    console.log('[AGREEMENT] Saved agreement to localStorage')
+    
     // Detect if mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
     console.log('[AGREEMENT] Device detection:', {
@@ -719,10 +736,10 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
             )}
 
             {/* Soal Card */}
-            <Card>
-              <CardHeader>
+            <Card className="rounded-md shadow-sm">
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">
+                  <CardTitle className="text-base">
                     Soal Nomor {currentSoal.nomorSoal}
                   </CardTitle>
                   <Button
@@ -736,9 +753,9 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 pt-0">
                 {/* Question Text */}
-                <div className="prose max-w-none text-base leading-relaxed">
+                <div className="prose max-w-none text-sm leading-normal">
                   {parse(currentSoal.soal || '')}
                 </div>
 
@@ -747,68 +764,93 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                   value={jawaban[currentSoal.id] || ''}
                   onValueChange={(value) => handleSelectJawaban(currentSoal.id, value)}
                 >
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     <div className={cn(
-                      "flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                      jawaban[currentSoal.id] === 'A' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      jawaban[currentSoal.id] === 'A' 
+                        ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
                       <RadioGroupItem value="A" id="option-a" className="mt-1" />
                       <Label htmlFor="option-a" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">A.</span>
                         <span className="inline">{parse(currentSoal.pilihanA || '')}</span>
                       </Label>
+                      {jawaban[currentSoal.id] === 'A' && (
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      )}
                     </div>
 
                     <div className={cn(
-                      "flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                      jawaban[currentSoal.id] === 'B' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      jawaban[currentSoal.id] === 'B' 
+                        ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
                       <RadioGroupItem value="B" id="option-b" className="mt-1" />
                       <Label htmlFor="option-b" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">B.</span>
                         <span className="inline">{parse(currentSoal.pilihanB || '')}</span>
                       </Label>
+                      {jawaban[currentSoal.id] === 'B' && (
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      )}
                     </div>
 
                     <div className={cn(
-                      "flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                      jawaban[currentSoal.id] === 'C' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      jawaban[currentSoal.id] === 'C' 
+                        ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
                       <RadioGroupItem value="C" id="option-c" className="mt-1" />
                       <Label htmlFor="option-c" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">C.</span>
                         <span className="inline">{parse(currentSoal.pilihanC || '')}</span>
                       </Label>
+                      {jawaban[currentSoal.id] === 'C' && (
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      )}
                     </div>
 
                     <div className={cn(
-                      "flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                      jawaban[currentSoal.id] === 'D' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      jawaban[currentSoal.id] === 'D' 
+                        ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                        : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
                       <RadioGroupItem value="D" id="option-d" className="mt-1" />
                       <Label htmlFor="option-d" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">D.</span>
                         <span className="inline">{parse(currentSoal.pilihanD || '')}</span>
                       </Label>
+                      {jawaban[currentSoal.id] === 'D' && (
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                      )}
                     </div>
 
                     {currentSoal.pilihanE && (
                       <div className={cn(
-                        "flex items-start gap-3 p-4 rounded-lg border-2 cursor-pointer transition-colors",
-                        jawaban[currentSoal.id] === 'E' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'
+                        "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                        jawaban[currentSoal.id] === 'E' 
+                          ? 'border-blue-500 bg-blue-50 shadow-sm' 
+                          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                       )}>
                         <RadioGroupItem value="E" id="option-e" className="mt-1" />
                         <Label htmlFor="option-e" className="flex-1 cursor-pointer">
                           <span className="font-semibold mr-2">E.</span>
                           <span className="inline">{parse(currentSoal.pilihanE || '')}</span>
                         </Label>
+                        {jawaban[currentSoal.id] === 'E' && (
+                          <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        )}
                       </div>
                     )}
                   </div>
                 </RadioGroup>
 
                 {/* Navigation Buttons */}
-                <div className="flex justify-between pt-4">
+                <div className="flex justify-between pt-2">
                   <Button
                     variant="outline"
                     onClick={() => setCurrentSoalIndex(prev => Math.max(0, prev - 1))}
@@ -876,7 +918,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
             </Button>
 
             {showNavigasi && (
-              <Card className="sticky top-24 w-64">
+              <Card className="rounded-md shadow-sm sticky top-24 w-64">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm">Navigasi Soal</CardTitle>
                   <CardDescription className="text-xs">

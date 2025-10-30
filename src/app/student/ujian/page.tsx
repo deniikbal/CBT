@@ -176,11 +176,11 @@ export default function UjianSayaPage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-3 md:space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Ujian Saya</h1>
-        <p className="text-sm md:text-base text-gray-600 mt-1">Daftar ujian yang tersedia untuk Anda</p>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Ujian Saya</h1>
+        <p className="text-xs md:text-sm text-gray-600 mt-1">Daftar ujian yang tersedia untuk Anda</p>
       </div>
 
       {/* Sedang Dikerjakan Alert */}
@@ -205,21 +205,21 @@ export default function UjianSayaPage() {
 
       {/* Sedang Dikerjakan (Belum Selesai) */}
       {sedangDikerjakan.length > 0 && (
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-lg md:text-xl font-semibold text-orange-700 flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 shrink-0" />
+        <div className="space-y-2 md:space-y-3">
+          <h2 className="text-base md:text-lg font-semibold text-orange-700 flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
             Sedang Dikerjakan ({sedangDikerjakan.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {sedangDikerjakan.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const isExpired = status.status === 'expired'
               
               return (
-                <Card key={jadwal.id} className="border-orange-500 border-2 shadow-lg bg-orange-50">
-                  <CardHeader className="pb-3">
+                <Card key={jadwal.id} className="rounded-md border-orange-500 border-2 shadow-md bg-orange-50">
+                  <CardHeader className="pb-2">
                     <div className="flex justify-between items-start mb-2 gap-2">
-                      <CardTitle className="text-base md:text-lg line-clamp-2">{jadwal.namaUjian}</CardTitle>
+                      <CardTitle className="text-sm md:text-base line-clamp-2">{jadwal.namaUjian}</CardTitle>
                       <Badge className="bg-orange-500 text-xs shrink-0">
                         <AlertCircle className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">Belum Selesai</span>
@@ -273,21 +273,21 @@ export default function UjianSayaPage() {
 
       {/* Sedang Berlangsung (Belum Dimulai) */}
       {activeUjian.length > 0 && (
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-lg md:text-xl font-semibold text-green-700 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 shrink-0" />
+        <div className="space-y-2 md:space-y-3">
+          <h2 className="text-base md:text-lg font-semibold text-green-700 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 shrink-0" />
             Sedang Berlangsung ({activeUjian.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {activeUjian.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const StatusIcon = status.icon
               
               return (
-                <Card key={jadwal.id} className="border-green-500 border-2 shadow-lg">
-                  <CardHeader className="pb-3">
+                <Card key={jadwal.id} className="rounded-md border-green-500 border-2 shadow-md">
+                  <CardHeader className="pb-2">
                     <div className="flex justify-between items-start mb-2 gap-2">
-                      <CardTitle className="text-base md:text-lg line-clamp-2">{jadwal.namaUjian}</CardTitle>
+                      <CardTitle className="text-sm md:text-base line-clamp-2">{jadwal.namaUjian}</CardTitle>
                       <Badge className={`${status.color} text-xs shrink-0`}>
                         <StatusIcon className="h-3 w-3 mr-1" />
                         <span className="hidden sm:inline">{status.label}</span>
@@ -335,18 +335,18 @@ export default function UjianSayaPage() {
 
       {/* Akan Datang */}
       {upcomingUjian.length > 0 && (
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-lg md:text-xl font-semibold text-blue-700 flex items-center gap-2">
-            <Clock className="h-5 w-5 shrink-0" />
+        <div className="space-y-2 md:space-y-3">
+          <h2 className="text-base md:text-lg font-semibold text-blue-700 flex items-center gap-2">
+            <Clock className="h-4 w-4 shrink-0" />
             Akan Datang ({upcomingUjian.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {upcomingUjian.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const StatusIcon = status.icon
               
               return (
-                <Card key={jadwal.id}>
+                <Card key={jadwal.id} className="rounded-md shadow-sm">
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{jadwal.namaUjian}</CardTitle>
@@ -393,12 +393,12 @@ export default function UjianSayaPage() {
 
       {/* Sudah Berakhir */}
       {expiredUjian.length > 0 && (
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-lg md:text-xl font-semibold text-gray-700 flex items-center gap-2">
-            <XCircle className="h-5 w-5 shrink-0" />
+        <div className="space-y-2 md:space-y-3">
+          <h2 className="text-base md:text-lg font-semibold text-gray-700 flex items-center gap-2">
+            <XCircle className="h-4 w-4 shrink-0" />
             Sudah Berakhir ({expiredUjian.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {expiredUjian.map((jadwal) => {
               const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               const StatusIcon = status.icon
@@ -445,19 +445,19 @@ export default function UjianSayaPage() {
 
       {/* Sudah Selesai */}
       {selesaiUjian.length > 0 && (
-        <div className="space-y-3 md:space-y-4">
-          <h2 className="text-lg md:text-xl font-semibold text-green-700 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 shrink-0" />
+        <div className="space-y-2 md:space-y-3">
+          <h2 className="text-base md:text-lg font-semibold text-green-700 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4 shrink-0" />
             Sudah Selesai ({selesaiUjian.length})
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {selesaiUjian.map((jadwal) => {
               const persentase = jadwal.hasilUjian?.skor && jadwal.hasilUjian?.skorMaksimal
                 ? Math.round((jadwal.hasilUjian.skor / jadwal.hasilUjian.skorMaksimal) * 100)
                 : null
 
               return (
-                <Card key={jadwal.id} className="border-green-200 bg-green-50/30">
+                <Card key={jadwal.id} className="rounded-md shadow-sm border-green-200 bg-green-50/30">
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{jadwal.namaUjian}</CardTitle>
@@ -533,7 +533,7 @@ export default function UjianSayaPage() {
 
       {/* Empty State */}
       {jadwalList.length === 0 && (
-        <Card>
+        <Card className="rounded-md shadow-sm">
           <CardContent className="py-12 text-center text-gray-500">
             <BookOpen className="h-16 w-16 mx-auto text-gray-400 mb-4" />
             <p className="text-lg font-medium">Tidak ada ujian tersedia</p>

@@ -161,23 +161,23 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-3 md:space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-sm md:text-base text-gray-600 mt-1">Selamat datang, {peserta?.name}!</p>
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Dashboard</h1>
+        <p className="text-xs md:text-sm text-gray-600 mt-1">Selamat datang, {peserta?.name}!</p>
       </div>
 
       {/* Profile Card */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
-        <Card className="lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
+        <Card className="lg:col-span-1 rounded-md shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <User className="h-4 w-4" />
               Profil Saya
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2">
             <div>
               <p className="text-sm text-gray-600">Nama</p>
               <p className="font-medium">{peserta?.name}</p>
@@ -205,10 +205,10 @@ export default function StudentDashboard() {
         </Card>
 
         {/* Stats Cards */}
-        <div className="lg:col-span-2 grid grid-cols-2 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xs md:text-sm font-medium text-gray-600">Total Ujian</CardTitle>
+        <div className="lg:col-span-2 grid grid-cols-2 gap-3">
+          <Card className="rounded-md shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-gray-600">Total Ujian</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -221,9 +221,9 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-xs md:text-sm font-medium text-gray-600">Ujian Selesai</CardTitle>
+          <Card className="rounded-md shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-medium text-gray-600">Ujian Selesai</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -240,10 +240,10 @@ export default function StudentDashboard() {
 
       {/* Ujian Tersedia */}
       <div>
-        <h2 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4">Ujian Tersedia</h2>
+        <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">Ujian Tersedia</h2>
         
         {jadwalList.filter(j => !j.sudahDikerjakan).length === 0 ? (
-          <Card>
+          <Card className="rounded-md shadow-sm">
             <CardContent className="py-8 md:py-12 text-center text-gray-500">
               <BookOpen className="h-12 md:h-16 w-12 md:w-16 mx-auto text-gray-400 mb-4" />
               <p className="text-base md:text-lg font-medium">Tidak ada ujian tersedia</p>
@@ -251,15 +251,15 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {jadwalList.filter(j => !j.sudahDikerjakan).map((jadwal) => {
               const isActive = isUjianActive(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               
               return (
-                <Card key={jadwal.id} className={isActive ? 'border-green-500 border-2' : ''}>
-                  <CardHeader className="pb-3">
+                <Card key={jadwal.id} className={isActive ? 'border-green-500 border-2 rounded-md shadow-sm' : 'rounded-md shadow-sm'}>
+                  <CardHeader className="pb-2">
                     <div className="flex justify-between items-start gap-2">
-                      <CardTitle className="text-base md:text-lg">{jadwal.namaUjian}</CardTitle>
+                      <CardTitle className="text-sm md:text-base">{jadwal.namaUjian}</CardTitle>
                       {isActive && (
                         <Badge className="bg-green-600 text-xs shrink-0">Berlangsung</Badge>
                       )}
@@ -303,10 +303,10 @@ export default function StudentDashboard() {
       {/* Ujian Sudah Selesai */}
       {jadwalList.filter(j => j.sudahDikerjakan).length > 0 && (
         <div>
-          <h2 className="text-xl md:text-2xl font-semibold mb-3 md:mb-4">Ujian Sudah Selesai</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">Ujian Sudah Selesai</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {jadwalList.filter(j => j.sudahDikerjakan).map((jadwal) => (
-              <Card key={jadwal.id} className="border-green-200 bg-green-50/30 opacity-75">
+              <Card key={jadwal.id} className="rounded-md shadow-sm border-green-200 bg-green-50/30 opacity-75">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg text-gray-700">{jadwal.namaUjian}</CardTitle>

@@ -24,7 +24,7 @@ export default function ExamAgreementDialog({ open, onAgree, examTitle }: ExamAg
 
   return (
     <Dialog open={open} onOpenChange={() => {}}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <Shield className="h-6 w-6 text-blue-600" />
