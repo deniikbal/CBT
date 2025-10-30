@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Calendar, Clock, Users, Loader2, AlertTriangle } from 'lucide-react'
+import { Plus, Edit, Trash2, Calendar, Clock, Users, Loader2, AlertTriangle, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -235,6 +235,29 @@ export default function JadwalUjianPage() {
       toast.error('Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleExportKartu = async (jadwalId: string, namaUjian: string) => {
+    try {
+      const response = await fetch(`/api/jadwal-ujian/${jadwalId}/export-kartu`)
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Kartu-Ujian-${namaUjian.replace(/\s+/g, '-')}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success('Kartu ujian berhasil diunduh')
+      } else {
+        toast.error('Gagal mengunduh kartu ujian')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Terjadi kesalahan saat mengunduh kartu ujian')
     }
   }
 
@@ -513,6 +536,14 @@ export default function JadwalUjianPage() {
                 accessor: () => null,
                 cell: (row) => (
                   <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleExportKartu(row.id, row.namaUjian)}
+                      title="Export Kartu Ujian PDF"
+                    >
+                      <Download className="h-4 w-4 text-blue-600" />
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
                       <Edit className="h-4 w-4" />
                     </Button>
