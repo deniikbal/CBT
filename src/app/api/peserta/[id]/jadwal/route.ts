@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, jadwalUjianPeserta, bankSoal, kelas, hasilUjianPeserta, peserta } from '@/db/schema';
-import { eq, desc, and, or } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 
 // GET jadwal ujian for specific peserta
 export async function GET(
@@ -33,11 +33,10 @@ export async function GET(
 
     let jadwalList;
     try {
-      // Fetch jadwal yang:
-      // 1. Peserta sudah terdaftar di jadwalUjianPeserta, ATAU
-      // 2. Jadwal dibuat untuk kelas peserta (kelasId match)
-      jadwalList = await db
-        .selectDistinct({
+      // Fetch jadwal dari 2 sumber:
+      // 1. Jadwal dimana peserta terdaftar explicit di jadwalUjianPeserta
+      const jadwalExplicit = await db
+        .select({
           id: jadwalUjian.id,
           namaUjian: jadwalUjian.namaUjian,
           bankSoalId: jadwalUjian.bankSoalId,
@@ -50,28 +49,42 @@ export async function GET(
           tampilkanNilai: jadwalUjian.tampilkanNilai,
           bankSoalKode: bankSoal.kodeBankSoal,
         })
-        .from(jadwalUjian)
+        .from(jadwalUjianPeserta)
+        .innerJoin(jadwalUjian, eq(jadwalUjianPeserta.jadwalUjianId, jadwalUjian.id))
         .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
-        .where(
-          or(
-            // Case 1: Peserta terdaftar di jadwal ini
-            db.exists(
-              db
-                .select()
-                .from(jadwalUjianPeserta)
-                .where(
-                  and(
-                    eq(jadwalUjianPeserta.jadwalUjianId, jadwalUjian.id),
-                    eq(jadwalUjianPeserta.pesertaId, pesertaId)
-                  )
-                )
-            )
-            ,
-            // Case 2: Jadwal dibuat untuk kelas peserta
-            eq(jadwalUjian.kelasId, pesertaData.kelasId)
-          )
-        )
-        .orderBy(desc(jadwalUjian.tanggalUjian));
+        .where(eq(jadwalUjianPeserta.pesertaId, pesertaId));
+
+      // 2. Jadwal untuk kelas peserta (jika kelasId tidak null)
+      let jadwalKelas = [];
+      if (pesertaData.kelasId) {
+        jadwalKelas = await db
+          .select({
+            id: jadwalUjian.id,
+            namaUjian: jadwalUjian.namaUjian,
+            bankSoalId: jadwalUjian.bankSoalId,
+            tanggalUjian: jadwalUjian.tanggalUjian,
+            jamMulai: jadwalUjian.jamMulai,
+            durasi: jadwalUjian.durasi,
+            minimumPengerjaan: jadwalUjian.minimumPengerjaan,
+            acakSoal: jadwalUjian.acakSoal,
+            acakOpsi: jadwalUjian.acakOpsi,
+            tampilkanNilai: jadwalUjian.tampilkanNilai,
+            bankSoalKode: bankSoal.kodeBankSoal,
+          })
+          .from(jadwalUjian)
+          .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
+          .where(eq(jadwalUjian.kelasId, pesertaData.kelasId));
+      }
+
+      // Merge dan deduplicate
+      const jadwalMap = new Map();
+      [...jadwalExplicit, ...jadwalKelas].forEach(jadwal => {
+        jadwalMap.set(jadwal.id, jadwal);
+      });
+
+      // Convert to array dan sort
+      jadwalList = Array.from(jadwalMap.values())
+        .sort((a, b) => new Date(b.tanggalUjian).getTime() - new Date(a.tanggalUjian).getTime());
       
       console.log('[API] Found', jadwalList.length, 'jadwal');
     } catch (queryError) {
