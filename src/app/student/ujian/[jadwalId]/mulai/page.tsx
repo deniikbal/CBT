@@ -154,13 +154,13 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     }
   }, [jawaban, jadwalId])
 
-  // Periodic auto-save ke database (setiap 30 detik)
+  // Periodic auto-save ke database (setiap 10 detik)
   useEffect(() => {
     if (!hasilId || submitting) return
 
     const autoSaveInterval = setInterval(() => {
       saveProgress()
-    }, 30000) // 30 seconds
+    }, 10000) // 10 seconds (faster for real-time monitoring)
 
     return () => clearInterval(autoSaveInterval)
   }, [hasilId, jawaban, submitting])

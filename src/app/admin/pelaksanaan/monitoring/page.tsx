@@ -119,7 +119,7 @@ export default function MonitoringPage() {
     fetchActiveExams()
   }, [])
 
-  // Auto refresh every 10 seconds
+  // Auto refresh every 5 seconds (faster for real-time monitoring)
   useEffect(() => {
     if (!autoRefresh) return
 
@@ -128,7 +128,7 @@ export default function MonitoringPage() {
       if (selectedExam) {
         fetchActivities(selectedExam.id)
       }
-    }, 10000)
+    }, 5000) // 5 seconds
 
     return () => clearInterval(interval)
   }, [autoRefresh, selectedExam])
