@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { peserta, kelas, jurusan } from '@/db/schema'
 import { eq, desc } from 'drizzle-orm'
-import bcrypt from 'bcryptjs'
 
 // GET - Ambil semua peserta dengan data kelas dan jurusan
 export async function GET() {
@@ -83,13 +82,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
-
+    // Store password as plain text for kartu ujian display
+    // For login, compare plain text password
     const [newPeserta] = await db.insert(peserta).values({
       name,
       noUjian,
-      password: hashedPassword,
+      password: password,
       kelasId,
       jurusanId
     }).returning()

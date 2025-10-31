@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Calendar, Clock, Users, Loader2, AlertTriangle } from 'lucide-react'
+import { Plus, Edit, Trash2, Calendar, Clock, Users, Loader2, AlertTriangle, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -81,6 +81,8 @@ export default function JadwalUjianPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [loadingExport, setLoadingExport] = useState<Set<string>>(new Set())
   
   const [formData, setFormData] = useState({
     namaUjian: '',
@@ -98,6 +100,10 @@ export default function JadwalUjianPage() {
   })
 
   useEffect(() => {
+    const storedUser = localStorage.getItem('user')
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser))
+    }
     fetchJadwal()
     fetchBankSoal()
     fetchMataPelajaran()
@@ -125,7 +131,9 @@ export default function JadwalUjianPage() {
 
   const fetchJadwal = async () => {
     try {
-      const response = await fetch('/api/jadwal-ujian')
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      const url = user.role === 'USER' ? `/api/jadwal-ujian?createdById=${user.id}` : '/api/jadwal-ujian'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setJadwalList(data)
@@ -139,7 +147,9 @@ export default function JadwalUjianPage() {
 
   const fetchBankSoal = async () => {
     try {
-      const response = await fetch('/api/bank-soal')
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      const url = user.role === 'USER' ? `/api/bank-soal?createdById=${user.id}` : '/api/bank-soal'
+      const response = await fetch(url)
       if (response.ok) {
         const data = await response.json()
         setBankSoalList(data)
@@ -198,11 +208,17 @@ export default function JadwalUjianPage() {
     try {
       const url = editingId ? `/api/jadwal-ujian/${editingId}` : '/api/jadwal-ujian'
       const method = editingId ? 'PUT' : 'POST'
+      const user = currentUser || JSON.parse(localStorage.getItem('user') || '{}')
+      
+      const payload = {
+        ...formData,
+        ...(method === 'POST' && { createdBy: user.id })
+      }
 
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       })
 
       const data = await response.json()
@@ -220,6 +236,41 @@ export default function JadwalUjianPage() {
       toast.error('Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleExportKartu = async (jadwalId: string, namaUjian: string) => {
+    try {
+      // Set loading state
+      setLoadingExport(prev => new Set(prev).add(jadwalId))
+
+      const response = await fetch(`/api/jadwal-ujian/${jadwalId}/export-kartu`)
+      
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Kartu-Ujian-${namaUjian.replace(/\s+/g, '-')}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+        toast.success('Kartu ujian berhasil diunduh')
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        toast.error(errorData.error || 'Gagal mengunduh kartu ujian')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Terjadi kesalahan saat mengunduh kartu ujian')
+    } finally {
+      // Remove loading state
+      setLoadingExport(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(jadwalId)
+        return newSet
+      })
     }
   }
 
@@ -498,6 +549,20 @@ export default function JadwalUjianPage() {
                 accessor: () => null,
                 cell: (row) => (
                   <div className="flex justify-end gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleExportKartu(row.id, row.namaUjian)}
+                      title="Export Kartu Ujian PDF"
+                      disabled={loadingExport.has(row.id)}
+                      className="relative"
+                    >
+                      {loadingExport.has(row.id) ? (
+                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 text-blue-600" />
+                      )}
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
                       <Edit className="h-4 w-4" />
                     </Button>

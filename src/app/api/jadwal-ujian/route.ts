@@ -6,11 +6,15 @@ import { eq, desc } from 'drizzle-orm';
 // GET all jadwal ujian
 export async function GET(request: NextRequest) {
   try {
-    const jadwalList = await db
+    const { searchParams } = new URL(request.url)
+    const createdById = searchParams.get('createdById')
+
+    let query = db
       .select({
         id: jadwalUjian.id,
         namaUjian: jadwalUjian.namaUjian,
         bankSoalId: jadwalUjian.bankSoalId,
+        createdBy: jadwalUjian.createdBy,
         kelasId: jadwalUjian.kelasId,
         tanggalUjian: jadwalUjian.tanggalUjian,
         jamMulai: jadwalUjian.jamMulai,
@@ -32,7 +36,13 @@ export async function GET(request: NextRequest) {
       .from(jadwalUjian)
       .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
       .leftJoin(kelas, eq(jadwalUjian.kelasId, kelas.id))
-      .orderBy(desc(jadwalUjian.createdAt));
+
+    // Filter by createdBy if provided
+    if (createdById) {
+      query = query.where(eq(jadwalUjian.createdBy, createdById))
+    }
+
+    const jadwalList = await query.orderBy(desc(jadwalUjian.createdAt))
 
     return NextResponse.json(jadwalList);
   } catch (error) {
@@ -61,12 +71,13 @@ export async function POST(request: NextRequest) {
       acakSoal,
       acakOpsi,
       tampilkanNilai,
+      createdBy,
     } = body;
 
     // Validate required fields
-    if (!namaUjian || !bankSoalId || !tanggalUjian || !jamMulai || !durasi) {
+    if (!namaUjian || !bankSoalId || !tanggalUjian || !jamMulai || !durasi || !createdBy) {
       return NextResponse.json(
-        { error: 'Nama ujian, bank soal, tanggal, jam mulai, dan durasi harus diisi' },
+        { error: 'Nama ujian, bank soal, tanggal, jam mulai, durasi, dan userId harus diisi' },
         { status: 400 }
       );
     }
@@ -98,6 +109,7 @@ export async function POST(request: NextRequest) {
       .values({
         namaUjian,
         bankSoalId,
+        createdBy,
         kelasId: kelasId || null,
         tanggalUjian: new Date(tanggalUjian),
         jamMulai,

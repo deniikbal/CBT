@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { jadwalUjian, jadwalUjianPeserta, bankSoal, kelas, hasilUjianPeserta } from '@/db/schema';
+import { jadwalUjian, jadwalUjianPeserta, bankSoal, kelas, hasilUjianPeserta, peserta } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 
 // GET jadwal ujian for specific peserta
@@ -13,9 +13,29 @@ export async function GET(
     
     console.log('[API] Fetching jadwal for peserta:', pesertaId);
 
+    // First, get peserta's kelas
+    const [pesertaData] = await db
+      .select({
+        kelasId: peserta.kelasId,
+      })
+      .from(peserta)
+      .where(eq(peserta.id, pesertaId))
+      .limit(1);
+
+    if (!pesertaData) {
+      return NextResponse.json(
+        { error: 'Peserta tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+
+    console.log('[API] Peserta kelas:', pesertaData.kelasId);
+
     let jadwalList;
     try {
-      jadwalList = await db
+      // Fetch jadwal dari 2 sumber:
+      // 1. Jadwal dimana peserta terdaftar explicit di jadwalUjianPeserta
+      const jadwalExplicit = await db
         .select({
           id: jadwalUjian.id,
           namaUjian: jadwalUjian.namaUjian,
@@ -32,8 +52,39 @@ export async function GET(
         .from(jadwalUjianPeserta)
         .innerJoin(jadwalUjian, eq(jadwalUjianPeserta.jadwalUjianId, jadwalUjian.id))
         .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
-        .where(eq(jadwalUjianPeserta.pesertaId, pesertaId))
-        .orderBy(desc(jadwalUjian.tanggalUjian));
+        .where(eq(jadwalUjianPeserta.pesertaId, pesertaId));
+
+      // 2. Jadwal untuk kelas peserta (jika kelasId tidak null)
+      let jadwalKelas = [];
+      if (pesertaData.kelasId) {
+        jadwalKelas = await db
+          .select({
+            id: jadwalUjian.id,
+            namaUjian: jadwalUjian.namaUjian,
+            bankSoalId: jadwalUjian.bankSoalId,
+            tanggalUjian: jadwalUjian.tanggalUjian,
+            jamMulai: jadwalUjian.jamMulai,
+            durasi: jadwalUjian.durasi,
+            minimumPengerjaan: jadwalUjian.minimumPengerjaan,
+            acakSoal: jadwalUjian.acakSoal,
+            acakOpsi: jadwalUjian.acakOpsi,
+            tampilkanNilai: jadwalUjian.tampilkanNilai,
+            bankSoalKode: bankSoal.kodeBankSoal,
+          })
+          .from(jadwalUjian)
+          .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
+          .where(eq(jadwalUjian.kelasId, pesertaData.kelasId));
+      }
+
+      // Merge dan deduplicate
+      const jadwalMap = new Map();
+      [...jadwalExplicit, ...jadwalKelas].forEach(jadwal => {
+        jadwalMap.set(jadwal.id, jadwal);
+      });
+
+      // Convert to array dan sort
+      jadwalList = Array.from(jadwalMap.values())
+        .sort((a, b) => new Date(b.tanggalUjian).getTime() - new Date(a.tanggalUjian).getTime());
       
       console.log('[API] Found', jadwalList.length, 'jadwal');
     } catch (queryError) {
