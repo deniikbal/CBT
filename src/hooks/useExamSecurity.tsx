@@ -30,7 +30,6 @@ export function useExamSecurity({
       const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
       const smallScreen = window.innerWidth < 768
       setIsMobile(mobile || smallScreen)
-      console.log('Device detection:', { mobile, smallScreen, isMobile: mobile || smallScreen })
     }
     
     checkMobile()
@@ -47,7 +46,6 @@ export function useExamSecurity({
   ) => {
     // Skip if not ready yet
     if (!hasilUjianId || hasilUjianId === 'pending' || !pesertaId || pesertaId === 'pending') {
-      console.log('Skipping log activity, not ready:', { hasilUjianId, pesertaId })
       return
     }
 
@@ -77,23 +75,37 @@ export function useExamSecurity({
       // Get IP address (optional, fallback if API fails)
       let ipAddress = null
       try {
-        const ipResponse = await fetch('https://api.ipify.org?format=json')
-        const ipData = await ipResponse.json()
-        ipAddress = ipData.ip
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+        
+        const ipResponse = await fetch('https://api.ipify.org?format=json', {
+          signal: controller.signal
+        })
+        clearTimeout(timeoutId)
+        
+        if (ipResponse.ok) {
+          const ipData = await ipResponse.json()
+          ipAddress = ipData.ip
+        }
       } catch (error) {
-        console.log('Could not fetch IP:', error)
+        // Silently fail - IP tracking is optional
+        // No need to log error to console
       }
 
       // Save session to database
-      await fetch('/api/ujian/update-session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          hasilUjianId,
-          sessionId: sessionId.current,
-          ipAddress,
-        }),
-      })
+      try {
+        await fetch('/api/ujian/update-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hasilUjianId,
+            sessionId: sessionId.current,
+            ipAddress,
+          }),
+        })
+      } catch (error) {
+        console.error('Failed to update session:', error)
+      }
 
       // Store session in localStorage
       localStorage.setItem(`exam_session_${hasilUjianId}`, sessionId.current)
@@ -156,8 +168,6 @@ export function useExamSecurity({
       const newCount = blurCount + 1
       setBlurCount(newCount)
       
-      console.log('Blur detected, count:', newCount, 'max:', maxBlurCount)
-      
       // Log activity - call directly without closure
       try {
         await fetch('/api/ujian/log-activity', {
@@ -175,8 +185,6 @@ export function useExamSecurity({
       }
 
       if (newCount >= maxBlurCount) {
-        console.log('Max blur count reached! Disabling account...')
-        
         toast.error(
           `Anda terlalu sering keluar dari tab ujian (${newCount}x). Akun Anda akan dinonaktifkan!`,
           { duration: 8000 }
@@ -200,7 +208,6 @@ export function useExamSecurity({
         
         // Disable account immediately
         try {
-          console.log('Calling disable API for peserta:', pesertaId)
           const response = await fetch(`/api/peserta/${pesertaId}/disable`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -208,7 +215,6 @@ export function useExamSecurity({
           })
           
           const data = await response.json()
-          console.log('Disable API response:', data)
           
           if (response.ok) {
             toast.error('Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.', {
@@ -217,7 +223,6 @@ export function useExamSecurity({
             
             // Logout after 3 seconds
             setTimeout(() => {
-              console.log('Logging out...')
               localStorage.removeItem('peserta')
               window.location.href = '/login'
             }, 3000)
@@ -244,9 +249,9 @@ export function useExamSecurity({
     }
   }, [hasilUjianId, pesertaId, maxBlurCount, blurCount])
 
-  // Fullscreen enforcement - disabled on mobile
+  // Fullscreen enforcement - now enabled on mobile
   useEffect(() => {
-    if (!enableFullscreen || isMobile) return
+    if (!enableFullscreen) return
 
     const handleFullscreenChange = () => {
       const isNowFullscreen = !!document.fullscreenElement
@@ -261,14 +266,17 @@ export function useExamSecurity({
     }
 
     document.addEventListener('fullscreenchange', handleFullscreenChange)
+    // Mobile webkit browsers
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange)
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(() => {})
       }
     }
-  }, [enableFullscreen, isFullscreen, isMobile])
+  }, [enableFullscreen, isFullscreen])
 
   // Disable right-click and keyboard shortcuts
   useEffect(() => {
@@ -375,23 +383,50 @@ export function useExamSecurity({
     }
   }, [hasilUjianId, pesertaId])
 
-  // Fullscreen request function (manual) - disabled on mobile
+  // Fullscreen request function (manual) - now supports mobile
   const requestFullscreen = async (): Promise<boolean> => {
-    if (!enableFullscreen || isMobile) {
-      console.log('Fullscreen skipped:', { enableFullscreen, isMobile })
+    if (!enableFullscreen) {
       return false
     }
 
     try {
-      const elem = document.documentElement
+      const elem = document.documentElement as any
+      
+      // Try standard fullscreen API
       if (elem.requestFullscreen) {
         await elem.requestFullscreen()
-        console.log('Fullscreen activated successfully')
         return true
       }
-      return false
+      // Try webkit fullscreen (iOS Safari)
+      else if (elem.webkitRequestFullscreen) {
+        await elem.webkitRequestFullscreen()
+        return true
+      }
+      // Try webkit enter fullscreen (older iOS)
+      else if (elem.webkitEnterFullscreen) {
+        await elem.webkitEnterFullscreen()
+        return true
+      }
+      // Try moz fullscreen (Firefox)
+      else if (elem.mozRequestFullScreen) {
+        await elem.mozRequestFullScreen()
+        return true
+      }
+      // Try ms fullscreen (IE/Edge)
+      else if (elem.msRequestFullscreen) {
+        await elem.msRequestFullscreen()
+        return true
+      }
+      else {
+        console.warn('Fullscreen API not supported on this device')
+        toast.warning('Browser Anda tidak mendukung mode fullscreen', { duration: 5000 })
+        return false
+      }
     } catch (error) {
       console.error('Fullscreen request error:', error)
+      if (isMobile) {
+        toast.info('Mode fullscreen mungkin tidak tersedia di browser mobile Anda', { duration: 5000 })
+      }
       return false
     }
   }

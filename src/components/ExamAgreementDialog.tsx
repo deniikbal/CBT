@@ -50,7 +50,7 @@ export default function ExamAgreementDialog({ open, onAgree, examTitle }: ExamAg
               <p className="font-semibold mb-2">Yang Dipantau:</p>
               <ul className="space-y-1 ml-4 text-gray-700">
                 <li>• Keluar tab/aplikasi (maks. 5x peringatan)</li>
-                <li>• Mode fullscreen (khusus desktop)</li>
+                <li>• Mode fullscreen (desktop & mobile)</li>
                 <li>• Copy-paste dan right-click dinonaktifkan</li>
                 <li>• Hanya bisa login dari 1 device</li>
               </ul>

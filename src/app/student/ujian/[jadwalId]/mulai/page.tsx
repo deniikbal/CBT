@@ -67,26 +67,8 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     enableRightClickBlock: agreedToTerms && !!hasilId,
   })
 
-  // Load Eruda for mobile debugging (only in development)
-  useEffect(() => {
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-      // Mobile detection
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-      if (isMobile) {
-        const script = document.createElement('script')
-        script.src = 'https://cdn.jsdelivr.net/npm/eruda'
-        document.body.appendChild(script)
-        script.onload = () => {
-          // @ts-ignore
-          if (window.eruda) window.eruda.init()
-        }
-      }
-    }
-  }, [])
-
   // Initialize pesertaId on mount
   useEffect(() => {
-    console.log('[INIT] Initializing peserta data...')
     const storedPeserta = localStorage.getItem('peserta')
     if (!storedPeserta) {
       console.error('[INIT] No peserta data in localStorage, redirecting to login')
@@ -96,7 +78,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
     try {
       const pesertaData = JSON.parse(storedPeserta)
-      console.log('[INIT] Peserta data:', { id: pesertaData.id, name: pesertaData.name, isActive: pesertaData.isActive })
       
       // Check if account is active
       if (pesertaData.isActive === false) {
@@ -109,7 +90,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         return
       }
       
-      console.log('[INIT] Setting pesertaId:', pesertaData.id)
       setPesertaId(pesertaData.id)
     } catch (error) {
       console.error('[INIT] Error parsing peserta data:', error)
@@ -118,22 +98,12 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     }
   }, [router])
 
-  // Log pesertaId changes
+  // Track pesertaId changes
   useEffect(() => {
-    console.log('pesertaId updated to:', pesertaId)
+    // pesertaId is ready
   }, [pesertaId])
 
-  // Check localStorage for existing agreement
-  useEffect(() => {
-    const agreementKey = `exam_agreement_${jadwalId}`
-    const hasAgreed = localStorage.getItem(agreementKey)
-    
-    if (hasAgreed === 'true') {
-      console.log('[AGREEMENT] Found existing agreement in localStorage')
-      setShowAgreement(false)
-      setAgreedToTerms(true)
-    }
-  }, [jadwalId])
+  // Agreement will always show on page load (no localStorage check)
 
   // Fetch jadwal info for agreement dialog
   useEffect(() => {
@@ -145,41 +115,26 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     
   // Start exam after agreement
   useEffect(() => {
-    console.log('=== START EXAM USEEFFECT ===')
-    console.log('Checking start exam conditions:', { 
-      agreedToTerms, 
-      hasilId, 
-      pesertaId, 
-      jadwalId,
-      loading 
-    })
-    
     if (!agreedToTerms) {
-      console.log('Waiting for agreement...')
       return
     }
     
     if (hasilId) {
-      console.log('Exam already started, hasilId exists:', hasilId)
       return
     }
     
     if (!pesertaId) {
-      console.log('pesertaId not ready yet, waiting...')
       return
     }
     
     if (!jadwalId) {
-      console.log('jadwalId missing')
       return
     }
     
     if (loading) {
-      console.log('Already loading, skip...')
       return
     }
     
-    console.log('All conditions met, starting ujian...')
     const storedPeserta = localStorage.getItem('peserta')
     if (storedPeserta) {
       const pesertaData = JSON.parse(storedPeserta)
@@ -235,11 +190,9 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
   const fetchJadwalInfo = async () => {
     try {
-      console.log('Fetching jadwal info for:', jadwalId)
       const response = await fetch(`/api/ujian/${jadwalId}/info`)
       if (response.ok) {
         const data = await response.json()
-        console.log('Jadwal info fetched:', data)
         setJadwal({
           id: data.id,
           namaUjian: data.namaUjian,
@@ -258,46 +211,29 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   }
 
   const startUjian = async (pesertaId: string) => {
-    console.log('[START] Starting exam for peserta:', pesertaId)
-    console.log('[START] Jadwal ID:', jadwalId)
     setLoading(true)
     
     try {
-      console.log('[START] Fetching API:', `/api/ujian/${jadwalId}/start`)
       const response = await fetch(`/api/ujian/${jadwalId}/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pesertaId })
       })
 
-      console.log('[START] Response status:', response.status)
-      console.log('[START] Response OK:', response.ok)
-
       if (!response.ok) {
         const data = await response.json()
-        console.error('[START] Failed to start ujian:', data)
-        console.error('[START] Error:', data.error)
-        console.error('[START] Will redirect to /student/ujian after 3 seconds')
-        
         toast.error(data.error || 'Gagal memulai ujian', { duration: 5000 })
         
         // Don't redirect immediately, let user see the error
         setTimeout(() => {
-          console.error('[START] Redirecting now...')
           router.push('/student/ujian')
         }, 3000)
         return
       }
 
       const data = await response.json()
-      console.log('[START] Response data:', { 
-        hasilId: data.hasilId, 
-        soalCount: data.soal?.length,
-        jadwalNama: data.jadwal?.namaUjian 
-      })
 
       if (!data.hasilId) {
-        console.error('[START] Missing hasilId in response:', data)
         toast.error('Data ujian tidak lengkap (hasilId)')
         setTimeout(() => {
           router.push('/student/ujian')
@@ -306,7 +242,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       }
 
       if (!data.soal || data.soal.length === 0) {
-        console.error('[START] Missing soal in response:', data)
         toast.error('Data ujian tidak lengkap (soal)')
         setTimeout(() => {
           router.push('/student/ujian')
@@ -315,15 +250,12 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       }
 
       if (!data.jadwal) {
-        console.error('[START] Missing jadwal in response:', data)
         toast.error('Data ujian tidak lengkap (jadwal)')
         setTimeout(() => {
           router.push('/student/ujian')
         }, 3000)
         return
       }
-
-      console.log('[START] All data valid, setting state...')
       setJadwal(data.jadwal)
       setSoalList(data.soal)
       setHasilId(data.hasilId)
@@ -363,23 +295,13 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       
       setTimeLeft(secondsLeft)
       setLoading(false)
-      
-      console.log('[START] ✅ Ujian started successfully!')
-      console.log('[START] State:', { 
-        hasilId: data.hasilId, 
-        soalCount: data.soal.length,
-        agreedToTerms: true,
-        loading: false
-      })
     } catch (error) {
-      console.error('[START] ❌ Exception error starting ujian:', error)
-      console.error('[START] Error details:', error instanceof Error ? error.message : String(error))
+      console.error('[START] Exception error starting ujian:', error)
       toast.error('Terjadi kesalahan saat memulai ujian', { duration: 5000 })
       setLoading(false)
       
       // Don't redirect immediately
       setTimeout(() => {
-        console.error('[START] Redirecting due to exception...')
         router.push('/student/ujian')
       }, 3000)
     }
@@ -453,12 +375,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         jawaban
       }
 
-      console.log('Submitting exam:', { 
-        pesertaId: submitData.pesertaId, 
-        hasilId: submitData.hasilId, 
-        jawabanCount: Object.keys(submitData.jawaban).length 
-      })
-
       const response = await fetch(`/api/ujian/${jadwalId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -472,8 +388,6 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         console.error('Failed to parse response:', parseError)
         data = { error: 'Server error: Invalid response format' }
       }
-      
-      console.log('Submit response:', response.status, data)
 
       if (response.ok) {
         // Clear localStorage setelah submit berhasil
@@ -522,39 +436,21 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
 
   // Agreement handler
   const handleAgreeToTerms = async () => {
-    console.log('[AGREEMENT] Agreement accepted, starting exam...')
-    
-    // Save agreement to localStorage
-    const agreementKey = `exam_agreement_${jadwalId}`
-    localStorage.setItem(agreementKey, 'true')
-    console.log('[AGREEMENT] Saved agreement to localStorage')
-    
-    // Detect if mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
-    console.log('[AGREEMENT] Device detection:', {
-      userAgent: navigator.userAgent,
-      screenWidth: window.innerWidth,
-      isMobile
-    })
-    
-    // Request fullscreen only on desktop
-    if (!isMobile && requestFullscreen) {
-      console.log('[AGREEMENT] Requesting fullscreen (desktop)...')
+    // Request fullscreen for all devices (desktop and mobile)
+    if (requestFullscreen) {
       try {
         const success = await requestFullscreen()
         if (success) {
-          console.log('[AGREEMENT] Fullscreen mode activated')
+          toast.success('Mode fullscreen aktif', { duration: 2000 })
         } else {
-          console.log('[AGREEMENT] Fullscreen not activated, continuing without it')
+          toast.info('Mode fullscreen tidak tersedia di browser Anda', { duration: 3000 })
         }
       } catch (error) {
         console.error('[AGREEMENT] Fullscreen error:', error)
+        toast.info('Tidak dapat mengaktifkan fullscreen, lanjut tanpa mode fullscreen', { duration: 3000 })
       }
-    } else {
-      console.log('[AGREEMENT] Skipping fullscreen (mobile device)')
     }
     
-    console.log('[AGREEMENT] Setting agreedToTerms to true')
     setShowAgreement(false)
     setAgreedToTerms(true)
   }
@@ -659,17 +555,11 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     )
   }
 
+  // Skip error display if data is still loading
+  // Modal petunjuk will show first, then data will load
   if (!jadwal || soalList.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Alert variant="destructive" className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Tidak dapat memuat soal ujian. Silakan hubungi pengawas.
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
+    // Return nothing, let the agreement dialog show
+    return null
   }
 
   const currentSoal = soalList[currentSoalIndex]
@@ -861,26 +751,28 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                   </Button>
 
                   {currentSoalIndex === totalSoal - 1 ? (
-                    <div className="flex flex-col items-end gap-2">
-                      {totalSoal - getJumlahDijawab() > 0 && !timeExpired && (
-                        <span className="text-xs text-orange-600">
-                          {totalSoal - getJumlahDijawab()} soal belum dijawab
-                        </span>
+                    <Button
+                      className={cn(
+                        "text-white",
+                        timeExpired 
+                          ? "bg-red-600 hover:bg-red-700 animate-pulse" 
+                          : "bg-green-600 hover:bg-green-700"
                       )}
-                      <Button
-                        className={cn(
-                          "text-white",
-                          timeExpired 
-                            ? "bg-red-600 hover:bg-red-700 animate-pulse" 
-                            : "bg-green-600 hover:bg-green-700"
-                        )}
-                        onClick={() => setShowSubmitDialog(true)}
-                        disabled={submitting}
-                      >
-                        <Send className="h-4 w-4 mr-2" />
-                        {timeExpired ? 'Submit Sekarang!' : 'Submit Ujian'}
-                      </Button>
-                    </div>
+                      onClick={() => {
+                        const unanswered = totalSoal - getJumlahDijawab()
+                        if (unanswered > 0) {
+                          toast.warning(`Masih ada ${unanswered} soal yang belum dijawab!`, {
+                            duration: 4000,
+                            description: 'Anda tetap bisa submit, tapi soal kosong akan dianggap salah.'
+                          })
+                        }
+                        setShowSubmitDialog(true)
+                      }}
+                      disabled={submitting}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {timeExpired ? 'Submit Sekarang!' : 'Submit Ujian'}
+                    </Button>
                   ) : (
                     <Button
                       variant="outline"
@@ -1065,8 +957,8 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
             {totalSoal - getJumlahDijawab() === 0 && (
               <Alert className="mt-4 border-green-500 bg-green-50">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  Semua soal sudah dijawab. Anda dapat submit sekarang.
+                <AlertDescription className="text-green-800 text-sm">
+                  Semua soal sudah dijawab. Siap untuk submit!
                 </AlertDescription>
               </Alert>
             )}
@@ -1084,7 +976,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
               onClick={handleSubmit} 
               disabled={submitting || totalSoal - getJumlahDijawab() > 0}
             >
-              {submitting ? 'Mengirim...' : totalSoal - getJumlahDijawab() > 0 ? 'Belum Bisa Submit' : 'Ya, Submit Sekarang'}
+              {submitting ? 'Mengirim...' : totalSoal - getJumlahDijawab() > 0 ? 'Jawab Semua Soal Dulu' : 'Ya, Submit Sekarang'}
             </Button>
           </DialogFooter>
         </DialogContent>
