@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, jadwalUjianPeserta, bankSoal, mataPelajaran, peserta, kelas } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { renderToBuffer } from '@react-pdf/renderer';
 import React from 'react';
 import { KartuUjianPDF } from '@/components/pdf/KartuUjianPDF';
@@ -21,6 +21,7 @@ export async function GET(
         tanggalUjian: jadwalUjian.tanggalUjian,
         jamMulai: jadwalUjian.jamMulai,
         durasi: jadwalUjian.durasi,
+        kelasId: jadwalUjian.kelasId,
         bankSoalKode: bankSoal.kodeBankSoal,
         matpelName: mataPelajaran.name,
       })
@@ -38,6 +39,16 @@ export async function GET(
     }
 
     // Get peserta list for this jadwal with kelas info
+    let whereCondition: any = eq(jadwalUjianPeserta.jadwalUjianId, jadwalId);
+    
+    // If jadwal has specific kelas, filter by that kelas
+    if (jadwal.kelasId) {
+      whereCondition = and(
+        eq(jadwalUjianPeserta.jadwalUjianId, jadwalId),
+        eq(peserta.kelasId, jadwal.kelasId)
+      );
+    }
+
     const pesertaList = await db
       .select({
         id: peserta.id,
@@ -50,7 +61,7 @@ export async function GET(
       .from(jadwalUjianPeserta)
       .innerJoin(peserta, eq(jadwalUjianPeserta.pesertaId, peserta.id))
       .leftJoin(kelas, eq(peserta.kelasId, kelas.id))
-      .where(eq(jadwalUjianPeserta.jadwalUjianId, jadwalId));
+      .where(whereCondition);
 
     if (pesertaList.length === 0) {
       return NextResponse.json(
@@ -59,18 +70,48 @@ export async function GET(
       );
     }
 
-    // Sort peserta by name (A-Z)
-    pesertaList.sort((a, b) => a.name.localeCompare(b.name, 'id-ID'));
+    // Group peserta by kelas
+    const groupedByKelas = pesertaList.reduce(
+      (acc, p) => {
+        const kelasKey = p.kelasName || 'Tanpa Kelas';
+        if (!acc[kelasKey]) {
+          acc[kelasKey] = [];
+        }
+        acc[kelasKey].push(p);
+        return acc;
+      },
+      {} as Record<string, typeof pesertaList>
+    );
+
+    // Natural sort for kelas names (X1, X2, X3... not X1, X10, X11)
+    const naturalSort = (a: string, b: string) => {
+      const aStr = a.replace(/\d+/g, (match) => match.padStart(10, '0'));
+      const bStr = b.replace(/\d+/g, (match) => match.padStart(10, '0'));
+      return aStr.localeCompare(bStr, 'id-ID');
+    };
+
+    // Create array of kelas with their peserta, sorted by kelas name (natural sort)
+    const pesertaByKelas = Object.keys(groupedByKelas)
+      .sort(naturalSort)
+      .map((kelasName) => ({
+        kelasName,
+        peserta: groupedByKelas[kelasName].sort((a, b) =>
+          a.name.localeCompare(b.name, 'id-ID')
+        ),
+      }));
 
     // Generate PDF using React PDF
     const pdfBuffer = await renderToBuffer(
       React.createElement(KartuUjianPDF, {
-        pesertaList: pesertaList.map((p) => ({
-          id: p.id,
-          name: p.name,
-          noUjian: p.noUjian,
-          password: p.password,
-          kelasName: p.kelasName,
+        pesertaByKelas: pesertaByKelas.map((group) => ({
+          kelasName: group.kelasName,
+          peserta: group.peserta.map((p) => ({
+            id: p.id,
+            name: p.name,
+            noUjian: p.noUjian,
+            password: p.password,
+            kelasName: p.kelasName,
+          })),
         })),
         examData: {
           namaUjian: jadwal.namaUjian,

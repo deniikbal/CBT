@@ -134,7 +134,10 @@ export interface ExamData {
 }
 
 interface KartuUjianPDFProps {
-  pesertaList: KartuData[];
+  pesertaByKelas: {
+    kelasName: string;
+    peserta: KartuData[];
+  }[];
   examData: ExamData;
 }
 
@@ -195,7 +198,7 @@ const KartuCard = ({
 };
 
 export const KartuUjianPDF: React.FC<KartuUjianPDFProps> = ({
-  pesertaList,
+  pesertaByKelas,
   examData,
 }) => {
   const formattedDate = new Date(examData.tanggalUjian).toLocaleDateString(
@@ -209,31 +212,33 @@ export const KartuUjianPDF: React.FC<KartuUjianPDFProps> = ({
 
   const cardsPerPage = 12; // 6 rows x 2 columns
 
-  // Chunk pesertaList into pages
-  const pages = [];
-  for (let i = 0; i < pesertaList.length; i += cardsPerPage) {
-    pages.push(pesertaList.slice(i, i + cardsPerPage));
-  }
-
   return (
     <Document>
-      {pages.map((pageCards, pageIndex) => (
-        <Page key={pageIndex} size="A4" style={styles.page}>
-          <View style={styles.cardsContainer}>
-            {pageCards.map((peserta) => (
-              <KartuCard
-                key={peserta.id}
-                peserta={peserta}
-                examData={examData}
-                formattedDate={formattedDate}
-              />
-            ))}
-          </View>
-          <Text style={styles.footer}>
-            Dicetak: {new Date().toLocaleString('id-ID')}
-          </Text>
-        </Page>
-      ))}
+      {pesertaByKelas.map((group) => {
+        // Chunk peserta in this kelas into pages
+        const pages = [];
+        for (let i = 0; i < group.peserta.length; i += cardsPerPage) {
+          pages.push(group.peserta.slice(i, i + cardsPerPage));
+        }
+
+        return pages.map((pageCards, pageIndex) => (
+          <Page key={`${group.kelasName}-${pageIndex}`} size="A4" style={styles.page}>
+            <View style={styles.cardsContainer}>
+              {pageCards.map((peserta) => (
+                <KartuCard
+                  key={peserta.id}
+                  peserta={peserta}
+                  examData={examData}
+                  formattedDate={formattedDate}
+                />
+              ))}
+            </View>
+            <Text style={styles.footer}>
+              Dicetak: {new Date().toLocaleString('id-ID')}
+            </Text>
+          </Page>
+        ));
+      })}
     </Document>
   );
 };
