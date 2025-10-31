@@ -54,7 +54,7 @@ export async function GET(
         id: peserta.id,
         name: peserta.name,
         noUjian: peserta.noUjian,
-        password: peserta.password,
+        password: peserta.unhashedPassword,
         kelasId: peserta.kelasId,
         kelasName: kelas.name,
       })

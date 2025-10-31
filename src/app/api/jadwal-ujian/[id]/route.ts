@@ -24,6 +24,7 @@ export async function GET(
         acakSoal: jadwalUjian.acakSoal,
         acakOpsi: jadwalUjian.acakOpsi,
         tampilkanNilai: jadwalUjian.tampilkanNilai,
+        isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
           id: bankSoal.id,
@@ -89,6 +90,7 @@ export async function PUT(
       acakSoal,
       acakOpsi,
       tampilkanNilai,
+      isActive,
     } = body;
 
     // Validate required fields
@@ -113,6 +115,7 @@ export async function PUT(
         acakSoal: acakSoal || false,
         acakOpsi: acakOpsi || false,
         tampilkanNilai: tampilkanNilai !== false,
+        isActive: isActive !== false,
         updatedAt: new Date(),
       })
       .where(eq(jadwalUjian.id, id))
@@ -147,6 +150,41 @@ export async function PUT(
     console.error('Error updating jadwal ujian:', error);
     return NextResponse.json(
       { error: error.message || 'Gagal mengupdate jadwal ujian' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH update partial jadwal ujian (e.g., toggle isActive)
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const [updated] = await db
+      .update(jadwalUjian)
+      .set({
+        ...body,
+        updatedAt: new Date(),
+      })
+      .where(eq(jadwalUjian.id, id))
+      .returning();
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: 'Jadwal ujian tidak ditemukan' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error('Error updating jadwal ujian:', error);
+    return NextResponse.json(
+      { error: 'Gagal mengupdate jadwal ujian' },
       { status: 500 }
     );
   }

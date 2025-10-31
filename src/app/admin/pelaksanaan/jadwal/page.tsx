@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from '@/components/ui/badge'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 import { Plus, Edit, Trash2, Calendar, Clock, Users, Loader2, AlertTriangle, Download } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -51,6 +52,7 @@ interface JadwalUjian {
   acakSoal: boolean
   acakOpsi: boolean
   tampilkanNilai: boolean
+  isActive: boolean
   bankSoal: {
     id: string
     kodeBankSoal: string
@@ -97,6 +99,7 @@ export default function JadwalUjianPage() {
     acakSoal: false,
     acakOpsi: false,
     tampilkanNilai: true,
+    isActive: true,
   })
 
   useEffect(() => {
@@ -299,8 +302,30 @@ export default function JadwalUjianPage() {
         acakSoal: jadwal.acakSoal,
         acakOpsi: jadwal.acakOpsi,
         tampilkanNilai: jadwal.tampilkanNilai,
+        isActive: jadwal.isActive,
       })
       setIsDialogOpen(true)
+    }
+  }
+
+  const toggleIsActive = async (jadwalId: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/jadwal-ujian/${jadwalId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !currentStatus }),
+      })
+
+      if (response.ok) {
+        await fetchJadwal()
+        toast.success(`Jadwal berhasil ${!currentStatus ? 'diaktifkan' : 'dinonaktifkan'}`)
+      } else {
+        const data = await response.json()
+        toast.error(data.error || 'Gagal mengubah status jadwal')
+      }
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Terjadi kesalahan')
     }
   }
 
@@ -399,6 +424,7 @@ export default function JadwalUjianPage() {
       acakSoal: false,
       acakOpsi: false,
       tampilkanNilai: true,
+      isActive: true,
     })
   }
 
@@ -541,6 +567,21 @@ export default function JadwalUjianPage() {
                     {row.acakSoal && <Badge variant="outline" className="w-fit">Acak Soal</Badge>}
                     {row.acakOpsi && <Badge variant="outline" className="w-fit">Acak Opsi</Badge>}
                     {row.tampilkanNilai && <Badge variant="outline" className="w-fit">Tampilkan Nilai</Badge>}
+                  </div>
+                ),
+              },
+              {
+                header: 'Status',
+                accessor: 'isActive',
+                cell: (row) => (
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={row.isActive}
+                      onCheckedChange={() => toggleIsActive(row.id, row.isActive)}
+                    />
+                    <span className="text-xs">
+                      {row.isActive ? 'Aktif' : 'Nonaktif'}
+                    </span>
                   </div>
                 ),
               },
@@ -876,6 +917,26 @@ export default function JadwalUjianPage() {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="false" id="tampilkan-nilai-tidak" />
                         <Label htmlFor="tampilkan-nilai-tidak" className="cursor-pointer font-normal">Tidak</Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Status Aktif */}
+                <div className="space-y-2">
+                  <Label>Status Jadwal</Label>
+                  <RadioGroup
+                    value={formData.isActive ? 'true' : 'false'}
+                    onValueChange={(value) => setFormData({ ...formData, isActive: value === 'true' })}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="status-aktif" />
+                        <Label htmlFor="status-aktif" className="cursor-pointer font-normal">Aktif</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="status-nonaktif" />
+                        <Label htmlFor="status-nonaktif" className="cursor-pointer font-normal">Nonaktif</Label>
                       </div>
                     </div>
                   </RadioGroup>

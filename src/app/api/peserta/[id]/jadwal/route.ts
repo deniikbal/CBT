@@ -47,12 +47,18 @@ export async function GET(
           acakSoal: jadwalUjian.acakSoal,
           acakOpsi: jadwalUjian.acakOpsi,
           tampilkanNilai: jadwalUjian.tampilkanNilai,
+          isActive: jadwalUjian.isActive,
           bankSoalKode: bankSoal.kodeBankSoal,
         })
         .from(jadwalUjianPeserta)
         .innerJoin(jadwalUjian, eq(jadwalUjianPeserta.jadwalUjianId, jadwalUjian.id))
         .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
-        .where(eq(jadwalUjianPeserta.pesertaId, pesertaId));
+        .where(
+          and(
+            eq(jadwalUjianPeserta.pesertaId, pesertaId),
+            eq(jadwalUjian.isActive, true)
+          )
+        );
 
       // 2. Jadwal untuk kelas peserta (jika kelasId tidak null)
       let jadwalKelas = [];
@@ -69,11 +75,17 @@ export async function GET(
             acakSoal: jadwalUjian.acakSoal,
             acakOpsi: jadwalUjian.acakOpsi,
             tampilkanNilai: jadwalUjian.tampilkanNilai,
+            isActive: jadwalUjian.isActive,
             bankSoalKode: bankSoal.kodeBankSoal,
           })
           .from(jadwalUjian)
           .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
-          .where(eq(jadwalUjian.kelasId, pesertaData.kelasId));
+          .where(
+            and(
+              eq(jadwalUjian.kelasId, pesertaData.kelasId),
+              eq(jadwalUjian.isActive, true)
+            )
+          );
       }
 
       // Merge dan deduplicate

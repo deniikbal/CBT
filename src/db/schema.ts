@@ -90,6 +90,7 @@ export const peserta = pgTable('peserta', {
   name: text('name').notNull(),
   noUjian: text('no_ujian').notNull().unique(),
   password: text('password').notNull(),
+  unhashedPassword: text('unhashed_password'), // Plain password for exam card printing
   kelasId: text('kelas_id').notNull().references(() => kelas.id, { onDelete: 'cascade' }),
   jurusanId: text('jurusan_id').notNull().references(() => jurusan.id, { onDelete: 'cascade' }),
   isActive: boolean('is_active').notNull().default(true),
@@ -129,6 +130,7 @@ export const soalBank = pgTable('soal_bank', {
   pilihanD: text('pilihan_d').notNull(),
   pilihanE: text('pilihan_e'),
   jawabanBenar: jawabanBenarEnum('jawaban_benar').notNull(),
+  pembahasan: text('pembahasan'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });
@@ -147,6 +149,7 @@ export const jadwalUjian = pgTable('jadwal_ujian', {
   acakSoal: boolean('acak_soal').notNull().default(false),
   acakOpsi: boolean('acak_opsi').notNull().default(false),
   tampilkanNilai: boolean('tampilkan_nilai').notNull().default(true),
+  isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });

@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
         acakSoal: jadwalUjian.acakSoal,
         acakOpsi: jadwalUjian.acakOpsi,
         tampilkanNilai: jadwalUjian.tampilkanNilai,
+        isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
           id: bankSoal.id,
@@ -71,6 +72,7 @@ export async function POST(request: NextRequest) {
       acakSoal,
       acakOpsi,
       tampilkanNilai,
+      isActive,
       createdBy,
     } = body;
 
@@ -118,6 +120,7 @@ export async function POST(request: NextRequest) {
         acakSoal: acakSoal || false,
         acakOpsi: acakOpsi || false,
         tampilkanNilai: tampilkanNilai !== false,
+        isActive: isActive !== false,
       })
       .returning();
 

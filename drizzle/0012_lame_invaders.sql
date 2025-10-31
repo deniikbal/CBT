@@ -1,0 +1,1 @@
+ALTER TABLE "soal_bank" ADD COLUMN "pembahasan" text;

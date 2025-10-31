@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { peserta, kelas, jurusan } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,8 +56,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check password (plain text comparison)
-    if (password !== pesertaData.password) {
+    // Check password (bcrypt comparison)
+    const passwordMatch = await bcrypt.compare(password, pesertaData.password);
+    if (!passwordMatch) {
       return NextResponse.json(
         { error: 'Nomor ujian atau password salah' },
         { status: 401 }

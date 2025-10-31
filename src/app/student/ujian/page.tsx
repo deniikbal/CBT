@@ -133,14 +133,6 @@ export default function UjianSayaPage() {
     getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'active'
   )
   
-  // Belum dimulai - waktu sudah lewat
-  const expiredUjian = jadwalList.filter(j => 
-    !j.sudahDikerjakan && 
-    !j.hasilUjian && 
-    getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'expired'
-  )
-  
-
 
   if (loading) {
     return (
@@ -381,58 +373,6 @@ export default function UjianSayaPage() {
                     <div className="pt-2">
                       <Button className="w-full" variant="outline" disabled>
                         Belum Waktunya
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Sudah Berakhir */}
-      {expiredUjian.length > 0 && (
-        <div className="space-y-2 md:space-y-3">
-          <h2 className="text-base md:text-lg font-semibold text-gray-700 flex items-center gap-2">
-            <XCircle className="h-4 w-4 shrink-0" />
-            Sudah Berakhir ({expiredUjian.length})
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {expiredUjian.map((jadwal) => {
-              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
-              const StatusIcon = status.icon
-              
-              return (
-                <Card key={jadwal.id} className="opacity-75">
-                  <CardHeader>
-                    <div className="flex justify-between items-start mb-2">
-                      <CardTitle className="text-lg">{jadwal.namaUjian}</CardTitle>
-                      <Badge className={status.color}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {status.label}
-                      </Badge>
-                    </div>
-                    <CardDescription className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      {jadwal.bankSoal?.kodeBankSoal || 'Bank Soal'}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="space-y-2 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="h-4 w-4" />
-                        {format(new Date(jadwal.tanggalUjian), 'EEEE, dd MMMM yyyy', { locale: localeId })}
-                      </div>
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Clock className="h-4 w-4" />
-                        {jadwal.jamMulai} WIB · Durasi {jadwal.durasi} menit
-                      </div>
-                    </div>
-
-                    <div className="pt-2">
-                      <Button className="w-full" variant="outline" disabled>
-                        Waktu Sudah Habis
                       </Button>
                     </div>
                   </CardContent>

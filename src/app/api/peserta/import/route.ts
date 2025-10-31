@@ -59,6 +59,7 @@ export async function POST(request: NextRequest) {
       name: string
       noUjian: string
       password: string
+      unhashedPassword: string
       kelasId: string
       jurusanId: string
       isActive: boolean
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
         name: namaLengkap,
         noUjian: noUjian,
         password: '', // Will be filled after hashing
+        unhashedPassword: password, // Store plain password for exam card
         kelasId: kelasData.id,
         jurusanId: jurusanData.id,
         isActive: true
