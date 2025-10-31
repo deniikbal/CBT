@@ -45,7 +45,56 @@ export async function GET(request: NextRequest) {
 
     const jadwalList = await query.orderBy(desc(jadwalUjian.createdAt))
 
-    return NextResponse.json(jadwalList);
+    // Detect kelas from peserta for each jadwal
+    const jadwalWithKelas = await Promise.all(
+      jadwalList.map(async (jadwal) => {
+        // Get all peserta for this jadwal
+        const pesertaList = await db
+          .select({
+            kelasId: peserta.kelasId,
+            kelasName: kelas.name,
+          })
+          .from(jadwalUjianPeserta)
+          .innerJoin(peserta, eq(jadwalUjianPeserta.pesertaId, peserta.id))
+          .leftJoin(kelas, eq(peserta.kelasId, kelas.id))
+          .where(eq(jadwalUjianPeserta.jadwalUjianId, jadwal.id))
+
+        // Detect kelas
+        if (pesertaList.length === 0) {
+          // No peserta
+          return { ...jadwal, kelas: null }
+        }
+
+        // Get unique kelas
+        const uniqueKelas = [...new Set(pesertaList.map(p => p.kelasId).filter(Boolean))]
+        
+        if (uniqueKelas.length === 1) {
+          // All peserta from same kelas
+          const kelasInfo = pesertaList.find(p => p.kelasId === uniqueKelas[0])
+          return {
+            ...jadwal,
+            kelas: kelasInfo?.kelasName ? {
+              id: uniqueKelas[0],
+              name: kelasInfo.kelasName
+            } : null
+          }
+        } else if (uniqueKelas.length > 1) {
+          // Mixed kelas
+          return {
+            ...jadwal,
+            kelas: {
+              id: 'mixed',
+              name: 'Semua Kelas'
+            }
+          }
+        } else {
+          // No kelas info
+          return { ...jadwal, kelas: null }
+        }
+      })
+    )
+
+    return NextResponse.json(jadwalWithKelas);
   } catch (error) {
     console.error('Error fetching jadwal ujian:', error);
     return NextResponse.json(
@@ -63,7 +112,6 @@ export async function POST(request: NextRequest) {
     const {
       namaUjian,
       bankSoalId,
-      kelasId,
       pesertaIds,
       tanggalUjian,
       jamMulai,
@@ -112,7 +160,7 @@ export async function POST(request: NextRequest) {
         namaUjian,
         bankSoalId,
         createdBy,
-        kelasId: kelasId || null,
+        kelasId: null, // Always null - no auto-assign by kelas
         tanggalUjian: new Date(tanggalUjian),
         jamMulai,
         durasi,

@@ -90,7 +90,6 @@ export default function JadwalUjianPage() {
     namaUjian: '',
     matpelId: '',
     bankSoalId: '',
-    kelasId: '',
     pesertaIds: [] as string[],
     tanggalUjian: '',
     jamMulai: '',
@@ -179,7 +178,11 @@ export default function JadwalUjianPage() {
       const response = await fetch('/api/kelas')
       if (response.ok) {
         const data = await response.json()
-        setKelasList(data)
+        // Sort dengan natural order (X1, X2, X3, ... X10, X11)
+        const sorted = data.sort((a: Kelas, b: Kelas) => 
+          a.name.localeCompare(b.name, 'id-ID', { numeric: true, sensitivity: 'base' })
+        )
+        setKelasList(sorted)
       }
     } catch (error) {
       console.error('Error fetching kelas:', error)
@@ -293,7 +296,6 @@ export default function JadwalUjianPage() {
         namaUjian: jadwal.namaUjian,
         matpelId: matpelId,
         bankSoalId: jadwal.bankSoalId,
-        kelasId: jadwal.kelasId || '',
         pesertaIds: data.peserta?.map((p: Peserta) => p.id) || [],
         tanggalUjian: format(new Date(jadwal.tanggalUjian), 'yyyy-MM-dd'),
         jamMulai: jadwal.jamMulai,
@@ -415,7 +417,6 @@ export default function JadwalUjianPage() {
       namaUjian: '',
       matpelId: '',
       bankSoalId: '',
-      kelasId: '',
       pesertaIds: [],
       tanggalUjian: '',
       jamMulai: '',
@@ -536,7 +537,7 @@ export default function JadwalUjianPage() {
               {
                 header: 'Kelas',
                 accessor: 'kelasId',
-                cell: (row) => row.kelas?.name || 'Semua Kelas',
+                cell: (row) => row.kelas?.name || '-',
               },
               {
                 header: 'Tanggal & Waktu',
@@ -714,26 +715,6 @@ export default function JadwalUjianPage() {
                         Tidak ada bank soal untuk mata pelajaran ini
                       </div>
                     )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Kelas */}
-              <div className="space-y-2">
-                <Label htmlFor="kelas">Kelas (Opsional)</Label>
-                <Select
-                  value={formData.kelasId || undefined}
-                  onValueChange={(value) => setFormData({ ...formData, kelasId: value })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Semua kelas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {kelasList.map((kls) => (
-                      <SelectItem key={kls.id} value={kls.id}>
-                        {kls.name}
-                      </SelectItem>
-                    ))}
                   </SelectContent>
                 </Select>
               </div>

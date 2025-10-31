@@ -60,42 +60,8 @@ export async function GET(
           )
         );
 
-      // 2. Jadwal untuk kelas peserta (jika kelasId tidak null)
-      let jadwalKelas = [];
-      if (pesertaData.kelasId) {
-        jadwalKelas = await db
-          .select({
-            id: jadwalUjian.id,
-            namaUjian: jadwalUjian.namaUjian,
-            bankSoalId: jadwalUjian.bankSoalId,
-            tanggalUjian: jadwalUjian.tanggalUjian,
-            jamMulai: jadwalUjian.jamMulai,
-            durasi: jadwalUjian.durasi,
-            minimumPengerjaan: jadwalUjian.minimumPengerjaan,
-            acakSoal: jadwalUjian.acakSoal,
-            acakOpsi: jadwalUjian.acakOpsi,
-            tampilkanNilai: jadwalUjian.tampilkanNilai,
-            isActive: jadwalUjian.isActive,
-            bankSoalKode: bankSoal.kodeBankSoal,
-          })
-          .from(jadwalUjian)
-          .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
-          .where(
-            and(
-              eq(jadwalUjian.kelasId, pesertaData.kelasId),
-              eq(jadwalUjian.isActive, true)
-            )
-          );
-      }
-
-      // Merge dan deduplicate
-      const jadwalMap = new Map();
-      [...jadwalExplicit, ...jadwalKelas].forEach(jadwal => {
-        jadwalMap.set(jadwal.id, jadwal);
-      });
-
-      // Convert to array dan sort
-      jadwalList = Array.from(jadwalMap.values())
+      // Only use explicit jadwal assignment (no auto-assign by kelas)
+      jadwalList = jadwalExplicit
         .sort((a, b) => new Date(b.tanggalUjian).getTime() - new Date(a.tanggalUjian).getTime());
       
       console.log('[API] Found', jadwalList.length, 'jadwal');

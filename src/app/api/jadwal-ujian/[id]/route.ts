@@ -81,7 +81,6 @@ export async function PUT(
     const {
       namaUjian,
       bankSoalId,
-      kelasId,
       pesertaIds,
       tanggalUjian,
       jamMulai,
@@ -107,7 +106,7 @@ export async function PUT(
       .set({
         namaUjian,
         bankSoalId,
-        kelasId: kelasId || null,
+        kelasId: null, // Always null - no auto-assign by kelas
         tanggalUjian: new Date(tanggalUjian),
         jamMulai,
         durasi,
