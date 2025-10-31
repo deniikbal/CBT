@@ -364,24 +364,23 @@ export function useExamSecurity({
     }
   }, [enableRightClickBlock])
 
-  // Page visibility change (more comprehensive than blur)
-  useEffect(() => {
-    // Skip if not ready yet
-    if (!hasilUjianId || hasilUjianId === 'pending' || !pesertaId || pesertaId === 'pending') return
+  // Page visibility change - DISABLED to prevent duplicate TAB_BLUR logging
+  // Window blur event already handles this, so we don't need duplicate logs
+  // useEffect(() => {
+  //   if (!hasilUjianId || hasilUjianId === 'pending' || !pesertaId || pesertaId === 'pending') return
 
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page is hidden (switched tab/minimized)
-        logActivity('TAB_BLUR')
-      }
-    }
+  //   const handleVisibilityChange = () => {
+  //     if (document.hidden) {
+  //       logActivity('TAB_BLUR')
+  //     }
+  //   }
 
-    document.addEventListener('visibilitychange', handleVisibilityChange)
+  //   document.addEventListener('visibilitychange', handleVisibilityChange)
 
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [hasilUjianId, pesertaId])
+  //   return () => {
+  //     document.removeEventListener('visibilitychange', handleVisibilityChange)
+  //   }
+  // }, [hasilUjianId, pesertaId])
 
   // Fullscreen request function (manual) - now supports mobile
   const requestFullscreen = async (): Promise<boolean> => {
