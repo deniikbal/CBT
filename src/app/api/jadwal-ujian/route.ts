@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
         acakSoal: jadwalUjian.acakSoal,
         acakOpsi: jadwalUjian.acakOpsi,
         tampilkanNilai: jadwalUjian.tampilkanNilai,
+        resetPelanggaranOnEnable: jadwalUjian.resetPelanggaranOnEnable,
+        autoSubmitOnViolation: jadwalUjian.autoSubmitOnViolation,
         isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
@@ -120,6 +122,8 @@ export async function POST(request: NextRequest) {
       acakSoal,
       acakOpsi,
       tampilkanNilai,
+      resetPelanggaranOnEnable,
+      autoSubmitOnViolation,
       isActive,
       createdBy,
     } = body;
@@ -168,6 +172,8 @@ export async function POST(request: NextRequest) {
         acakSoal: acakSoal || false,
         acakOpsi: acakOpsi || false,
         tampilkanNilai: tampilkanNilai !== false,
+        resetPelanggaranOnEnable: resetPelanggaranOnEnable !== false,
+        autoSubmitOnViolation: autoSubmitOnViolation || false,
         isActive: isActive !== false,
       })
       .returning();

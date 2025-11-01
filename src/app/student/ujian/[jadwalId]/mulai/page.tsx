@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,7 @@ interface JadwalInfo {
   minimumPengerjaan: number | null
   waktuMulai: string
   tampilkanNilai: boolean
+  autoSubmitOnViolation: boolean
 }
 
 export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadwalId: string }> }) {
@@ -57,6 +58,10 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   const [showAgreement, setShowAgreement] = useState(true)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [pesertaId, setPesertaId] = useState<string>('')
+  const [violationCount, setViolationCount] = useState(0)
+  
+  // Create auto submit handler ref that will be assigned later
+  const autoSubmitRef = useRef<(() => void) | null>(null)
 
   // Exam Security Hooks - must be called before any conditional returns
   const { blurCount, isFullscreen, logActivity, requestFullscreen } = useExamSecurity({
@@ -65,6 +70,9 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     maxBlurCount: 5,
     enableFullscreen: agreedToTerms && !!hasilId,
     enableRightClickBlock: agreedToTerms && !!hasilId,
+    initialBlurCount: violationCount,
+    autoSubmitOnViolation: jadwal?.autoSubmitOnViolation || false,
+    onAutoSubmit: () => autoSubmitRef.current?.(),
   })
 
   // Initialize pesertaId on mount
@@ -200,6 +208,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
           minimumPengerjaan: data.minimumPengerjaan,
           waktuMulai: data.waktuMulai,
           tampilkanNilai: data.tampilkanNilai,
+          autoSubmitOnViolation: data.autoSubmitOnViolation || false,
         })
         setLoading(false)
       } else {
@@ -259,6 +268,11 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       setJadwal(data.jadwal)
       setSoalList(data.soal)
       setHasilId(data.hasilId)
+      
+      // Load existing violation count from database
+      if (data.existingViolationCount !== undefined) {
+        setViolationCount(data.existingViolationCount)
+      }
 
       // Load existing answers from database if available
       if (data.existingAnswers) {
@@ -433,6 +447,10 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     })
     await handleSubmit()
   }
+
+  // Assign handleSubmit to ref for auto-submit callback
+  // This runs after handleSubmit is defined
+  autoSubmitRef.current = handleSubmit
 
   // Agreement handler
   const handleAgreeToTerms = async () => {
@@ -656,83 +674,83 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                 >
                   <div className="space-y-2">
                     <div className={cn(
-                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      "flex items-center gap-3 p-3 rounded-sm border cursor-pointer transition-all",
                       jawaban[currentSoal.id] === 'A' 
                         ? 'border-blue-500 bg-blue-50 shadow-sm' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
-                      <RadioGroupItem value="A" id="option-a" className="mt-1" />
+                      <RadioGroupItem value="A" id="option-a" />
                       <Label htmlFor="option-a" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">A.</span>
                         <span className="inline">{parse(currentSoal.pilihanA || '')}</span>
                       </Label>
                       {jawaban[currentSoal.id] === 'A' && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                       )}
                     </div>
 
                     <div className={cn(
-                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      "flex items-center gap-3 p-3 rounded-sm border cursor-pointer transition-all",
                       jawaban[currentSoal.id] === 'B' 
                         ? 'border-blue-500 bg-blue-50 shadow-sm' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
-                      <RadioGroupItem value="B" id="option-b" className="mt-1" />
+                      <RadioGroupItem value="B" id="option-b" />
                       <Label htmlFor="option-b" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">B.</span>
                         <span className="inline">{parse(currentSoal.pilihanB || '')}</span>
                       </Label>
                       {jawaban[currentSoal.id] === 'B' && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                       )}
                     </div>
 
                     <div className={cn(
-                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      "flex items-center gap-3 p-3 rounded-sm border cursor-pointer transition-all",
                       jawaban[currentSoal.id] === 'C' 
                         ? 'border-blue-500 bg-blue-50 shadow-sm' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
-                      <RadioGroupItem value="C" id="option-c" className="mt-1" />
+                      <RadioGroupItem value="C" id="option-c" />
                       <Label htmlFor="option-c" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">C.</span>
                         <span className="inline">{parse(currentSoal.pilihanC || '')}</span>
                       </Label>
                       {jawaban[currentSoal.id] === 'C' && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                       )}
                     </div>
 
                     <div className={cn(
-                      "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                      "flex items-center gap-3 p-3 rounded-sm border cursor-pointer transition-all",
                       jawaban[currentSoal.id] === 'D' 
                         ? 'border-blue-500 bg-blue-50 shadow-sm' 
                         : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                     )}>
-                      <RadioGroupItem value="D" id="option-d" className="mt-1" />
+                      <RadioGroupItem value="D" id="option-d" />
                       <Label htmlFor="option-d" className="flex-1 cursor-pointer">
                         <span className="font-semibold mr-2">D.</span>
                         <span className="inline">{parse(currentSoal.pilihanD || '')}</span>
                       </Label>
                       {jawaban[currentSoal.id] === 'D' && (
-                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                        <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                       )}
                     </div>
 
                     {currentSoal.pilihanE && (
                       <div className={cn(
-                        "flex items-start gap-3 p-3 rounded-md border cursor-pointer transition-all",
+                        "flex items-center gap-3 p-3 rounded-sm border cursor-pointer transition-all",
                         jawaban[currentSoal.id] === 'E' 
                           ? 'border-blue-500 bg-blue-50 shadow-sm' 
                           : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                       )}>
-                        <RadioGroupItem value="E" id="option-e" className="mt-1" />
+                        <RadioGroupItem value="E" id="option-e" />
                         <Label htmlFor="option-e" className="flex-1 cursor-pointer">
                           <span className="font-semibold mr-2">E.</span>
                           <span className="inline">{parse(currentSoal.pilihanE || '')}</span>
                         </Label>
                         {jawaban[currentSoal.id] === 'E' && (
-                          <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                          <CheckCircle2 className="h-5 w-5 text-blue-600 flex-shrink-0" />
                         )}
                       </div>
                     )}
@@ -743,15 +761,17 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                 <div className="flex justify-between pt-2">
                   <Button
                     variant="outline"
+                    size="sm"
                     onClick={() => setCurrentSoalIndex(prev => Math.max(0, prev - 1))}
                     disabled={currentSoalIndex === 0}
                   >
-                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    <ChevronLeft className="h-3 w-3 mr-1" />
                     Sebelumnya
                   </Button>
 
                   {currentSoalIndex === totalSoal - 1 ? (
                     <Button
+                      size="sm"
                       className={cn(
                         "text-white",
                         timeExpired 
@@ -770,16 +790,17 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
                       }}
                       disabled={submitting}
                     >
-                      <Send className="h-4 w-4 mr-2" />
+                      <Send className="h-3 w-3 mr-1" />
                       {timeExpired ? 'Submit Sekarang!' : 'Submit Ujian'}
                     </Button>
                   ) : (
                     <Button
                       variant="outline"
+                      size="sm"
                       onClick={() => setCurrentSoalIndex(prev => Math.min(totalSoal - 1, prev + 1))}
                     >
                       Selanjutnya
-                      <ChevronRight className="h-4 w-4 ml-2" />
+                      <ChevronRight className="h-3 w-3 ml-1" />
                     </Button>
                   )}
                 </div>

@@ -41,7 +41,7 @@ export default function HasilUjianPage() {
 
   if (!tampilkan) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-20 lg:pt-4">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-6">
         <Card className="rounded-md shadow-lg max-w-lg w-full">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
@@ -85,7 +85,7 @@ export default function HasilUjianPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-20 lg:pt-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 pt-6">
       <Card className="rounded-md shadow-lg max-w-2xl w-full">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">

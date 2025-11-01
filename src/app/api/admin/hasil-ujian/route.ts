@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { hasilUjianPeserta, jadwalUjian, peserta, bankSoal, kelas, soal } from '@/db/schema';
+import { hasilUjianPeserta, jadwalUjian, peserta, bankSoal, kelas } from '@/db/schema';
 import { eq, sql } from 'drizzle-orm';
 
 export async function GET() {
   try {
-    console.log('[Hasil Ujian API] Fetching completed exams...');
-    
     // Get all submitted/completed exams
     const submittedExams = await db
       .select({
@@ -32,8 +30,6 @@ export async function GET() {
       .innerJoin(jadwalUjian, eq(hasilUjianPeserta.jadwalUjianId, jadwalUjian.id))
       .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
       .leftJoin(kelas, eq(peserta.kelasId, kelas.id));
-    
-    console.log(`[Hasil Ujian API] Found ${submittedExams.length} exams total (filtering now)`);
 
     // Process results
     const results = submittedExams.map(exam => {
@@ -47,13 +43,15 @@ export async function GET() {
 
       // Parse jawaban to calculate benar/salah/kosong
       let jawabanObj: Record<number, string> = {};
+      let jumlahJawaban = 0;
       if (exam.jawaban) {
         try {
           jawabanObj = typeof exam.jawaban === 'string' 
             ? JSON.parse(exam.jawaban) 
             : exam.jawaban;
+          jumlahJawaban = Object.keys(jawabanObj).length;
         } catch (e) {
-          console.error('Error parsing jawaban:', e);
+          // Silent error
         }
       }
 
@@ -62,6 +60,11 @@ export async function GET() {
       if (exam.skorMaksimal && exam.skorMaksimal > 0) {
         nilai = Math.round((exam.skor || 0) / exam.skorMaksimal * 100);
       }
+
+      const totalSoal = exam.skorMaksimal || 0;
+      const benar = exam.skor || 0;
+      const kosong = Math.max(0, totalSoal - jumlahJawaban);
+      const salah = totalSoal - benar - kosong;
 
       return {
         id: exam.id,
@@ -77,17 +80,16 @@ export async function GET() {
         waktuSelesai: exam.waktuSelesai,
         durasi,
         nilai,
-        totalSoal: exam.skorMaksimal || 0,
-        benar: exam.skor || 0,
-        salah: (exam.skorMaksimal || 0) - (exam.skor || 0),
-        kosong: Object.keys(jawabanObj).length > 0 ? Math.max(0, (exam.skorMaksimal || 0) - Object.keys(jawabanObj).length) : 0,
+        totalSoal,
+        benar,
+        salah,
+        kosong,
         status: exam.status,
       };
     });
 
     // Filter only submitted exams
     const submitted = results.filter(r => r.status === 'submitted');
-    console.log(`[Hasil Ujian API] Filtered to ${submitted.length} submitted exams`);
 
     // Sort by waktuSelesai desc (newest first)
     const sorted = submitted.sort((a, b) => {
@@ -96,12 +98,8 @@ export async function GET() {
       return new Date(b.waktuSelesai).getTime() - new Date(a.waktuSelesai).getTime();
     });
 
-    console.log('[Hasil Ujian API] Returning', sorted.length, 'results');
-    console.log('[Hasil Ujian API] First result:', sorted[0] || 'none');
     return NextResponse.json(sorted);
   } catch (error) {
-    console.error('[Hasil Ujian API] Error fetching results:', error);
-    
     return NextResponse.json(
       { 
         error: 'Failed to fetch exam results',

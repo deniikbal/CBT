@@ -149,6 +149,8 @@ export const jadwalUjian = pgTable('jadwal_ujian', {
   acakSoal: boolean('acak_soal').notNull().default(false),
   acakOpsi: boolean('acak_opsi').notNull().default(false),
   tampilkanNilai: boolean('tampilkan_nilai').notNull().default(true),
+  resetPelanggaranOnEnable: boolean('reset_pelanggaran_on_enable').notNull().default(true), // Reset counter saat enable account
+  autoSubmitOnViolation: boolean('auto_submit_on_violation').notNull().default(false), // Auto submit saat 5x pelanggaran
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
@@ -177,6 +179,7 @@ export const hasilUjianPeserta = pgTable('hasil_ujian_peserta', {
   ipAddress: text('ip_address'), // IP address saat mulai
   soalOrder: text('soal_order'), // JSON array of soal IDs dalam urutan yang sudah diacak (untuk consistency)
   optionMappings: text('option_mappings'), // JSON object: { soalId: { A: 'C', B: 'A', ... } } - mapping shuffle opsi
+  jumlahPelanggaran: integer('jumlah_pelanggaran').notNull().default(0), // counter untuk tab blur violations
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });

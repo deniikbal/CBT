@@ -24,6 +24,8 @@ export async function GET(
         acakSoal: jadwalUjian.acakSoal,
         acakOpsi: jadwalUjian.acakOpsi,
         tampilkanNilai: jadwalUjian.tampilkanNilai,
+        resetPelanggaranOnEnable: jadwalUjian.resetPelanggaranOnEnable,
+        autoSubmitOnViolation: jadwalUjian.autoSubmitOnViolation,
         isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
@@ -89,6 +91,8 @@ export async function PUT(
       acakSoal,
       acakOpsi,
       tampilkanNilai,
+      resetPelanggaranOnEnable,
+      autoSubmitOnViolation,
       isActive,
     } = body;
 
@@ -114,6 +118,8 @@ export async function PUT(
         acakSoal: acakSoal || false,
         acakOpsi: acakOpsi || false,
         tampilkanNilai: tampilkanNilai !== false,
+        resetPelanggaranOnEnable: resetPelanggaranOnEnable !== false,
+        autoSubmitOnViolation: autoSubmitOnViolation || false,
         isActive: isActive !== false,
         updatedAt: new Date(),
       })

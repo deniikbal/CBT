@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Upload, Loader2, Trash } from 'lucide-react'
+import { Plus, Edit, Trash2, Upload, Loader2, Trash, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTable, Column } from '@/components/ui/data-table'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -63,6 +63,9 @@ export default function PesertaPage() {
   const [selectedPeserta, setSelectedPeserta] = useState<string[]>([])
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false)
+  const [bulkStatusAction, setBulkStatusAction] = useState<'enable' | 'disable'>('enable')
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -402,6 +405,46 @@ export default function PesertaPage() {
     }
   }
 
+  const handleBulkToggleStatus = async () => {
+    if (selectedPeserta.length === 0) {
+      toast.error('Pilih peserta yang ingin diubah statusnya')
+      return
+    }
+
+    setIsTogglingStatus(true)
+
+    try {
+      const endpoint = bulkStatusAction === 'enable' 
+        ? '/api/peserta/bulk-enable' 
+        : '/api/peserta/bulk-disable'
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedPeserta })
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        await fetchPeserta()
+        setSelectedPeserta([])
+        setIsBulkStatusOpen(false)
+        const action = bulkStatusAction === 'enable' ? 'diaktifkan' : 'dinonaktifkan'
+        toast.success(`Berhasil ${action} ${data.count} peserta`, {
+          description: `Status akun peserta telah diubah`
+        })
+      } else {
+        toast.error(data.error || 'Gagal mengubah status peserta')
+      }
+    } catch (error) {
+      console.error('Error bulk toggle status:', error)
+      toast.error('Terjadi kesalahan saat mengubah status')
+    } finally {
+      setIsTogglingStatus(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center p-8">
@@ -426,15 +469,41 @@ export default function PesertaPage() {
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {selectedPeserta.length > 0 && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setIsBulkDeleteOpen(true)}
-                  className="border-red-600 text-red-600 hover:bg-red-50 w-full sm:w-auto text-xs sm:text-sm"
-                >
-                  <Trash className="h-4 w-4 mr-2" />
-                  <span>Hapus Terpilih ({selectedPeserta.length})</span>
-                </Button>
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setBulkStatusAction('enable')
+                      setIsBulkStatusOpen(true)
+                    }}
+                    className="border-green-600 text-green-600 hover:bg-green-50 w-full sm:w-auto text-xs sm:text-sm"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <span>Aktifkan ({selectedPeserta.length})</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setBulkStatusAction('disable')
+                      setIsBulkStatusOpen(true)
+                    }}
+                    className="border-orange-600 text-orange-600 hover:bg-orange-50 w-full sm:w-auto text-xs sm:text-sm"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    <span>Nonaktifkan ({selectedPeserta.length})</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsBulkDeleteOpen(true)}
+                    className="border-red-600 text-red-600 hover:bg-red-50 w-full sm:w-auto text-xs sm:text-sm"
+                  >
+                    <Trash className="h-4 w-4 mr-2" />
+                    <span>Hapus ({selectedPeserta.length})</span>
+                  </Button>
+                </>
               )}
               
               <Dialog open={isImportDialogOpen} onOpenChange={(open) => {
@@ -861,6 +930,119 @@ export default function PesertaPage() {
               onClick={confirmToggleStatus}
             >
               {confirmAction?.enable ? 'Ya, Aktifkan' : 'Ya, Nonaktifkan'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Status Update Confirmation Dialog */}
+      <Dialog open={isBulkStatusOpen} onOpenChange={setIsBulkStatusOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center animate-in zoom-in duration-300 ${
+                bulkStatusAction === 'enable' ? 'bg-green-100' : 'bg-orange-100'
+              }`}>
+                {bulkStatusAction === 'enable' ? (
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                ) : (
+                  <XCircle className="h-6 w-6 text-orange-600" />
+                )}
+              </div>
+              <div>
+                <DialogTitle className="text-xl">
+                  {bulkStatusAction === 'enable' ? 'Aktifkan' : 'Nonaktifkan'} Peserta Terpilih?
+                </DialogTitle>
+                <DialogDescription className="mt-1">
+                  Ubah status {selectedPeserta.length} akun peserta
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className={`border rounded-lg p-4 animate-in fade-in slide-in-from-top-2 duration-300 ${
+              bulkStatusAction === 'enable' 
+                ? 'bg-green-50 border-green-200' 
+                : 'bg-orange-50 border-orange-200'
+            }`}>
+              <p className={`text-sm font-medium mb-2 ${
+                bulkStatusAction === 'enable' ? 'text-green-800' : 'text-orange-800'
+              }`}>
+                Anda akan {bulkStatusAction === 'enable' ? 'mengaktifkan' : 'menonaktifkan'}{' '}
+                <span className="font-bold">{selectedPeserta.length} peserta</span>
+              </p>
+              <ul className={`text-sm space-y-1 list-disc list-inside ${
+                bulkStatusAction === 'enable' ? 'text-green-700' : 'text-orange-700'
+              }`}>
+                {bulkStatusAction === 'enable' ? (
+                  <>
+                    <li>Akun peserta dapat login kembali</li>
+                    <li>Dapat mengikuti ujian yang dijadwalkan</li>
+                    <li>Counter pelanggaran akan direset (jika diaktifkan di jadwal)</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Akun peserta tidak dapat login</li>
+                    <li>Tidak dapat mengikuti ujian</li>
+                    <li>Data tetap tersimpan di sistem</li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            {isTogglingStatus && (
+              <div className="mt-4 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center justify-between text-sm">
+                  <span className={`font-medium ${
+                    bulkStatusAction === 'enable' ? 'text-green-700' : 'text-orange-700'
+                  }`}>
+                    Memproses...
+                  </span>
+                </div>
+                <div className={`w-full rounded-full h-2 overflow-hidden ${
+                  bulkStatusAction === 'enable' ? 'bg-green-100' : 'bg-orange-100'
+                }`}>
+                  <div className={`h-2 rounded-full animate-pulse w-full ${
+                    bulkStatusAction === 'enable' 
+                      ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                      : 'bg-gradient-to-r from-orange-500 to-orange-600'
+                  }`}></div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsBulkStatusOpen(false)}
+              disabled={isTogglingStatus}
+            >
+              Batal
+            </Button>
+            <Button 
+              type="button" 
+              variant={bulkStatusAction === 'enable' ? 'default' : 'destructive'}
+              onClick={handleBulkToggleStatus}
+              disabled={isTogglingStatus}
+              className={bulkStatusAction === 'enable' ? 'bg-green-600 hover:bg-green-700' : ''}
+            >
+              {isTogglingStatus ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  {bulkStatusAction === 'enable' ? (
+                    <><CheckCircle className="h-4 w-4 mr-2" />Ya, Aktifkan</>
+                  ) : (
+                    <><XCircle className="h-4 w-4 mr-2" />Ya, Nonaktifkan</>
+                  )}
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>

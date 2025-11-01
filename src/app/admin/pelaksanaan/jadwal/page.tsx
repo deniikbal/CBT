@@ -52,6 +52,8 @@ interface JadwalUjian {
   acakSoal: boolean
   acakOpsi: boolean
   tampilkanNilai: boolean
+  resetPelanggaranOnEnable: boolean
+  autoSubmitOnViolation: boolean
   isActive: boolean
   bankSoal: {
     id: string
@@ -98,6 +100,8 @@ export default function JadwalUjianPage() {
     acakSoal: false,
     acakOpsi: false,
     tampilkanNilai: true,
+    resetPelanggaranOnEnable: true,
+    autoSubmitOnViolation: false,
     isActive: true,
   })
 
@@ -304,6 +308,8 @@ export default function JadwalUjianPage() {
         acakSoal: jadwal.acakSoal,
         acakOpsi: jadwal.acakOpsi,
         tampilkanNilai: jadwal.tampilkanNilai,
+        resetPelanggaranOnEnable: jadwal.resetPelanggaranOnEnable ?? true,
+        autoSubmitOnViolation: jadwal.autoSubmitOnViolation ?? false,
         isActive: jadwal.isActive,
       })
       setIsDialogOpen(true)
@@ -425,6 +431,8 @@ export default function JadwalUjianPage() {
       acakSoal: false,
       acakOpsi: false,
       tampilkanNilai: true,
+      resetPelanggaranOnEnable: true,
+      autoSubmitOnViolation: false,
       isActive: true,
     })
   }
@@ -842,7 +850,9 @@ export default function JadwalUjianPage() {
             {/* Pengaturan */}
             <div className="border-t pt-3">
               <Label className="text-base font-semibold mb-3 block">Pengaturan Ujian</Label>
-              <div className="grid grid-cols-3 gap-8">
+              
+              {/* Row 1: Acak Soal & Acak Opsi */}
+              <div className="grid grid-cols-2 gap-8 mb-4">
                 {/* Acak Soal */}
                 <div className="space-y-2">
                   <Label>Acak Soal</Label>
@@ -882,7 +892,10 @@ export default function JadwalUjianPage() {
                     </div>
                   </RadioGroup>
                 </div>
+              </div>
 
+              {/* Row 2: Tampilkan Nilai & Reset Pelanggaran */}
+              <div className="grid grid-cols-2 gap-8 mb-4">
                 {/* Tampilkan Nilai Siswa */}
                 <div className="space-y-2">
                   <Label>Tampilkan Nilai ke Siswa</Label>
@@ -898,6 +911,51 @@ export default function JadwalUjianPage() {
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="false" id="tampilkan-nilai-tidak" />
                         <Label htmlFor="tampilkan-nilai-tidak" className="cursor-pointer font-normal">Tidak</Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+
+                {/* Reset Pelanggaran Saat Enable */}
+                <div className="space-y-2">
+                  <Label>Reset Pelanggaran Saat Aktivasi</Label>
+                  <p className="text-xs text-gray-500">Reset counter pelanggaran saat admin aktifkan akun peserta</p>
+                  <RadioGroup
+                    value={formData.resetPelanggaranOnEnable ? 'true' : 'false'}
+                    onValueChange={(value) => setFormData({ ...formData, resetPelanggaranOnEnable: value === 'true' })}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="reset-pelanggaran-ya" />
+                        <Label htmlFor="reset-pelanggaran-ya" className="cursor-pointer font-normal">Ya</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="reset-pelanggaran-tidak" />
+                        <Label htmlFor="reset-pelanggaran-tidak" className="cursor-pointer font-normal">Tidak</Label>
+                      </div>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              {/* Row 3: Auto Submit & Status */}
+              <div className="grid grid-cols-2 gap-8">
+                {/* Auto Submit On Violation */}
+                <div className="space-y-2">
+                  <Label>Auto Submit Saat 5x Pelanggaran</Label>
+                  <p className="text-xs text-gray-500">Jawaban otomatis terkirim saat peserta blur 5x (mode strict)</p>
+                  <RadioGroup
+                    value={formData.autoSubmitOnViolation ? 'true' : 'false'}
+                    onValueChange={(value) => setFormData({ ...formData, autoSubmitOnViolation: value === 'true' })}
+                  >
+                    <div className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="true" id="auto-submit-ya" />
+                        <Label htmlFor="auto-submit-ya" className="cursor-pointer font-normal">Ya</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="false" id="auto-submit-tidak" />
+                        <Label htmlFor="auto-submit-tidak" className="cursor-pointer font-normal">Tidak</Label>
                       </div>
                     </div>
                   </RadioGroup>

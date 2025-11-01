@@ -8,6 +8,9 @@ interface SecurityConfig {
   maxBlurCount?: number
   enableFullscreen?: boolean
   enableRightClickBlock?: boolean
+  initialBlurCount?: number
+  autoSubmitOnViolation?: boolean
+  onAutoSubmit?: () => void
 }
 
 export function useExamSecurity({
@@ -16,13 +19,21 @@ export function useExamSecurity({
   maxBlurCount = 5,
   enableFullscreen = true,
   enableRightClickBlock = true,
+  initialBlurCount = 0,
+  autoSubmitOnViolation = false,
+  onAutoSubmit,
 }: SecurityConfig) {
   const router = useRouter()
-  const [blurCount, setBlurCount] = useState(0)
+  const [blurCount, setBlurCount] = useState(initialBlurCount)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const sessionId = useRef<string>(crypto.randomUUID())
   const sessionCheckInterval = useRef<NodeJS.Timeout>()
+
+  // Update blurCount when initialBlurCount changes (from database)
+  useEffect(() => {
+    setBlurCount(initialBlurCount)
+  }, [initialBlurCount])
 
   // Detect mobile device
   useEffect(() => {
@@ -185,54 +196,84 @@ export function useExamSecurity({
       }
 
       if (newCount >= maxBlurCount) {
-        toast.error(
-          `Anda terlalu sering keluar dari tab ujian (${newCount}x). Akun Anda akan dinonaktifkan!`,
-          { duration: 8000 }
-        )
-        
-        // Log account disable activity
-        try {
-          await fetch('/api/ujian/log-activity', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              hasilUjianId,
-              pesertaId,
-              activityType: 'SESSION_VIOLATION',
-              metadata: JSON.stringify({ reason: 'Max blur exceeded, account disabled' }),
-            }),
-          })
-        } catch (error) {
-          console.error('Failed to log SESSION_VIOLATION:', error)
-        }
-        
-        // Disable account immediately
-        try {
-          const response = await fetch(`/api/peserta/${pesertaId}/disable`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ reason: 'Pelanggaran keamanan ujian (keluar tab > 5x)' })
-          })
+        // Check if auto submit is enabled
+        if (autoSubmitOnViolation && onAutoSubmit) {
+          toast.error(
+            `Anda terlalu sering keluar dari tab ujian (${newCount}x). Jawaban akan otomatis terkirim!`,
+            { duration: 8000 }
+          )
           
-          const data = await response.json()
+          // Log force submit activity
+          try {
+            await fetch('/api/ujian/log-activity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hasilUjianId,
+                pesertaId,
+                activityType: 'FORCE_SUBMIT',
+                metadata: JSON.stringify({ reason: 'Max blur exceeded, auto submit' }),
+              }),
+            })
+          } catch (error) {
+            console.error('Failed to log FORCE_SUBMIT:', error)
+          }
           
-          if (response.ok) {
-            toast.error('Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.', {
-              duration: 5000
+          // Trigger auto submit after short delay
+          setTimeout(() => {
+            onAutoSubmit()
+          }, 2000)
+        } else {
+          // Original behavior: disable account
+          toast.error(
+            `Anda terlalu sering keluar dari tab ujian (${newCount}x). Akun Anda akan dinonaktifkan!`,
+            { duration: 8000 }
+          )
+          
+          // Log account disable activity
+          try {
+            await fetch('/api/ujian/log-activity', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hasilUjianId,
+                pesertaId,
+                activityType: 'SESSION_VIOLATION',
+                metadata: JSON.stringify({ reason: 'Max blur exceeded, account disabled' }),
+              }),
+            })
+          } catch (error) {
+            console.error('Failed to log SESSION_VIOLATION:', error)
+          }
+          
+          // Disable account immediately
+          try {
+            const response = await fetch(`/api/peserta/${pesertaId}/disable`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reason: 'Pelanggaran keamanan ujian (keluar tab > 5x)' })
             })
             
-            // Logout after 3 seconds
-            setTimeout(() => {
-              localStorage.removeItem('peserta')
-              window.location.href = '/login'
-            }, 3000)
-          } else {
-            console.error('Failed to disable account:', data)
-            toast.error('Terjadi kesalahan saat menonaktifkan akun')
+            const data = await response.json()
+            
+            if (response.ok) {
+              toast.error('Akun Anda telah dinonaktifkan. Hubungi pengawas untuk mengaktifkan kembali.', {
+                duration: 5000
+              })
+              
+              // Logout after 3 seconds
+              setTimeout(() => {
+                localStorage.removeItem('peserta')
+                window.location.href = '/login'
+              }, 3000)
+            } else {
+              console.error('Failed to disable account:', data)
+              toast.error('Terjadi kesalahan saat menonaktifkan akun')
+            }
+          } catch (error) {
+            console.error('Error calling disable API:', error)
+            toast.error('Terjadi kesalahan sistem')
           }
-        } catch (error) {
-          console.error('Error calling disable API:', error)
-          toast.error('Terjadi kesalahan sistem')
         }
       } else {
         toast.warning(

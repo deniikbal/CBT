@@ -29,6 +29,7 @@ export async function GET(
       minimumPengerjaan: jadwal.minimumPengerjaan,
       waktuMulai: jadwal.waktuMulai ? jadwal.waktuMulai.toISOString() : new Date().toISOString(),
       tampilkanNilai: jadwal.tampilkanNilai,
+      autoSubmitOnViolation: jadwal.autoSubmitOnViolation || false,
     })
   } catch (error) {
     console.error('Error fetching jadwal info:', error)

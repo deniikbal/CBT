@@ -1,0 +1,2 @@
+ALTER TABLE "jadwal_ujian" ADD COLUMN "reset_pelanggaran_on_enable" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "jadwal_ujian" ADD COLUMN "auto_submit_on_violation" boolean DEFAULT false NOT NULL;

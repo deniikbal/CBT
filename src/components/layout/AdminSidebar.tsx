@@ -75,7 +75,8 @@ const getMenuItems = (role?: string): MenuItem[] => {
         title: 'Hasil Ujian',
         icon: Award,
         submenu: [
-          { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList }
+          { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList },
+          { title: 'Belum Ujian', href: '/admin/hasil-ujian/belum-ujian', icon: Users }
         ]
       }
     ]
@@ -102,7 +103,8 @@ const getMenuItems = (role?: string): MenuItem[] => {
       title: 'Hasil Ujian',
       icon: Award,
       submenu: [
-        { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList }
+        { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList },
+        { title: 'Belum Ujian', href: '/admin/hasil-ujian/belum-ujian', icon: Users }
       ]
     }
   ]

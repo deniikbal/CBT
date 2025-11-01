@@ -1,0 +1,1 @@
+ALTER TABLE "hasil_ujian_peserta" ADD COLUMN "jumlah_pelanggaran" integer DEFAULT 0 NOT NULL;

@@ -99,6 +99,20 @@
       "when": 1761913675420,
       "tag": "0013_polite_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1761996542408,
+      "tag": "0014_crazy_firelord",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1761997527525,
+      "tag": "0015_smiling_stephen_strange",
+      "breakpoints": true
     }
   ]
 }

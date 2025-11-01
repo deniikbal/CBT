@@ -384,10 +384,13 @@ export async function POST(
         acakSoal: jadwal.acakSoal,
         acakOpsi: jadwal.acakOpsi,
         tampilkanNilai: jadwal.tampilkanNilai,
+        resetPelanggaranOnEnable: jadwal.resetPelanggaranOnEnable,
+        autoSubmitOnViolation: jadwal.autoSubmitOnViolation,
         waktuMulai: existingHasil?.waktuMulai || now,
       },
       soal: processedSoal,
       existingAnswers: existingHasil?.jawaban || null,
+      existingViolationCount: existingHasil?.jumlahPelanggaran || 0,
     });
   } catch (error) {
     console.error('Error starting ujian:', error);
