@@ -94,26 +94,44 @@ export async function POST(
       console.log('Ujian sudah expired, mengabaikan validasi minimum waktu');
     }
 
-    // Get all soal for grading
-    const soalList = await db
-      .select()
-      .from(soalBank)
-      .where(eq(soalBank.bankSoalId, jadwal.bankSoalId));
+    // Get snapshot kunci jawaban (prioritize snapshot, fallback to soalBank if not exist)
+    let kunciJawabanSnapshot: Record<string, string> = {};
+    let useSnapshot = false;
+    
+    if (hasil.kunciJawabanSnapshot) {
+      kunciJawabanSnapshot = JSON.parse(hasil.kunciJawabanSnapshot);
+      useSnapshot = true;
+      console.log('[GRADING] Using snapshot kunci jawaban');
+    } else {
+      // Fallback: get current kunci jawaban from soalBank (for backward compatibility)
+      console.log('[GRADING] No snapshot found, falling back to current soalBank');
+      const soalList = await db
+        .select()
+        .from(soalBank)
+        .where(eq(soalBank.bankSoalId, jadwal.bankSoalId));
+      
+      soalList.forEach((soal) => {
+        kunciJawabanSnapshot[soal.id] = soal.jawabanBenar;
+      });
+    }
 
     // Get option mappings if options were shuffled
     const optionMappings = hasil.optionMappings 
       ? JSON.parse(hasil.optionMappings) 
       : {};
 
-    // Calculate score
+    // Calculate score using snapshot
     let benar = 0;
-    const totalSoal = soalList.length;
+    const totalSoal = Object.keys(kunciJawabanSnapshot).length;
 
     console.log('[GRADING] Starting grading process');
+    console.log('[GRADING] Using snapshot:', useSnapshot);
     console.log('[GRADING] Has option mappings:', Object.keys(optionMappings).length > 0);
+    console.log('[GRADING] Total soal:', totalSoal);
 
-    soalList.forEach((soal) => {
-      const jawabanPeserta = jawaban[soal.id];
+    Object.keys(kunciJawabanSnapshot).forEach((soalId) => {
+      const jawabanPeserta = jawaban[soalId];
+      const kunciJawaban = kunciJawabanSnapshot[soalId];
       
       if (!jawabanPeserta) {
         // No answer - incorrect
@@ -122,21 +140,21 @@ export async function POST(
 
       // If options were shuffled, convert answer back to original key
       let originalAnswer = jawabanPeserta;
-      if (optionMappings[soal.id] && jadwal.acakOpsi) {
-        const mapping = optionMappings[soal.id];
+      if (optionMappings[soalId] && jadwal.acakOpsi) {
+        const mapping = optionMappings[soalId];
         // mapping is { newKey: originalKey }
         // jawabanPeserta is newKey, we need originalKey
         originalAnswer = mapping[jawabanPeserta] || jawabanPeserta;
         console.log('[GRADING]', {
-          soalId: soal.id.substring(0, 8),
+          soalId: soalId.substring(0, 8),
           pesertaAnswer: jawabanPeserta,
           convertedAnswer: originalAnswer,
-          correctAnswer: soal.jawabanBenar,
-          isCorrect: originalAnswer === soal.jawabanBenar
+          correctAnswer: kunciJawaban,
+          isCorrect: originalAnswer === kunciJawaban
         });
       }
 
-      if (originalAnswer === soal.jawabanBenar) {
+      if (originalAnswer === kunciJawaban) {
         benar++;
       }
     });

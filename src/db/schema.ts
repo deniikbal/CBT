@@ -179,6 +179,7 @@ export const hasilUjianPeserta = pgTable('hasil_ujian_peserta', {
   ipAddress: text('ip_address'), // IP address saat mulai
   soalOrder: text('soal_order'), // JSON array of soal IDs dalam urutan yang sudah diacak (untuk consistency)
   optionMappings: text('option_mappings'), // JSON object: { soalId: { A: 'C', B: 'A', ... } } - mapping shuffle opsi
+  kunciJawabanSnapshot: text('kunci_jawaban_snapshot'), // JSON object: { soalId: 'A'/'B'/'C'/'D'/'E' } - snapshot kunci jawaban saat ujian dimulai
   jumlahPelanggaran: integer('jumlah_pelanggaran').notNull().default(0), // counter untuk tab blur violations
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),

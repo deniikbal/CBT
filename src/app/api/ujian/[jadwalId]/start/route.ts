@@ -230,6 +230,7 @@ export async function POST(
     let processedSoal;
     let soalOrder;
     let optionMappings;
+    let kunciJawabanSnapshot: Record<string, string> = {};
 
     // Check if already started and has saved order
     if (existingHasil && existingHasil.soalOrder) {
@@ -239,6 +240,11 @@ export async function POST(
       soalOrder = JSON.parse(existingHasil.soalOrder);
       optionMappings = existingHasil.optionMappings 
         ? JSON.parse(existingHasil.optionMappings) 
+        : {};
+      
+      // Load snapshot kunci jawaban if exists
+      kunciJawabanSnapshot = existingHasil.kunciJawabanSnapshot
+        ? JSON.parse(existingHasil.kunciJawabanSnapshot)
         : {};
 
       // Re-order soal based on saved order
@@ -301,6 +307,13 @@ export async function POST(
       // Save soal order
       soalOrder = processedSoal.map((s: any) => s.id);
       optionMappings = {};
+      
+      // Create snapshot of kunci jawaban (before shuffling options)
+      soalList.forEach((soal: any) => {
+        kunciJawabanSnapshot[soal.id] = soal.jawabanBenar;
+      });
+      
+      console.log('[SNAPSHOT] Created kunci jawaban snapshot for', Object.keys(kunciJawabanSnapshot).length, 'soal');
 
       // Acak opsi jika perlu
       processedSoal = processedSoal.map((soal: any, index) => {
@@ -362,10 +375,12 @@ export async function POST(
           status: 'in_progress',
           soalOrder: JSON.stringify(soalOrder),
           optionMappings: JSON.stringify(optionMappings),
+          kunciJawabanSnapshot: JSON.stringify(kunciJawabanSnapshot),
         })
         .returning();
       
       hasilId = newHasil.id;
+      console.log('[SNAPSHOT] Saved snapshot to database for hasilId:', hasilId);
     }
 
     // Debug: Log soal order being returned

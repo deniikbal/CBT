@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Award, Eye, FileText } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Award, Eye, FileText, RefreshCw, AlertTriangle } from 'lucide-react'
 import { DataTable } from '@/components/ui/data-table'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useToast } from '@/hooks/use-toast'
 
 interface HasilUjian {
   id: string
@@ -43,12 +45,19 @@ interface JawabanDetail {
 }
 
 export default function HasilUjianPage() {
+  const { toast } = useToast()
   const [hasilList, setHasilList] = useState<HasilUjian[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedHasil, setSelectedHasil] = useState<HasilUjian | null>(null)
   const [jawabanDetail, setJawabanDetail] = useState<JawabanDetail[]>([])
   const [loadingDetail, setLoadingDetail] = useState(false)
   const [errorDetail, setErrorDetail] = useState<string>('')
+  
+  // Recalculate states
+  const [showRecalculateDialog, setShowRecalculateDialog] = useState(false)
+  const [selectedForRecalc, setSelectedForRecalc] = useState<Set<string>>(new Set())
+  const [updateSnapshot, setUpdateSnapshot] = useState(false)
+  const [recalculating, setRecalculating] = useState(false)
 
   useEffect(() => {
     fetchHasil()
@@ -108,6 +117,87 @@ export default function HasilUjianPage() {
     }
   }
 
+  const handleRecalculate = async () => {
+    if (selectedForRecalc.size === 0) {
+      toast({
+        title: 'Error',
+        description: 'Pilih minimal 1 hasil ujian untuk di-recalculate',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setRecalculating(true)
+    try {
+      console.log('[Recalculate] Starting recalculation for', selectedForRecalc.size, 'hasil')
+      const response = await fetch('/api/admin/hasil-ujian/recalculate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          hasilIds: Array.from(selectedForRecalc),
+          updateSnapshot,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[Recalculate] Success:', data)
+        
+        toast({
+          title: 'Berhasil!',
+          description: `${data.totalProcessed} nilai berhasil di-recalculate`,
+        })
+
+        // Refresh data
+        await fetchHasil()
+        
+        // Reset selection
+        setSelectedForRecalc(new Set())
+        setShowRecalculateDialog(false)
+      } else {
+        const error = await response.json()
+        console.error('[Recalculate] Error:', error)
+        
+        toast({
+          title: 'Gagal',
+          description: error.error || 'Gagal melakukan recalculate',
+          variant: 'destructive',
+        })
+      }
+    } catch (error) {
+      console.error('[Recalculate] Exception:', error)
+      toast({
+        title: 'Error',
+        description: 'Terjadi kesalahan saat recalculate',
+        variant: 'destructive',
+      })
+    } finally {
+      setRecalculating(false)
+    }
+  }
+
+  const toggleSelectForRecalc = (hasilId: string) => {
+    setSelectedForRecalc(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(hasilId)) {
+        newSet.delete(hasilId)
+      } else {
+        newSet.add(hasilId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedForRecalc.size === hasilList.length) {
+      setSelectedForRecalc(new Set())
+    } else {
+      setSelectedForRecalc(new Set(hasilList.map(h => h.id)))
+    }
+  }
+
   const getNilaiGrade = (nilai: number) => {
     if (nilai >= 85) return { grade: 'A', color: 'bg-green-500' }
     if (nilai >= 75) return { grade: 'B', color: 'bg-blue-500' }
@@ -124,6 +214,21 @@ export default function HasilUjianPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Hasil Ujian</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">Lihat hasil ujian siswa yang sudah selesai</p>
         </div>
+        <div className="flex gap-2">
+          {selectedForRecalc.size > 0 && (
+            <Badge variant="outline" className="px-3 py-1.5">
+              {selectedForRecalc.size} dipilih
+            </Badge>
+          )}
+          <Button
+            onClick={() => setShowRecalculateDialog(true)}
+            className="bg-orange-600 hover:bg-orange-700"
+            disabled={selectedForRecalc.size === 0}
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Fix & Recalculate
+          </Button>
+        </div>
       </div>
 
       {/* Main Table */}
@@ -136,6 +241,22 @@ export default function HasilUjianPage() {
           <DataTable
             data={hasilList}
             columns={[
+              {
+                header: () => (
+                  <Checkbox
+                    checked={selectedForRecalc.size === hasilList.length && hasilList.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                ),
+                accessor: () => null,
+                cell: (row) => (
+                  <Checkbox
+                    checked={selectedForRecalc.has(row.id)}
+                    onCheckedChange={() => toggleSelectForRecalc(row.id)}
+                  />
+                ),
+                className: 'w-12',
+              },
               {
                 header: 'Peserta',
                 accessor: 'pesertaName',
@@ -423,6 +544,104 @@ export default function HasilUjianPage() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Recalculate Dialog */}
+      <Dialog open={showRecalculateDialog} onOpenChange={setShowRecalculateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <RefreshCw className="h-5 w-5 text-orange-600" />
+              </div>
+              <div>
+                <DialogTitle>Fix & Recalculate Nilai</DialogTitle>
+                <DialogDescription>
+                  Hitung ulang nilai berdasarkan kunci jawaban terbaru
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Warning */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex gap-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <div className="font-semibold text-yellow-900 mb-1">Perhatian!</div>
+                <div className="text-yellow-800">
+                  Proses ini akan menghitung ulang nilai siswa berdasarkan kunci jawaban yang ada saat ini di bank soal.
+                  Gunakan fitur ini jika ada kesalahan kunci jawaban yang sudah diperbaiki.
+                </div>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="text-sm space-y-2">
+                <div className="font-semibold text-blue-900">Yang akan diproses:</div>
+                <div className="text-blue-800">
+                  • {selectedForRecalc.size} hasil ujian dipilih<br/>
+                  • Nilai akan dihitung ulang berdasarkan jawaban siswa yang tersimpan<br/>
+                  • Jawaban siswa tetap sama, hanya nilai yang berubah
+                </div>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Checkbox
+                  id="updateSnapshot"
+                  checked={updateSnapshot}
+                  onCheckedChange={(checked) => setUpdateSnapshot(checked as boolean)}
+                />
+                <div className="flex-1">
+                  <label
+                    htmlFor="updateSnapshot"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    Update Snapshot Kunci Jawaban
+                  </label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Jika dicentang, sistem akan menyimpan kunci jawaban terbaru sebagai snapshot baru.
+                    Ini berarti nilai siswa akan tetap stabil meskipun kunci jawaban berubah lagi di masa depan.
+                  </p>
+                  <p className="text-xs text-orange-600 mt-2 font-medium">
+                    Rekomendasi: Centang opsi ini setelah kunci jawaban dipastikan sudah benar.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowRecalculateDialog(false)}
+              disabled={recalculating}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={handleRecalculate}
+              disabled={recalculating}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              {recalculating ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Recalculate Sekarang
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
