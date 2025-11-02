@@ -50,15 +50,18 @@ export async function GET(
       );
     }
 
-    // Get peserta list
+    // Get peserta list with kelas info
     const pesertaList = await db
       .select({
         id: peserta.id,
         name: peserta.name,
         noUjian: peserta.noUjian,
+        kelasId: peserta.kelasId,
+        kelasName: kelas.name,
       })
       .from(jadwalUjianPeserta)
       .innerJoin(peserta, eq(jadwalUjianPeserta.pesertaId, peserta.id))
+      .leftJoin(kelas, eq(peserta.kelasId, kelas.id))
       .where(eq(jadwalUjianPeserta.jadwalUjianId, id));
 
     return NextResponse.json({ ...jadwal, peserta: pesertaList });

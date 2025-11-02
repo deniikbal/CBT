@@ -38,6 +38,7 @@ interface Peserta {
   name: string
   noUjian: string
   kelasId?: string
+  kelasName?: string | null
 }
 
 interface JadwalUjian {
@@ -87,6 +88,11 @@ export default function JadwalUjianPage() {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [loadingExport, setLoadingExport] = useState<Set<string>>(new Set())
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
+  const [exportJadwalId, setExportJadwalId] = useState<string | null>(null)
+  const [exportNamaUjian, setExportNamaUjian] = useState<string>('')
+  const [exportKelasId, setExportKelasId] = useState<string>('all')
+  const [exportKelasList, setExportKelasList] = useState<Kelas[]>([])
   
   const [formData, setFormData] = useState({
     namaUjian: '',
@@ -251,20 +257,77 @@ export default function JadwalUjianPage() {
 
   const handleExportKartu = async (jadwalId: string, namaUjian: string) => {
     try {
-      // Set loading state
-      setLoadingExport(prev => new Set(prev).add(jadwalId))
+      // Fetch jadwal detail to get peserta and their kelas
+      const response = await fetch(`/api/jadwal-ujian/${jadwalId}`)
+      if (!response.ok) {
+        toast.error('Gagal mengambil data jadwal')
+        return
+      }
 
-      const response = await fetch(`/api/jadwal-ujian/${jadwalId}/export-kartu`)
+      const jadwal = await response.json()
+      
+      // Get unique kelas from peserta
+      const uniqueKelas = new Map<string, Kelas>()
+      jadwal.peserta?.forEach((p: Peserta) => {
+        if (p.kelasId) {
+          const kelasData = kelasList.find(k => k.id === p.kelasId)
+          if (kelasData && !uniqueKelas.has(kelasData.id)) {
+            uniqueKelas.set(kelasData.id, kelasData)
+          }
+        }
+      })
+
+      // Sort kelas dengan natural order
+      const sortedKelas = Array.from(uniqueKelas.values()).sort((a, b) =>
+        a.name.localeCompare(b.name, 'id-ID', { numeric: true, sensitivity: 'base' })
+      )
+
+      // Open dialog with kelas options
+      setExportJadwalId(jadwalId)
+      setExportNamaUjian(namaUjian)
+      setExportKelasList(sortedKelas)
+      setExportKelasId('all')
+      setIsExportDialogOpen(true)
+    } catch (error) {
+      console.error('Error:', error)
+      toast.error('Terjadi kesalahan')
+    }
+  }
+
+  const confirmExportKartu = async () => {
+    if (!exportJadwalId) return
+
+    try {
+      // Set loading state
+      setLoadingExport(prev => new Set(prev).add(exportJadwalId))
+      setIsExportDialogOpen(false)
+
+      // Build URL with kelasId query param if not 'all'
+      const url = exportKelasId === 'all' 
+        ? `/api/jadwal-ujian/${exportJadwalId}/export-kartu`
+        : `/api/jadwal-ujian/${exportJadwalId}/export-kartu?kelasId=${exportKelasId}`
+
+      const response = await fetch(url)
       
       if (response.ok) {
         const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
+        const downloadUrl = window.URL.createObjectURL(blob)
         const a = document.createElement('a')
-        a.href = url
-        a.download = `Kartu-Ujian-${namaUjian.replace(/\s+/g, '-')}.pdf`
+        a.href = downloadUrl
+        
+        // Add kelas name to filename if filtered
+        let filename = `Kartu-Ujian-${exportNamaUjian.replace(/\s+/g, '-')}`
+        if (exportKelasId !== 'all') {
+          const selectedKelas = exportKelasList.find(k => k.id === exportKelasId)
+          if (selectedKelas) {
+            filename += `-${selectedKelas.name}`
+          }
+        }
+        a.download = `${filename}.pdf`
+        
         document.body.appendChild(a)
         a.click()
-        window.URL.revokeObjectURL(url)
+        window.URL.revokeObjectURL(downloadUrl)
         document.body.removeChild(a)
         toast.success('Kartu ujian berhasil diunduh')
       } else {
@@ -278,9 +341,14 @@ export default function JadwalUjianPage() {
       // Remove loading state
       setLoadingExport(prev => {
         const newSet = new Set(prev)
-        newSet.delete(jadwalId)
+        newSet.delete(exportJadwalId)
         return newSet
       })
+      // Reset export states
+      setExportJadwalId(null)
+      setExportNamaUjian('')
+      setExportKelasId('all')
+      setExportKelasList([])
     }
   }
 
@@ -1104,6 +1172,65 @@ export default function JadwalUjianPage() {
                 </>
               )}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Export Kartu Dialog */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600">
+              <Download className="h-5 w-5" />
+              Export Kartu Ujian
+            </DialogTitle>
+            <DialogDescription className="pt-3">
+              Pilih kelas untuk export kartu ujian
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="exportKelas">Filter Kelas</Label>
+              <Select
+                value={exportKelasId}
+                onValueChange={setExportKelasId}
+              >
+                <SelectTrigger id="exportKelas" className="w-full">
+                  <SelectValue placeholder="Pilih kelas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Kelas</SelectItem>
+                  {exportKelasList.map((kls) => (
+                    <SelectItem key={kls.id} value={kls.id}>
+                      {kls.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                {exportKelasId === 'all' 
+                  ? 'Kartu ujian akan digenerate untuk semua kelas'
+                  : `Kartu ujian hanya untuk kelas ${exportKelasList.find(k => k.id === exportKelasId)?.name || ''}`
+                }
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsExportDialogOpen(false)}
+              >
+                Batal
+              </Button>
+              <Button
+                type="button"
+                onClick={confirmExportKartu}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export PDF
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

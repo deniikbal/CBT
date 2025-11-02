@@ -59,21 +59,38 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     lineHeight: 1.2,
   },
+  infoContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  },
   infoRow: {
     display: 'flex',
     flexDirection: 'row',
+    gap: 8,
     marginBottom: 2,
-    fontSize: 5,
+  },
+  infoItem: {
+    display: 'flex',
+    flexDirection: 'row',
+    flex: 1,
+    fontSize: 7,
   },
   infoLabel: {
     fontWeight: 'bold',
-    width: 30,
+    marginRight: 3,
     color: '#374151',
   },
   infoValue: {
     flex: 1,
     color: '#1F2937',
     overflow: 'hidden',
+  },
+  infoValueBold: {
+    flex: 1,
+    color: '#1F2937',
+    overflow: 'hidden',
+    fontWeight: 'bold',
   },
   scheduleSection: {
     marginTop: 3,
@@ -159,22 +176,29 @@ const KartuCard = ({
       </View>
 
       {/* Peserta Info */}
-      <View>
+      <View style={styles.infoContainer}>
+        {/* Row 1: No. Ujian & Password */}
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>No. Ujian:</Text>
-          <Text style={styles.infoValue}>{peserta.noUjian}</Text>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>No. Ujian:</Text>
+            <Text style={styles.infoValueBold}>{peserta.noUjian}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Password:</Text>
+            <Text style={styles.infoValueBold}>{peserta.password}</Text>
+          </View>
         </View>
+        
+        {/* Row 2: Nama & Kelas */}
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Nama:</Text>
-          <Text style={styles.infoValue}>{peserta.name}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Kelas:</Text>
-          <Text style={styles.infoValue}>{peserta.kelasName || '-'}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Password:</Text>
-          <Text style={styles.infoValue}>{peserta.password}</Text>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Nama:</Text>
+            <Text style={styles.infoValue}>{peserta.name}</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Text style={styles.infoLabel}>Kelas:</Text>
+            <Text style={styles.infoValue}>{peserta.kelasName || '-'}</Text>
+          </View>
         </View>
       </View>
 

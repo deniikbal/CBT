@@ -12,6 +12,8 @@ export async function GET(
 ) {
   try {
     const { id: jadwalId } = await params;
+    const { searchParams } = new URL(request.url);
+    const filterKelasId = searchParams.get('kelasId'); // Get kelasId from query params
 
     // Get jadwal with related data
     const [jadwal] = await db
@@ -39,14 +41,15 @@ export async function GET(
     }
 
     // Get peserta list for this jadwal with kelas info
-    let whereCondition: any = eq(jadwalUjianPeserta.jadwalUjianId, jadwalId);
+    let whereConditions: any[] = [eq(jadwalUjianPeserta.jadwalUjianId, jadwalId)];
     
-    // If jadwal has specific kelas, filter by that kelas
-    if (jadwal.kelasId) {
-      whereCondition = and(
-        eq(jadwalUjianPeserta.jadwalUjianId, jadwalId),
-        eq(peserta.kelasId, jadwal.kelasId)
-      );
+    // If user selected specific kelas in filter, apply that filter
+    if (filterKelasId && filterKelasId !== 'all') {
+      whereConditions.push(eq(peserta.kelasId, filterKelasId));
+    }
+    // Otherwise, if jadwal has specific kelas, filter by that kelas
+    else if (jadwal.kelasId) {
+      whereConditions.push(eq(peserta.kelasId, jadwal.kelasId));
     }
 
     const pesertaList = await db
@@ -61,7 +64,7 @@ export async function GET(
       .from(jadwalUjianPeserta)
       .innerJoin(peserta, eq(jadwalUjianPeserta.pesertaId, peserta.id))
       .leftJoin(kelas, eq(peserta.kelasId, kelas.id))
-      .where(whereCondition);
+      .where(whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0]);
 
     if (pesertaList.length === 0) {
       return NextResponse.json(
