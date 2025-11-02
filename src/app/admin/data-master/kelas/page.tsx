@@ -346,7 +346,7 @@ export default function KelasPage() {
                   value={formData.jurusanId} 
                   onValueChange={(value) => setFormData({ ...formData, jurusanId: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih jurusan" />
                   </SelectTrigger>
                   <SelectContent>

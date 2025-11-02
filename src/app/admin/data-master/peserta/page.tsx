@@ -767,7 +767,7 @@ export default function PesertaPage() {
                   value={formData.jurusanId} 
                   onValueChange={(value) => setFormData({ ...formData, jurusanId: value, kelasId: '' })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Pilih jurusan" />
                   </SelectTrigger>
                   <SelectContent>
@@ -786,7 +786,7 @@ export default function PesertaPage() {
                   onValueChange={(value) => setFormData({ ...formData, kelasId: value })}
                   disabled={!formData.jurusanId}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder={formData.jurusanId ? "Pilih kelas" : "Pilih jurusan terlebih dahulu"} />
                   </SelectTrigger>
                   <SelectContent>

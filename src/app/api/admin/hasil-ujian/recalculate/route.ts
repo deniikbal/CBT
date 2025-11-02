@@ -24,9 +24,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log('[RECALCULATE] Starting recalculation for', hasilIds.length, 'hasil');
-    console.log('[RECALCULATE] Update snapshot:', updateSnapshot);
-
     // Get all hasil ujian
     const hasilList = await db
       .select({
@@ -59,8 +56,6 @@ export async function POST(request: NextRequest) {
 
     // Process each jadwal group
     for (const [jadwalId, hasilGroup] of jadwalMap.entries()) {
-      console.log('[RECALCULATE] Processing jadwalId:', jadwalId, 'with', hasilGroup.length, 'hasil');
-
       // Get jadwal info
       const [jadwal] = await db
         .select()
@@ -69,7 +64,6 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (!jadwal) {
-        console.error('[RECALCULATE] Jadwal not found:', jadwalId);
         continue;
       }
 
@@ -87,8 +81,6 @@ export async function POST(request: NextRequest) {
       soalList.forEach((soal) => {
         newKunciJawaban[soal.id] = soal.jawabanBenar;
       });
-
-      console.log('[RECALCULATE] Loaded', soalList.length, 'kunci jawaban from soalBank');
 
       // Recalculate each hasil
       for (const hasil of hasilGroup) {
@@ -160,10 +152,7 @@ export async function POST(request: NextRequest) {
             newNilai,
             snapshotUpdated: updateSnapshot,
           });
-
-          console.log('[RECALCULATE] Updated', hasil.id, '- New score:', skor, '/', skorMaksimal);
         } catch (error) {
-          console.error('[RECALCULATE] Error processing hasil:', hasil.id, error);
           results.push({
             hasilId: hasil.id,
             pesertaId: hasil.pesertaId,
@@ -173,15 +162,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('[RECALCULATE] Completed. Processed', results.length, 'hasil');
-
     return NextResponse.json({
       message: 'Recalculation completed',
       totalProcessed: results.length,
       results,
     });
   } catch (error) {
-    console.error('[RECALCULATE] Error:', error);
     return NextResponse.json(
       { 
         error: 'Failed to recalculate',
