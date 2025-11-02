@@ -210,6 +210,7 @@ export default function BelumUjianPage() {
                     size="sm"
                     onClick={() => handleViewDetail(row)}
                     disabled={row.belumUjian === 0}
+                    className="border-blue-600 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Detail ({row.belumUjian})

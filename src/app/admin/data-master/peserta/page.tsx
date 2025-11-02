@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, Upload, Loader2, Trash, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Edit, Trash2, Upload, Loader2, Trash, CheckCircle, XCircle, Key } from 'lucide-react'
 import { toast } from 'sonner'
 import { DataTable, Column } from '@/components/ui/data-table'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -66,6 +66,10 @@ export default function PesertaPage() {
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false)
   const [bulkStatusAction, setBulkStatusAction] = useState<'enable' | 'disable'>('enable')
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
+  const [isGeneratePasswordOpen, setIsGeneratePasswordOpen] = useState(false)
+  const [passwordMethod, setPasswordMethod] = useState<'admin' | 'random'>('admin')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [isGeneratingPassword, setIsGeneratingPassword] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formData, setFormData] = useState({ 
     name: '', 
@@ -445,6 +449,54 @@ export default function PesertaPage() {
     }
   }
 
+  const handleGeneratePassword = async () => {
+    if (selectedPeserta.length === 0) {
+      toast.error('Pilih peserta yang ingin digenerate passwordnya')
+      return
+    }
+
+    if (passwordMethod === 'admin' && !adminPassword.trim()) {
+      toast.error('Masukkan password yang ingin digunakan')
+      return
+    }
+
+    setIsGeneratingPassword(true)
+
+    try {
+      const response = await fetch('/api/peserta/generate-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          ids: selectedPeserta,
+          method: passwordMethod,
+          password: passwordMethod === 'admin' ? adminPassword : undefined
+        })
+      })
+
+      const data = await response.json()
+      
+      if (response.ok) {
+        await fetchPeserta()
+        setSelectedPeserta([])
+        setIsGeneratePasswordOpen(false)
+        setAdminPassword('')
+        setPasswordMethod('admin')
+        toast.success(`Berhasil generate password untuk ${data.count} peserta`, {
+          description: passwordMethod === 'admin' 
+            ? 'Password telah diset sesuai yang ditentukan'
+            : 'Password random 6 karakter telah digenerate'
+        })
+      } else {
+        toast.error(data.error || 'Gagal generate password')
+      }
+    } catch (error) {
+      console.error('Error generate password:', error)
+      toast.error('Terjadi kesalahan saat generate password')
+    } finally {
+      setIsGeneratingPassword(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center p-8">
@@ -493,6 +545,15 @@ export default function PesertaPage() {
                   >
                     <XCircle className="h-4 w-4 mr-2" />
                     <span>Nonaktifkan ({selectedPeserta.length})</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setIsGeneratePasswordOpen(true)}
+                    className="border-purple-600 text-purple-600 hover:bg-purple-50 w-full sm:w-auto text-xs sm:text-sm"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    <span>Generate Password ({selectedPeserta.length})</span>
                   </Button>
                   <Button 
                     variant="outline" 
@@ -833,24 +894,25 @@ export default function PesertaPage() {
                 accessor: () => null,
                 cell: (row) => (
                   <div className="flex justify-end gap-2">
-                    {row.isActive === false && (
+                    {row.isActive === false ? (
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleToggleStatus(row.id, true)}
                         title="Aktifkan Akun"
+                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
                       >
-                        <span className="text-green-600 text-xs font-medium">Aktifkan</span>
+                        <CheckCircle className="h-4 w-4" />
                       </Button>
-                    )}
-                    {row.isActive !== false && (
+                    ) : (
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         onClick={() => handleToggleStatus(row.id, false)}
                         title="Nonaktifkan Akun"
+                        className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                       >
-                        <span className="text-orange-600 text-xs font-medium">Nonaktifkan</span>
+                        <XCircle className="h-4 w-4" />
                       </Button>
                     )}
                     <Button 
@@ -1041,6 +1103,149 @@ export default function PesertaPage() {
                   ) : (
                     <><XCircle className="h-4 w-4 mr-2" />Ya, Nonaktifkan</>
                   )}
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate Password Dialog */}
+      <Dialog open={isGeneratePasswordOpen} onOpenChange={setIsGeneratePasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+                <Key className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">Generate Password</DialogTitle>
+                <DialogDescription className="mt-1">
+                  Generate password untuk {selectedPeserta.length} peserta terpilih
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Pilih Metode Generate Password</Label>
+              
+              <div className="space-y-2">
+                {/* Option 1: Admin Defined Password */}
+                <div 
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                    passwordMethod === 'admin' 
+                      ? 'border-purple-600 bg-purple-50' 
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                  onClick={() => setPasswordMethod('admin')}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="passwordMethod"
+                      value="admin"
+                      checked={passwordMethod === 'admin'}
+                      onChange={(e) => setPasswordMethod('admin')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm mb-1">Password yang Ditentukan</div>
+                      <div className="text-xs text-gray-600 mb-3">
+                        Semua peserta terpilih akan menggunakan password yang sama
+                      </div>
+                      
+                      {passwordMethod === 'admin' && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <Input
+                            type="text"
+                            placeholder="Masukkan password"
+                            value={adminPassword}
+                            onChange={(e) => setAdminPassword(e.target.value)}
+                            className="text-sm"
+                            autoFocus
+                          />
+                          <p className="text-xs text-gray-500">
+                            Contoh: 123456, password123, atau kata lainnya
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 2: Random Password */}
+                <div 
+                  className={`border rounded-lg p-4 cursor-pointer transition-all ${
+                    passwordMethod === 'random' 
+                      ? 'border-purple-600 bg-purple-50' 
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
+                  onClick={() => setPasswordMethod('random')}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="passwordMethod"
+                      value="random"
+                      checked={passwordMethod === 'random'}
+                      onChange={(e) => setPasswordMethod('random')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-sm mb-1">Generate Random</div>
+                      <div className="text-xs text-gray-600">
+                        Setiap peserta akan mendapat password random 6 karakter (kombinasi huruf & angka)
+                      </div>
+                      {passwordMethod === 'random' && (
+                        <div className="mt-3 p-3 bg-purple-100 rounded border border-purple-200 animate-in fade-in slide-in-from-top-2 duration-300">
+                          <p className="text-xs text-purple-800 font-medium">Contoh password random:</p>
+                          <p className="text-sm font-mono text-purple-900 mt-1">a3X9k2, B7m4Pq, K9z1Lw</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <p className="text-xs text-yellow-800">
+                <strong>Catatan:</strong> Password akan disimpan dalam bentuk ter-hash untuk keamanan. 
+                Password asli akan disimpan di field unhashedPassword untuk keperluan admin.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setIsGeneratePasswordOpen(false)
+                setAdminPassword('')
+                setPasswordMethod('admin')
+              }}
+              disabled={isGeneratingPassword}
+            >
+              Batal
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleGeneratePassword}
+              disabled={isGeneratingPassword || (passwordMethod === 'admin' && !adminPassword.trim())}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {isGeneratingPassword ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <Key className="h-4 w-4 mr-2" />
+                  Generate Password
                 </>
               )}
             </Button>

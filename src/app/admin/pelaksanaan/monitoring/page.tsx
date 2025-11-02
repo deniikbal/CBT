@@ -184,7 +184,7 @@ export default function MonitoringPage() {
             variant={autoRefresh ? "default" : "outline"}
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
-            className="w-full sm:w-auto text-xs sm:text-sm"
+            className={`w-full sm:w-auto text-xs sm:text-sm ${autoRefresh ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-spin' : ''}`} />
             {autoRefresh ? 'Auto Refresh' : 'Refresh Off'}
@@ -193,7 +193,7 @@ export default function MonitoringPage() {
             variant="outline"
             size="sm"
             onClick={() => fetchActiveExams()}
-            className="w-full sm:w-auto text-xs sm:text-sm"
+            className="w-full sm:w-auto text-xs sm:text-sm border-blue-600 text-blue-600 hover:bg-blue-50"
           >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Manual
@@ -340,6 +340,7 @@ export default function MonitoringPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleViewDetails(exam)}
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
                     >
                       <Eye className="h-4 w-4 mr-2" />
                       Detail

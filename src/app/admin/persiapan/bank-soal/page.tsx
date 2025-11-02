@@ -184,96 +184,98 @@ export default function BankSoalPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Bank Soal</h1>
-          <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola bank soal ujian</p>
-        </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Bank Soal
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{editingId ? 'Edit Bank Soal' : 'Tambah Bank Soal'}</DialogTitle>
-              <DialogDescription>
-                {editingId ? 'Edit data bank soal' : 'Tambah bank soal baru'}
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="kodeBankSoal">Kode Bank Soal *</Label>
-                <Input
-                  id="kodeBankSoal"
-                  placeholder="Contoh: BS-MTK-001"
-                  value={formData.kodeBankSoal}
-                  onChange={(e) => setFormData({ ...formData, kodeBankSoal: e.target.value })}
-                  required
-                  className="w-full"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="matpelId">Mata Pelajaran *</Label>
-                <Select 
-                  value={formData.matpelId} 
-                  onValueChange={(value) => setFormData({ ...formData, matpelId: value })}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Pilih mata pelajaran" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {matpelList.map((matpel) => (
-                      <SelectItem key={matpel.id} value={matpel.id}>
-                        {matpel.kodeMatpel} - {matpel.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="jumlahSoal">Jumlah Soal *</Label>
-                <Input
-                  id="jumlahSoal"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formData.jumlahSoal}
-                  onChange={(e) => setFormData({ ...formData, jumlahSoal: parseInt(e.target.value) || 0 })}
-                  required
-                  className="w-full"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
-                  Batal
-                </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {editingId ? 'Mengupdate...' : 'Menyimpan...'}
-                    </>
-                  ) : (
-                    editingId ? 'Update' : 'Simpan'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Bank Soal</h1>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola bank soal ujian</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Bank Soal</CardTitle>
-          <CardDescription>Total: {bankSoalList.length} bank soal</CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Daftar Bank Soal</CardTitle>
+              <CardDescription>Total: {bankSoalList.length} bank soal</CardDescription>
+            </div>
+            
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open)
+              if (!open) resetForm()
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Bank Soal
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingId ? 'Edit Bank Soal' : 'Tambah Bank Soal'}</DialogTitle>
+                  <DialogDescription>
+                    {editingId ? 'Edit data bank soal' : 'Tambah bank soal baru'}
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="kodeBankSoal">Kode Bank Soal *</Label>
+                    <Input
+                      id="kodeBankSoal"
+                      placeholder="Contoh: BS-MTK-001"
+                      value={formData.kodeBankSoal}
+                      onChange={(e) => setFormData({ ...formData, kodeBankSoal: e.target.value })}
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="matpelId">Mata Pelajaran *</Label>
+                    <Select 
+                      value={formData.matpelId} 
+                      onValueChange={(value) => setFormData({ ...formData, matpelId: value })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pilih mata pelajaran" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {matpelList.map((matpel) => (
+                          <SelectItem key={matpel.id} value={matpel.id}>
+                            {matpel.kodeMatpel} - {matpel.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="jumlahSoal">Jumlah Soal *</Label>
+                    <Input
+                      id="jumlahSoal"
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      value={formData.jumlahSoal}
+                      onChange={(e) => setFormData({ ...formData, jumlahSoal: parseInt(e.target.value) || 0 })}
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
+                      Batal
+                    </Button>
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          {editingId ? 'Mengupdate...' : 'Menyimpan...'}
+                        </>
+                      ) : (
+                        editingId ? 'Update' : 'Simpan'
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <DataTable
@@ -339,16 +341,26 @@ export default function BankSoalPage() {
                       variant="outline" 
                       size="sm" 
                       onClick={() => router.push(`/admin/persiapan/bank-soal/${row.id}/soal`)}
-                      className="gap-1"
+                      className="gap-1 border-blue-600 text-blue-600 hover:bg-blue-50"
                     >
                       <FileText className="h-4 w-4" />
                       Kelola Soal
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEdit(row)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDelete(row.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ),

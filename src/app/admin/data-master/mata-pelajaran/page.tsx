@@ -111,22 +111,29 @@ export default function MataPelajaranPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Data Mata Pelajaran</h1>
-          <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola data mata pelajaran</p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Data Mata Pelajaran</h1>
+        <p className="text-gray-600 mt-2 text-sm sm:text-base">Kelola data mata pelajaran</p>
+      </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={(open) => {
-          setIsDialogOpen(open)
-          if (!open) resetForm()
-        }}>
-          <DialogTrigger asChild>
-            <Button className="w-full sm:w-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Mata Pelajaran
-            </Button>
-          </DialogTrigger>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Daftar Mata Pelajaran</CardTitle>
+              <CardDescription>Total: {matpelList.length} mata pelajaran</CardDescription>
+            </div>
+            
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open)
+              if (!open) resetForm()
+            }}>
+              <DialogTrigger asChild>
+                <Button className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Mata Pelajaran
+                </Button>
+              </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingId ? 'Edit Mata Pelajaran' : 'Tambah Mata Pelajaran'}</DialogTitle>
@@ -159,19 +166,14 @@ export default function MataPelajaranPage() {
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit">
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
                   {editingId ? 'Update' : 'Simpan'}
                 </Button>
               </div>
             </form>
           </DialogContent>
         </Dialog>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Daftar Mata Pelajaran</CardTitle>
-          <CardDescription>Total: {matpelList.length} mata pelajaran</CardDescription>
+          </div>
         </CardHeader>
         <CardContent>
           <DataTable
@@ -197,11 +199,21 @@ export default function MataPelajaranPage() {
                 accessor: () => null,
                 cell: (row) => (
                   <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEdit(row)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDelete(row.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ),

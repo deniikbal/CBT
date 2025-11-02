@@ -474,35 +474,37 @@ export default function JadwalUjianPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Jadwal Ujian</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Kelola jadwal dan pengaturan ujian</p>
-        </div>
-        <Button onClick={handleOpenDialog} className="gap-2 w-full sm:w-auto">
-          <Plus className="h-4 w-4" />
-          Buat Jadwal
-        </Button>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold">Jadwal Ujian</h1>
+        <p className="text-gray-600 mt-1 text-sm sm:text-base">Kelola jadwal dan pengaturan ujian</p>
       </div>
 
       {/* Jadwal List */}
       <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <CardTitle>Daftar Jadwal Ujian</CardTitle>
-            <CardDescription>Kelola jadwal ujian yang telah dibuat</CardDescription>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Daftar Jadwal Ujian</CardTitle>
+              <CardDescription>Kelola jadwal ujian yang telah dibuat</CardDescription>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              {selectedIds.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  className="bg-red-600 hover:bg-red-700 w-full sm:w-auto text-xs sm:text-sm"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  <span>Hapus Terpilih ({selectedIds.length})</span>
+                </Button>
+              )}
+              <Button onClick={handleOpenDialog} size="sm" className="gap-2 w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4" />
+                Buat Jadwal
+              </Button>
+            </div>
           </div>
-          {selectedIds.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleBulkDelete}
-              className="bg-red-600 hover:bg-red-700 w-full sm:w-auto text-xs sm:text-sm"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              <span>Hapus Terpilih ({selectedIds.length})</span>
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
           <DataTable
@@ -587,6 +589,7 @@ export default function JadwalUjianPage() {
                     <Switch
                       checked={row.isActive}
                       onCheckedChange={() => toggleIsActive(row.id, row.isActive)}
+                      className="data-[state=checked]:bg-blue-600"
                     />
                     <span className="text-xs">
                       {row.isActive ? 'Aktif' : 'Nonaktif'}
@@ -605,19 +608,29 @@ export default function JadwalUjianPage() {
                       onClick={() => handleExportKartu(row.id, row.namaUjian)}
                       title="Export Kartu Ujian PDF"
                       disabled={loadingExport.has(row.id)}
-                      className="relative"
+                      className="relative text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       {loadingExport.has(row.id) ? (
-                        <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Download className="h-4 w-4 text-blue-600" />
+                        <Download className="h-4 w-4" />
                       )}
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEdit(row)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
-                      <Trash2 className="h-4 w-4 text-red-600" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDelete(row.id)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ),

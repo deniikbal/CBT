@@ -10,22 +10,17 @@ export async function POST(
   try {
     const { id } = await params
 
-    console.log('Disabling peserta account:', id)
-
     // Check if peserta exists
     const existingPeserta = await db.query.peserta.findFirst({
       where: eq(peserta.id, id)
     })
 
     if (!existingPeserta) {
-      console.error('Peserta not found:', id)
       return NextResponse.json(
         { error: 'Peserta tidak ditemukan' },
         { status: 404 }
       )
     }
-
-    console.log('Current peserta status:', existingPeserta.isActive)
 
     // Update peserta to inactive
     const result = await db
@@ -36,8 +31,6 @@ export async function POST(
       })
       .where(eq(peserta.id, id))
       .returning()
-
-    console.log('Account disabled successfully:', result)
 
     return NextResponse.json({ 
       success: true,

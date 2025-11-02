@@ -341,7 +341,7 @@ export function DataTable<T extends Record<string, any>>({
                   variant={currentPage === pageNum ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => setCurrentPage(pageNum)}
-                  className="w-9"
+                  className={currentPage === pageNum ? 'w-9 bg-blue-600 hover:bg-blue-700 text-white' : 'w-9'}
                 >
                   {pageNum}
                 </Button>

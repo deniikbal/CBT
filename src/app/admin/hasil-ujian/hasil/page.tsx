@@ -192,6 +192,7 @@ export default function HasilUjianPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewDetail(row)}
+                    className="border-blue-600 text-blue-600 hover:bg-blue-50"
                   >
                     <Eye className="h-4 w-4 mr-2" />
                     Detail
