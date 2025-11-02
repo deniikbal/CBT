@@ -214,28 +214,32 @@ export default function HasilUjianPage() {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Hasil Ujian</h1>
           <p className="text-gray-600 mt-1 text-sm sm:text-base">Lihat hasil ujian siswa yang sudah selesai</p>
         </div>
-        <div className="flex gap-2">
-          {selectedForRecalc.size > 0 && (
-            <Badge variant="outline" className="px-3 py-1.5">
-              {selectedForRecalc.size} dipilih
-            </Badge>
-          )}
-          <Button
-            onClick={() => setShowRecalculateDialog(true)}
-            className="bg-orange-600 hover:bg-orange-700"
-            disabled={selectedForRecalc.size === 0}
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Fix & Recalculate
-          </Button>
-        </div>
       </div>
 
       {/* Main Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Daftar Hasil Ujian</CardTitle>
-          <CardDescription>Klik "Detail" untuk melihat jawaban siswa</CardDescription>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <CardTitle>Daftar Hasil Ujian</CardTitle>
+              <CardDescription>Klik "Detail" untuk melihat jawaban siswa</CardDescription>
+            </div>
+            <div className="flex gap-2">
+              {selectedForRecalc.size > 0 && (
+                <Badge variant="outline" className="px-3 py-1.5">
+                  {selectedForRecalc.size} dipilih
+                </Badge>
+              )}
+              <Button
+                onClick={() => setShowRecalculateDialog(true)}
+                className="bg-orange-600 hover:bg-orange-700"
+                disabled={selectedForRecalc.size === 0}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Fix & Recalculate
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <DataTable
