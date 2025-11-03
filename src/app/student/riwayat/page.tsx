@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Calendar, Clock, Award, BookOpen, Eye, TrendingUp, TrendingDown } from 'lucide-react'
+import { Calendar, Clock, Award, BookOpen, Eye, TrendingUp, TrendingDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -32,6 +32,8 @@ export default function RiwayatUjianPage() {
   const [peserta, setPeserta] = useState<Peserta | null>(null)
   const [riwayatList, setRiwayatList] = useState<RiwayatUjian[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 5
 
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
@@ -102,6 +104,16 @@ export default function RiwayatUjianPage() {
   }
 
   const stats = calculateStats()
+
+  // Pagination logic
+  const totalPages = Math.ceil(riwayatList.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentData = riwayatList.slice(startIndex, endIndex)
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+  }
 
   if (loading) {
     return (
@@ -233,7 +245,7 @@ export default function RiwayatUjianPage() {
             <>
             {/* Mobile View - Cards */}
             <div className="md:hidden space-y-4">
-              {riwayatList.map((riwayat) => {
+              {currentData.map((riwayat) => {
                 const badge = getGradeBadge(riwayat.persentase)
                 
                 return (
@@ -314,7 +326,7 @@ export default function RiwayatUjianPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {riwayatList.map((riwayat) => {
+                {currentData.map((riwayat) => {
                   const badge = getGradeBadge(riwayat.persentase)
                   
                   return (
@@ -376,6 +388,56 @@ export default function RiwayatUjianPage() {
               </TableBody>
             </Table>
             </div>
+
+            {/* Pagination */}
+            {riwayatList.length > itemsPerPage && (
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t">
+                <div className="text-sm text-gray-600">
+                  Menampilkan {startIndex + 1} - {Math.min(endIndex, riwayatList.length)} dari {riwayatList.length} data
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Prev
+                  </Button>
+                  
+                  <div className="flex gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <Button
+                        key={page}
+                        variant={currentPage === page ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => handlePageChange(page)}
+                        className={
+                          currentPage === page
+                            ? "bg-blue-600 hover:bg-blue-700 text-white"
+                            : "border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                        }
+                      >
+                        {page}
+                      </Button>
+                    ))}
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 disabled:opacity-50"
+                  >
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </div>
+            )}
             </>
           )}
         </CardContent>

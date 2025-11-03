@@ -61,17 +61,17 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-200 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <Card className="w-full max-w-md rounded-sm">
         <CardHeader className="space-y-1 text-center">
           <a href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
-            <div className="bg-slate-800 p-3 rounded-full">
+            <div className="bg-blue-600 p-3 rounded-full">
               <Shield className="h-8 w-8 text-white" />
             </div>
           </a>
           <CardTitle className="text-2xl font-bold">Login Admin</CardTitle>
           <CardDescription>
-            Masukkan email dan password untuk mengakses panel
+            Masukkan email dan password untuk mengakses panel admin
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -124,7 +124,7 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
               {loading ? 'Memproses...' : 'Login'}
             </Button>
           </form>

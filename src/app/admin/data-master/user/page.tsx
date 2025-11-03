@@ -155,7 +155,7 @@ export default function UserPage() {
               <CardDescription>Total: {userList.length} user</CardDescription>
             </div>
             <DialogTrigger asChild>
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Button className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Tambah User
               </Button>
@@ -164,6 +164,16 @@ export default function UserPage() {
         <CardContent>
           <DataTable
             data={userList}
+            filters={[
+              {
+                key: 'role',
+                label: 'Role',
+                options: [
+                  { value: 'ADMIN', label: 'Admin' },
+                  { value: 'USER', label: 'User' },
+                ],
+              },
+            ]}
             columns={[
               {
                 header: 'No',
@@ -186,8 +196,8 @@ export default function UserPage() {
                 cell: (row) => (
                   <span className={`px-2 py-1 rounded text-xs font-semibold ${
                     row.role === 'ADMIN' 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-blue-100 text-blue-800'
+                      ? 'bg-blue-100 text-blue-800' 
+                      : 'bg-green-100 text-green-800'
                   }`}>
                     {row.role}
                   </span>
@@ -199,7 +209,7 @@ export default function UserPage() {
                 cell: (row) => (
                   <div className="flex justify-end gap-2">
                     <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-4 w-4 text-blue-600" />
                     </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
                       <Trash2 className="h-4 w-4 text-red-600" />
@@ -282,7 +292,7 @@ export default function UserPage() {
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Batal
               </Button>
-              <Button type="submit">
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
                 {editingId ? 'Update' : 'Simpan'}
               </Button>
             </div>

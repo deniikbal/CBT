@@ -48,7 +48,7 @@ export default function StudentLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md rounded-sm">
         <CardHeader className="space-y-1 text-center">
           <a href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
             <div className="bg-blue-600 p-3 rounded-full">
@@ -110,17 +110,10 @@ export default function StudentLoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
               {loading ? 'Memproses...' : 'Login'}
             </Button>
           </form>
-
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Login sebagai admin?</p>
-            <a href="/adm" className="text-blue-600 hover:underline font-medium">
-              Klik di sini
-            </a>
-          </div>
         </CardContent>
       </Card>
     </div>
