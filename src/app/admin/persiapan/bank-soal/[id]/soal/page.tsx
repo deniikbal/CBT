@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
-import { Plus, Edit, Trash2, ArrowLeft, FileText, CheckCircle2 } from 'lucide-react'
+import { Plus, Edit, Trash2, ArrowLeft, FileText, CheckCircle2, BookOpen, Target, TrendingUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { DataTable, Column } from '@/components/ui/data-table'
@@ -116,93 +116,126 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
   const percentage = targetSoal > 0 ? Math.round((soalCount / targetSoal) * 100) : 0
 
   return (
-    <div className="space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+    <div className="space-y-4">
+      {/* Header dengan Breadcrumb */}
+      <div className="flex items-center justify-between">
         <Button 
           variant="ghost" 
           size="sm" 
           onClick={() => router.push('/admin/persiapan/bank-soal')}
-          className="gap-2 text-xs sm:text-sm"
+          className="gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Kembali</span>
+          <span>Kembali ke Bank Soal</span>
         </Button>
       </div>
 
-      {/* Header Info */}
-      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="text-xl sm:text-2xl">Kelola Soal</CardTitle>
-          <CardDescription>
-            <div className="mt-2 space-y-1 text-xs sm:text-sm">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="font-semibold text-gray-700">Bank Soal:</span>
-                <span className="text-base sm:text-lg font-bold text-blue-600">{bankSoal.kodeBankSoal}</span>
-              </div>
+      {/* Compact Header Card */}
+      <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0 shadow-lg">
+        <CardContent className="py-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+              <BookOpen className="h-6 w-6" />
+            </div>
+            <div>
+              <div className="text-sm text-blue-100">Bank Soal</div>
+              <h1 className="text-2xl font-bold">{bankSoal.kodeBankSoal}</h1>
               {bankSoal.mataPelajaran && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="font-semibold text-gray-700">Mata Pelajaran:</span>
-                  <Badge variant="secondary" className="w-fit">
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
                     {bankSoal.mataPelajaran.kodeMatpel}
                   </Badge>
-                  <span className="text-gray-700">{bankSoal.mataPelajaran.name}</span>
+                  <span className="text-sm text-blue-100">{bankSoal.mataPelajaran.name}</span>
                 </div>
               )}
             </div>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-xs sm:text-sm text-gray-600">Target Soal</div>
-              <div className="text-2xl sm:text-3xl font-bold text-gray-800">{targetSoal}</div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <Target className="h-4 w-4 text-blue-200" />
+                <div className="text-xs text-blue-100">Target</div>
+              </div>
+              <div className="text-2xl font-bold">{targetSoal}</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-xs sm:text-sm text-gray-600">Soal Terbuat</div>
-              <div className="text-2xl sm:text-3xl font-bold text-blue-600">{soalCount}</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <FileText className="h-4 w-4 text-blue-200" />
+                <div className="text-xs text-blue-100">Terbuat</div>
+              </div>
+              <div className="text-2xl font-bold">{soalCount}</div>
             </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm">
-              <div className="text-xs sm:text-sm text-gray-600">Progress</div>
-              <div className="flex items-end gap-2">
-                <div className="text-2xl sm:text-3xl font-bold text-green-600">{percentage}%</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+              <div className="flex items-center gap-2 mb-1">
+                <TrendingUp className="h-4 w-4 text-blue-200" />
+                <div className="text-xs text-blue-100">Progress</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="text-2xl font-bold">{percentage}%</div>
                 {percentage >= 100 && (
-                  <CheckCircle2 className="h-5 sm:h-6 w-5 sm:w-6 text-green-600 mb-1" />
+                  <CheckCircle2 className="h-5 w-5 text-green-400" />
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Progress Bar */}
+          <div className="mt-4">
+            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 ${
+                  percentage >= 100 ? 'bg-green-400' : 'bg-white'
+                }`}
+                style={{ width: `${Math.min(percentage, 100)}%` }}
+              />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Action Button */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h2 className="text-lg sm:text-xl font-semibold">Daftar Soal</h2>
-        <Button onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/tambah`)} className="gap-2 w-full sm:w-auto text-xs sm:text-sm">
-          <Plus className="h-4 w-4" />
-          <span>Tambah Soal</span>
-        </Button>
-      </div>
-
       {/* Soal List */}
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="border-2">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Daftar Soal</CardTitle>
+              <CardDescription className="text-sm mt-1">
+                {soalCount > 0 ? `${soalCount} soal telah dibuat` : 'Belum ada soal'}
+              </CardDescription>
+            </div>
+            <Button 
+              onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/tambah`)} 
+              className="bg-blue-600 hover:bg-blue-700"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Tambah Soal
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
           <DataTable
             data={soalList}
             columns={[
               {
                 header: 'No',
                 accessor: 'nomorSoal',
-                cell: (row) => <span className="font-medium">{row.nomorSoal}</span>,
-                className: 'w-16',
+                cell: (row) => (
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+                    {row.nomorSoal}
+                  </div>
+                ),
+                className: 'w-20',
               },
               {
                 header: 'Soal',
                 accessor: 'soal',
                 cell: (row) => (
-                  <div className="max-w-2xl max-h-32 overflow-hidden rounded border border-gray-200 bg-white p-3">
-                    <div className="text-sm text-gray-800 [&_*]:my-0 [&_p]:my-1 [&_ul]:my-2 [&_ol]:my-2 [&_li]:list-disc [&_ol>li]:list-decimal [&_li]:ml-4 [&_img]:max-h-24 [&_img]:object-contain">
-                      {row.soal ? parse(row.soal) : <span className="text-sm text-gray-500">(Soal kosong)</span>}
+                  <div className="max-w-2xl">
+                    <div className="text-sm text-gray-800 line-clamp-2 [&_*]:my-0 [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_li]:list-disc [&_ol>li]:list-decimal [&_li]:ml-4 [&_img]:max-h-16 [&_img]:object-contain [&_img]:inline">
+                      {row.soal ? parse(row.soal) : <span className="text-sm text-gray-400 italic">Soal kosong</span>}
                     </div>
                   </div>
                 ),
@@ -211,35 +244,44 @@ export default function KelolaSoalPage({ params }: { params: Promise<{ id: strin
                 header: 'Jawaban',
                 accessor: 'jawabanBenar',
                 cell: (row) => (
-                  <Badge variant="outline" className="font-bold">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-green-100 text-green-700 font-bold">
                     {row.jawabanBenar}
-                  </Badge>
+                  </div>
                 ),
-                className: 'w-24',
+                className: 'w-24 text-center',
               },
               {
                 header: 'Aksi',
                 accessor: () => null,
                 cell: (row) => (
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)}>
-                      <Edit className="h-4 w-4" />
+                  <div className="flex justify-end gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(row)} className="hover:bg-blue-50">
+                      <Edit className="h-4 w-4 text-blue-600" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)}>
+                    <Button variant="ghost" size="sm" onClick={() => handleDelete(row.id)} className="hover:bg-red-50">
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
                   </div>
                 ),
-                className: 'w-32 text-right',
+                className: 'w-24 text-right',
               },
             ]}
             searchPlaceholder="Cari soal..."
             searchKeys={['soal', 'nomorSoal']}
             emptyMessage={
-              <div className="text-center py-12 text-gray-500">
-                <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-                <p className="text-lg font-medium">Belum ada soal</p>
-                <p className="text-sm mt-1">Klik tombol "Tambah Soal" untuk membuat soal baru</p>
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </div>
+                <p className="text-lg font-semibold text-gray-700">Belum ada soal</p>
+                <p className="text-sm text-gray-500 mt-2 mb-4">Mulai buat soal untuk bank soal ini</p>
+                <Button 
+                  onClick={() => router.push(`/admin/persiapan/bank-soal/${bankSoalId}/soal/tambah`)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tambah Soal Pertama
+                </Button>
               </div>
             }
           />
