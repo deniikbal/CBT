@@ -1,16 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Award, Eye, FileText, RefreshCw, AlertTriangle } from 'lucide-react'
+import { Award, Eye, FileText, RefreshCw, AlertTriangle, Download } from 'lucide-react'
 import { DataTable } from '@/components/ui/data-table'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
+import * as XLSX from 'xlsx'
 
 interface HasilUjian {
   id: string
@@ -59,8 +60,16 @@ export default function HasilUjianPage() {
   const [updateSnapshot, setUpdateSnapshot] = useState(false)
   const [recalculating, setRecalculating] = useState(false)
 
+  // Export states
+  const [filteredHasil, setFilteredHasil] = useState<HasilUjian[]>([])
+  const [exporting, setExporting] = useState(false)
+
   useEffect(() => {
     fetchHasil()
+  }, [])
+
+  const handleFilteredDataChange = useCallback((data: HasilUjian[]) => {
+    setFilteredHasil(data)
   }, [])
 
   const fetchHasil = async () => {
@@ -121,7 +130,7 @@ export default function HasilUjianPage() {
     if (selectedForRecalc.size === 0) {
       toast({
         title: 'Error',
-        description: 'Pilih minimal 1 hasil ujian untuk di-recalculate',
+        description: 'Pilih minimal 1 hasil ujian untuk di-regenerate',
         variant: 'destructive',
       })
       return
@@ -147,7 +156,7 @@ export default function HasilUjianPage() {
         
         toast({
           title: 'Berhasil!',
-          description: `${data.totalProcessed} nilai berhasil di-recalculate`,
+          description: `${data.totalProcessed} nilai berhasil di-regenerate`,
         })
 
         // Refresh data
@@ -162,7 +171,7 @@ export default function HasilUjianPage() {
         
         toast({
           title: 'Gagal',
-          description: error.error || 'Gagal melakukan recalculate',
+          description: error.error || 'Gagal melakukan regenerate',
           variant: 'destructive',
         })
       }
@@ -170,7 +179,7 @@ export default function HasilUjianPage() {
       console.error('[Recalculate] Exception:', error)
       toast({
         title: 'Error',
-        description: 'Terjadi kesalahan saat recalculate',
+        description: 'Terjadi kesalahan saat regenerate nilai',
         variant: 'destructive',
       })
     } finally {
@@ -195,6 +204,67 @@ export default function HasilUjianPage() {
       setSelectedForRecalc(new Set())
     } else {
       setSelectedForRecalc(new Set(hasilList.map(h => h.id)))
+    }
+  }
+
+  const handleExport = async () => {
+    if (filteredHasil.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Tidak ada data untuk di-export',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setExporting(true)
+    try {
+      // Sort by No Ujian ascending
+      const sortedData = [...filteredHasil].sort((a, b) => {
+        return a.pesertaNoUjian.localeCompare(b.pesertaNoUjian, undefined, { numeric: true })
+      })
+
+      // Prepare data for Excel
+      const excelData = sortedData.map((hasil, index) => ({
+        'No': index + 1,
+        'No Ujian': hasil.pesertaNoUjian,
+        'Nama Lengkap': hasil.pesertaName,
+        'Nilai': hasil.nilai,
+      }))
+
+      // Create workbook and worksheet
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.json_to_sheet(excelData)
+
+      // Set column widths
+      ws['!cols'] = [
+        { wch: 5 },  // No
+        { wch: 15 }, // No Ujian
+        { wch: 30 }, // Nama Lengkap
+        { wch: 10 }, // Nilai
+      ]
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Hasil Ujian')
+
+      // Generate file name with current date
+      const fileName = `Hasil_Ujian_${format(new Date(), 'yyyy-MM-dd_HHmmss')}.xlsx`
+
+      // Write file
+      XLSX.writeFile(wb, fileName)
+
+      toast({
+        title: 'Berhasil!',
+        description: `${filteredHasil.length} data berhasil di-export ke ${fileName}`,
+      })
+    } catch (error) {
+      console.error('[Export] Exception:', error)
+      toast({
+        title: 'Error',
+        description: 'Terjadi kesalahan saat export data',
+        variant: 'destructive',
+      })
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -231,12 +301,20 @@ export default function HasilUjianPage() {
                 </Badge>
               )}
               <Button
+                onClick={handleExport}
+                className="bg-green-600 hover:bg-green-700"
+                disabled={filteredHasil.length === 0 || exporting}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {exporting ? 'Mengexport...' : 'Export Excel'}
+              </Button>
+              <Button
                 onClick={() => setShowRecalculateDialog(true)}
                 className="bg-orange-600 hover:bg-orange-700"
                 disabled={selectedForRecalc.size === 0}
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Fix & Recalculate
+                Regenerate Nilai
               </Button>
             </div>
           </div>
@@ -244,6 +322,7 @@ export default function HasilUjianPage() {
         <CardContent>
           <DataTable
             data={hasilList}
+            onFilteredDataChange={handleFilteredDataChange}
             columns={[
               {
                 header: () => (
@@ -560,7 +639,7 @@ export default function HasilUjianPage() {
                 <RefreshCw className="h-5 w-5 text-orange-600" />
               </div>
               <div>
-                <DialogTitle>Fix & Recalculate Nilai</DialogTitle>
+                <DialogTitle>Regenerate Nilai</DialogTitle>
                 <DialogDescription>
                   Hitung ulang nilai berdasarkan kunci jawaban terbaru
                 </DialogDescription>
@@ -641,7 +720,7 @@ export default function HasilUjianPage() {
               ) : (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Recalculate Sekarang
+                  Regenerate Sekarang
                 </>
               )}
             </Button>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,7 @@ interface DataTableProps<T> {
   filters?: FilterOption[]
   emptyMessage?: React.ReactNode
   itemsPerPageOptions?: number[]
+  onFilteredDataChange?: (filteredData: T[]) => void
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -42,6 +43,7 @@ export function DataTable<T extends Record<string, any>>({
   filters = [],
   emptyMessage = 'Tidak ada data',
   itemsPerPageOptions = [10, 25, 50, 100],
+  onFilteredDataChange,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(itemsPerPageOptions[0])
@@ -49,6 +51,7 @@ export function DataTable<T extends Record<string, any>>({
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({})
   const [sortColumn, setSortColumn] = useState<keyof T | null>(null)
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const prevFilteredDataRef = useRef<string>('')
 
   // Filter, search, and sort logic
   const filteredData = useMemo(() => {
@@ -114,9 +117,21 @@ export function DataTable<T extends Record<string, any>>({
   const paginatedData = filteredData.slice(startIndex, endIndex)
 
   // Reset to page 1 when filters change
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1)
   }, [searchQuery, activeFilters, itemsPerPage])
+  
+  // Notify parent of filtered data changes only when data actually changes
+  useEffect(() => {
+    if (onFilteredDataChange) {
+      const currentDataString = JSON.stringify(filteredData.map(item => item.id || item))
+      
+      if (currentDataString !== prevFilteredDataRef.current) {
+        prevFilteredDataRef.current = currentDataString
+        onFilteredDataChange(filteredData)
+      }
+    }
+  }, [filteredData, onFilteredDataChange])
 
   const handleFilterChange = (key: string, value: string) => {
     setActiveFilters((prev) => ({ ...prev, [key]: value }))
