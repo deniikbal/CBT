@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { 
   Monitor, 
   AlertTriangle, 
@@ -18,11 +19,13 @@ import {
   RefreshCw,
   CheckCircle2,
   XCircle,
-  Info
+  Info,
+  Search,
+  User,
+  BookOpen
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { DataTable, Column } from '@/components/ui/data-table'
 
 interface ActiveExam {
   id: string
@@ -56,6 +59,8 @@ export default function MonitoringPage() {
   const [selectedExam, setSelectedExam] = useState<ActiveExam | null>(null)
   const [activities, setActivities] = useState<ActivityDetail[]>([])
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterRisk, setFilterRisk] = useState<string>('all')
 
   // Fetch active exams
   const fetchActiveExams = async () => {
@@ -171,6 +176,18 @@ export default function MonitoringPage() {
     safe: activeExams.filter(e => e.riskLevel === 'low').length,
   }
 
+  // Filter and search exams
+  const filteredExams = activeExams.filter(exam => {
+    const matchesSearch = 
+      exam.pesertaName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      exam.pesertaNoUjian.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      exam.namaUjian.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesFilter = filterRisk === 'all' || exam.riskLevel === filterRisk
+    
+    return matchesSearch && matchesFilter
+  })
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -201,177 +218,192 @@ export default function MonitoringPage() {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Aktif</p>
-                <p className="text-3xl font-bold">{stats.total}</p>
-              </div>
-              <Users className="h-10 w-10 text-blue-600" />
+      {/* Search and Filter Bar */}
+      <Card className="border-blue-100 bg-gradient-to-r from-blue-50 to-white rounded-sm">
+        <CardContent className="p-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Cari nama peserta, no ujian, atau nama ujian..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-8 text-xs border-blue-200 focus:border-blue-400 rounded-sm"
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Risiko Tinggi</p>
-                <p className="text-3xl font-bold text-red-600">{stats.highRisk}</p>
-              </div>
-              <AlertTriangle className="h-10 w-10 text-red-600" />
+            <div className="flex gap-1.5">
+              <Button
+                variant={filterRisk === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterRisk('all')}
+                className={`h-8 px-2.5 text-[11px] rounded-sm ${filterRisk === 'all' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+              >
+                Semua ({activeExams.length})
+              </Button>
+              <Button
+                variant={filterRisk === 'high' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterRisk('high')}
+                className={`h-8 px-2.5 text-[11px] rounded-sm ${filterRisk === 'high' ? 'bg-red-600 hover:bg-red-700' : 'border-red-300 text-red-600 hover:bg-red-50'}`}
+              >
+                Tinggi ({stats.highRisk})
+              </Button>
+              <Button
+                variant={filterRisk === 'medium' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterRisk('medium')}
+                className={`h-8 px-2.5 text-[11px] rounded-sm ${filterRisk === 'medium' ? 'bg-yellow-600 hover:bg-yellow-700' : 'border-yellow-300 text-yellow-600 hover:bg-yellow-50'}`}
+              >
+                Sedang ({stats.mediumRisk})
+              </Button>
+              <Button
+                variant={filterRisk === 'low' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setFilterRisk('low')}
+                className={`h-8 px-2.5 text-[11px] rounded-sm ${filterRisk === 'low' ? 'bg-green-600 hover:bg-green-700' : 'border-green-300 text-green-600 hover:bg-green-50'}`}
+              >
+                Aman ({stats.safe})
+              </Button>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Risiko Sedang</p>
-                <p className="text-3xl font-bold text-yellow-600">{stats.mediumRisk}</p>
-              </div>
-              <Activity className="h-10 w-10 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Aman</p>
-                <p className="text-3xl font-bold text-green-600">{stats.safe}</p>
-              </div>
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Active Exams List */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            Ujian Sedang Berlangsung
-          </CardTitle>
-          <CardDescription>
-            Daftar peserta yang sedang mengerjakan ujian dengan status monitoring
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-12 text-gray-500">Loading...</div>
-          ) : (
-            <DataTable
-              data={activeExams}
-              columns={[
-                {
-                  header: 'Peserta',
-                  accessor: 'pesertaName',
-                  cell: (exam) => (
-                    <div>
-                      <div className="font-semibold">{exam.pesertaName}</div>
-                      <div className="text-sm text-gray-500">{exam.pesertaNoUjian}</div>
-                    </div>
-                  ),
-                },
-                {
-                  header: 'Ujian',
-                  accessor: 'namaUjian',
-                },
-                {
-                  header: 'Progress',
-                  accessor: 'progress',
-                  cell: (exam) => `${exam.progress} jawaban`,
-                },
-                {
-                  header: 'Risk Level',
-                  accessor: 'riskLevel',
-                  cell: (exam) => getRiskBadge(exam.riskLevel),
-                },
-                {
-                  header: 'Aktivitas Mencurigakan',
-                  accessor: 'totalSuspicious',
-                  cell: (exam) => {
-                    const hasActivity = exam.totalSuspicious > 0;
-                    return (
-                      <div className="flex flex-wrap gap-1 text-xs">
-                        {exam.activityCounts.TAB_BLUR > 0 && (
-                          <Badge variant="outline">🔄 Tab: {exam.activityCounts.TAB_BLUR}x</Badge>
-                        )}
-                        {exam.activityCounts.EXIT_FULLSCREEN > 0 && (
-                          <Badge variant="outline">🖥️ Fullscreen: {exam.activityCounts.EXIT_FULLSCREEN}x</Badge>
-                        )}
-                        {exam.activityCounts.ATTEMPTED_DEVTOOLS > 0 && (
-                          <Badge variant="outline" className="text-red-600">⚠️ DevTools: {exam.activityCounts.ATTEMPTED_DEVTOOLS}x</Badge>
-                        )}
-                        {exam.activityCounts.SCREENSHOT_ATTEMPT > 0 && (
-                          <Badge variant="outline">📸 Screenshot: {exam.activityCounts.SCREENSHOT_ATTEMPT}x</Badge>
-                        )}
-                        {exam.activityCounts.RIGHT_CLICK > 0 && (
-                          <Badge variant="outline">🖱️ Right Click: {exam.activityCounts.RIGHT_CLICK}x</Badge>
-                        )}
-                        {exam.activityCounts.COPY_ATTEMPT > 0 && (
-                          <Badge variant="outline">📋 Copy: {exam.activityCounts.COPY_ATTEMPT}x</Badge>
-                        )}
-                        {exam.activityCounts.PASTE_ATTEMPT > 0 && (
-                          <Badge variant="outline">📋 Paste: {exam.activityCounts.PASTE_ATTEMPT}x</Badge>
-                        )}
-                        {exam.activityCounts.SESSION_VIOLATION > 0 && (
-                          <Badge variant="outline" className="text-red-600">🚫 Session: {exam.activityCounts.SESSION_VIOLATION}x</Badge>
-                        )}
-                        {!hasActivity && (
-                          <Badge variant="outline" className="text-green-600">✓ Aman</Badge>
-                        )}
-                      </div>
-                    );
-                  },
-                },
-                {
-                  header: 'Aksi',
-                  accessor: () => null,
-                  cell: (exam) => (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewDetails(exam)}
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                    >
-                      <Eye className="h-4 w-4 mr-2" />
-                      Detail
-                    </Button>
-                  ),
-                  className: 'text-right',
-                },
-              ]}
-              searchPlaceholder="Cari peserta..."
-              searchKeys={['pesertaName', 'pesertaNoUjian', 'namaUjian']}
-              filters={[
-                {
-                  key: 'riskLevel',
-                  label: 'Risk Level',
-                  options: [
-                    { value: 'low', label: 'Low' },
-                    { value: 'medium', label: 'Medium' },
-                    { value: 'high', label: 'High' },
-                  ],
-                },
-              ]}
-              emptyMessage={
-                <div className="text-center py-12">
-                  <Shield className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-gray-500">Tidak ada ujian yang sedang berlangsung</p>
-                </div>
-              }
-            />
-          )}
+          </div>
         </CardContent>
       </Card>
+
+      {/* Active Exams Grid */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Monitor className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-semibold text-gray-900">
+            Ujian Sedang Berlangsung
+          </h2>
+          <Badge variant="secondary" className="ml-2">
+            {filteredExams.length} peserta
+          </Badge>
+        </div>
+
+        {loading ? (
+          <Card>
+            <CardContent className="py-24">
+              <div className="text-center">
+                <RefreshCw className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+                <p className="text-gray-500">Memuat data monitoring...</p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredExams.length === 0 ? (
+          <Card>
+            <CardContent className="py-24">
+              <div className="text-center">
+                <Shield className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-700 mb-2">
+                  {searchQuery || filterRisk !== 'all' 
+                    ? 'Tidak ada hasil yang sesuai'
+                    : 'Tidak ada ujian yang sedang berlangsung'
+                  }
+                </h3>
+                <p className="text-gray-500 text-sm">
+                  {searchQuery || filterRisk !== 'all'
+                    ? 'Coba ubah filter atau kata kunci pencarian'
+                    : 'Data akan muncul saat ada peserta yang mulai mengerjakan ujian'
+                  }
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
+            {filteredExams.map((exam) => (
+              <div 
+                key={exam.id} 
+                className={`relative rounded-lg border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg overflow-hidden ${
+                  exam.riskLevel === 'high' ? 'border-red-500 bg-gradient-to-br from-red-50 to-white' :
+                  exam.riskLevel === 'medium' ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-white' :
+                  'border-green-500 bg-gradient-to-br from-green-50 to-white'
+                }`}
+                onClick={() => handleViewDetails(exam)}
+              >
+                {/* Risk Badge Corner */}
+                <div className="absolute top-0 right-0">
+                  {exam.riskLevel === 'high' ? (
+                    <div className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">⚠️</div>
+                  ) : exam.riskLevel === 'medium' ? (
+                    <div className="bg-yellow-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">⚡</div>
+                  ) : (
+                    <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">✓</div>
+                  )}
+                </div>
+
+                <div className="p-2.5 pt-1.5">
+                  {/* Nama Peserta */}
+                  <h3 className="font-bold text-[11px] text-gray-900 truncate pr-5 mb-1.5 mt-0.5">
+                    {exam.pesertaName}
+                  </h3>
+
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 gap-1 mb-1.5">
+                    <div className="bg-white/60 rounded px-1.5 py-0.5 flex items-center gap-0.5">
+                      <CheckCircle2 className="h-2.5 w-2.5 text-blue-600 flex-shrink-0" />
+                      <span className="text-[9px] font-semibold text-gray-700">{exam.progress}</span>
+                    </div>
+                    <div className="bg-white/60 rounded px-1.5 py-0.5 flex items-center gap-0.5">
+                      <Clock className="h-2.5 w-2.5 text-gray-600 flex-shrink-0" />
+                      <span className="text-[9px] font-semibold text-gray-700">{exam.duration}m</span>
+                    </div>
+                  </div>
+
+                  {/* Pelanggaran Badge */}
+                  {exam.totalSuspicious === 0 ? (
+                    <div className="bg-green-100 border border-green-300 rounded py-0.5 text-center">
+                      <span className="text-[9px] font-medium text-green-700">✓ Aman</span>
+                    </div>
+                  ) : (
+                    <div className="bg-white/60 rounded p-1 border border-gray-200">
+                      <div className="flex flex-wrap gap-0.5 justify-center">
+                        {exam.activityCounts.TAB_BLUR > 0 && (
+                          <span className="inline-flex items-center bg-orange-100 text-orange-700 text-[8px] px-1 py-0.5 rounded font-medium">
+                            🔄{exam.activityCounts.TAB_BLUR}
+                          </span>
+                        )}
+                        {exam.activityCounts.EXIT_FULLSCREEN > 0 && (
+                          <span className="inline-flex items-center bg-blue-100 text-blue-700 text-[8px] px-1 py-0.5 rounded font-medium">
+                            🖥️{exam.activityCounts.EXIT_FULLSCREEN}
+                          </span>
+                        )}
+                        {exam.activityCounts.ATTEMPTED_DEVTOOLS > 0 && (
+                          <span className="inline-flex items-center bg-red-100 text-red-700 text-[8px] px-1 py-0.5 rounded font-medium">
+                            ⚠️{exam.activityCounts.ATTEMPTED_DEVTOOLS}
+                          </span>
+                        )}
+                        {exam.activityCounts.SCREENSHOT_ATTEMPT > 0 && (
+                          <span className="inline-flex items-center bg-purple-100 text-purple-700 text-[8px] px-1 py-0.5 rounded font-medium">
+                            📸{exam.activityCounts.SCREENSHOT_ATTEMPT}
+                          </span>
+                        )}
+                        {exam.activityCounts.RIGHT_CLICK > 0 && (
+                          <span className="inline-flex items-center bg-gray-100 text-gray-700 text-[8px] px-1 py-0.5 rounded font-medium">
+                            🖱️{exam.activityCounts.RIGHT_CLICK}
+                          </span>
+                        )}
+                        {exam.activityCounts.COPY_ATTEMPT > 0 && (
+                          <span className="inline-flex items-center bg-indigo-100 text-indigo-700 text-[8px] px-1 py-0.5 rounded font-medium">
+                            📋{exam.activityCounts.COPY_ATTEMPT}
+                          </span>
+                        )}
+                        {exam.activityCounts.SESSION_VIOLATION > 0 && (
+                          <span className="inline-flex items-center bg-red-200 text-red-800 text-[8px] px-1 py-0.5 rounded font-medium">
+                            🚫{exam.activityCounts.SESSION_VIOLATION}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Activity Detail Dialog */}
       <Dialog open={!!selectedExam} onOpenChange={() => setSelectedExam(null)}>

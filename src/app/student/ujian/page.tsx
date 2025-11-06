@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
+import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -44,6 +44,7 @@ export default function UjianSayaPage() {
   const [peserta, setPeserta] = useState<Peserta | null>(null)
   const [jadwalList, setJadwalList] = useState<JadwalUjian[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
@@ -52,6 +53,15 @@ export default function UjianSayaPage() {
       setPeserta(pesertaData)
       fetchJadwal(pesertaData.id)
     }
+  }, [])
+
+  // Update timer setiap detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(interval)
   }, [])
 
   const fetchJadwal = async (pesertaId: string) => {
@@ -68,15 +78,14 @@ export default function UjianSayaPage() {
     }
   }
 
-  const getUjianStatus = (tanggal: string, jamMulai: string, durasi: number) => {
+  const getUjianStatus = (tanggal: string, jamMulai: string) => {
     const now = new Date()
     const ujianDate = new Date(tanggal)
     const [hours, minutes] = jamMulai.split(':').map(Number)
     ujianDate.setHours(hours, minutes, 0)
     
-    const ujianEnd = new Date(ujianDate)
-    ujianEnd.setMinutes(ujianEnd.getMinutes() + durasi)
-    
+    // Hanya check apakah sudah melewati waktu mulai atau belum
+    // Tidak ada status expired berdasarkan waktu selesai
     if (now < ujianDate) {
       return {
         status: 'upcoming',
@@ -84,20 +93,38 @@ export default function UjianSayaPage() {
         color: 'bg-blue-500',
         icon: Clock
       }
-    } else if (now >= ujianDate && now <= ujianEnd) {
+    } else {
+      // Sudah melewati waktu mulai = active (selama status isActive dari admin)
       return {
         status: 'active',
         label: 'Sedang Berlangsung',
         color: 'bg-green-500',
         icon: CheckCircle
       }
-    } else {
-      return {
-        status: 'expired',
-        label: 'Sudah Berakhir',
-        color: 'bg-gray-500',
-        icon: XCircle
-      }
+    }
+  }
+
+  const getCountdown = (tanggal: string, jamMulai: string) => {
+    const ujianDate = new Date(tanggal)
+    const [hours, minutes] = jamMulai.split(':').map(Number)
+    ujianDate.setHours(hours, minutes, 0)
+    
+    const diff = ujianDate.getTime() - currentTime.getTime()
+    
+    if (diff <= 0) {
+      return null
+    }
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    const hours_remaining = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    const minutes_remaining = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+    
+    return {
+      days,
+      hours: hours_remaining,
+      minutes: minutes_remaining,
+      seconds
     }
   }
 
@@ -123,14 +150,14 @@ export default function UjianSayaPage() {
   const upcomingUjian = jadwalList.filter(j => 
     !j.sudahDikerjakan && 
     !j.hasilUjian && 
-    getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'upcoming'
+    getUjianStatus(j.tanggalUjian, j.jamMulai).status === 'upcoming'
   )
   
   // Belum dimulai - waktu sedang berlangsung
   const activeUjian = jadwalList.filter(j => 
     !j.sudahDikerjakan && 
     !j.hasilUjian && 
-    getUjianStatus(j.tanggalUjian, j.jamMulai, j.durasi).status === 'active'
+    getUjianStatus(j.tanggalUjian, j.jamMulai).status === 'active'
   )
   
 
@@ -204,9 +231,6 @@ export default function UjianSayaPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {sedangDikerjakan.map((jadwal) => {
-              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
-              const isExpired = status.status === 'expired'
-              
               return (
                 <Card key={jadwal.id} className="rounded-md border-orange-500 border-2 shadow-md bg-orange-50">
                   <CardHeader className="pb-2">
@@ -233,13 +257,7 @@ export default function UjianSayaPage() {
                         <Clock className="h-3 md:h-4 w-3 md:w-4 shrink-0" />
                         {jadwal.jamMulai} WIB · Durasi {jadwal.durasi} menit
                       </div>
-                      {isExpired && (
-                        <div className="flex items-center gap-2 text-red-600 text-xs bg-red-50 p-2 rounded">
-                          <AlertCircle className="h-3 w-3 shrink-0" />
-                          Waktu ujian telah berakhir! Segera submit jawaban.
-                        </div>
-                      )}
-                      {jadwal.minimumPengerjaan && !isExpired && (
+                      {jadwal.minimumPengerjaan && (
                         <div className="flex items-center gap-2 text-gray-600 text-xs">
                           <AlertCircle className="h-3 w-3 shrink-0" />
                           Minimum: {jadwal.minimumPengerjaan} menit
@@ -272,7 +290,7 @@ export default function UjianSayaPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {activeUjian.map((jadwal) => {
-              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
+              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai)
               const StatusIcon = status.icon
               
               return (
@@ -334,8 +352,9 @@ export default function UjianSayaPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {upcomingUjian.map((jadwal) => {
-              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
+              const status = getUjianStatus(jadwal.tanggalUjian, jadwal.jamMulai)
               const StatusIcon = status.icon
+              const countdown = getCountdown(jadwal.tanggalUjian, jadwal.jamMulai)
               
               return (
                 <Card key={jadwal.id} className="rounded-md shadow-sm">
@@ -369,6 +388,20 @@ export default function UjianSayaPage() {
                         </div>
                       )}
                     </div>
+
+                    {/* Countdown Timer */}
+                    {countdown && (
+                      <div className="bg-blue-50 border border-blue-300 rounded p-2">
+                        <div className="flex items-center justify-center gap-1 text-blue-700">
+                          <Clock className="h-3 w-3" />
+                          <span className="text-xs font-medium">Dimulai dalam:</span>
+                          <span className="font-mono font-bold text-sm">
+                            {countdown.days > 0 && `${countdown.days}h `}
+                            {countdown.hours.toString().padStart(2, '0')}:{countdown.minutes.toString().padStart(2, '0')}:{countdown.seconds.toString().padStart(2, '0')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="pt-2">
                       <Button className="w-full" variant="outline" disabled>
