@@ -74,6 +74,7 @@ export default function HasilUjianPage() {
 
   const fetchHasil = async () => {
     try {
+      setLoading(true)
       console.log('[Hasil Ujian Page] Fetching hasil ujian...')
       const response = await fetch('/api/admin/hasil-ujian')
       console.log('[Hasil Ujian Page] Response status:', response.status)
@@ -82,12 +83,26 @@ export default function HasilUjianPage() {
         const data = await response.json()
         console.log('[Hasil Ujian Page] Fetched data:', data.length, 'results')
         setHasilList(data)
+        toast({
+          title: 'Berhasil!',
+          description: `Data diperbarui - ${data.length} hasil ujian`,
+        })
       } else {
         const error = await response.json()
         console.error('[Hasil Ujian Page] API error:', error)
+        toast({
+          title: 'Gagal',
+          description: 'Gagal memuat data hasil ujian',
+          variant: 'destructive',
+        })
       }
     } catch (error) {
       console.error('[Hasil Ujian Page] Failed to fetch hasil ujian:', error)
+      toast({
+        title: 'Error',
+        description: 'Terjadi kesalahan saat memuat data',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
@@ -315,6 +330,15 @@ export default function HasilUjianPage() {
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Regenerate Nilai
+              </Button>
+              <Button
+                onClick={fetchHasil}
+                variant="outline"
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                disabled={loading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Memuat...' : 'Refresh'}
               </Button>
             </div>
           </div>

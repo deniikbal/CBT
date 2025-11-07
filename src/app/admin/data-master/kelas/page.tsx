@@ -52,7 +52,11 @@ export default function KelasPage() {
       const response = await fetch('/api/kelas')
       if (response.ok) {
         const data = await response.json()
-        setKelasList(data)
+        // Sort data using natural sort
+        const sortedData = data.sort((a: Kelas, b: Kelas) => {
+          return a.name.localeCompare(b.name, 'id', { numeric: true, sensitivity: 'base' })
+        })
+        setKelasList(sortedData)
       }
     } catch (error) {
       console.error('Error fetching kelas:', error)

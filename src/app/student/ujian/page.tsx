@@ -232,7 +232,7 @@ export default function UjianSayaPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {sedangDikerjakan.map((jadwal) => {
               return (
-                <Card key={jadwal.id} className="rounded-md border-orange-500 border-2 shadow-md bg-orange-50">
+                <Card key={jadwal.id} className="rounded-sm border-orange-500 border-2 shadow-md bg-orange-50">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start mb-2 gap-2">
                       <CardTitle className="text-sm md:text-base line-clamp-2">{jadwal.namaUjian}</CardTitle>
@@ -294,7 +294,7 @@ export default function UjianSayaPage() {
               const StatusIcon = status.icon
               
               return (
-                <Card key={jadwal.id} className="rounded-md border-green-500 border-2 shadow-md">
+                <Card key={jadwal.id} className="rounded-sm border-green-500 border-2 shadow-md">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start mb-2 gap-2">
                       <CardTitle className="text-sm md:text-base line-clamp-2">{jadwal.namaUjian}</CardTitle>
@@ -357,7 +357,7 @@ export default function UjianSayaPage() {
               const countdown = getCountdown(jadwal.tanggalUjian, jadwal.jamMulai)
               
               return (
-                <Card key={jadwal.id} className="rounded-md shadow-sm">
+                <Card key={jadwal.id} className="rounded-sm shadow-sm">
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{jadwal.namaUjian}</CardTitle>
@@ -430,7 +430,7 @@ export default function UjianSayaPage() {
                 : null
 
               return (
-                <Card key={jadwal.id} className="rounded-md shadow-sm border-green-200 bg-green-50/30">
+                <Card key={jadwal.id} className="rounded-sm shadow-sm border-green-200 bg-green-50/30">
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <CardTitle className="text-lg">{jadwal.namaUjian}</CardTitle>
@@ -506,7 +506,7 @@ export default function UjianSayaPage() {
 
       {/* Empty State */}
       {jadwalList.length === 0 && (
-        <Card className="rounded-md shadow-sm">
+        <Card className="rounded-sm shadow-sm">
           <CardContent className="py-12 text-center text-gray-500">
             <BookOpen className="h-16 w-16 mx-auto text-gray-400 mb-4" />
             <p className="text-lg font-medium">Tidak ada ujian tersedia</p>

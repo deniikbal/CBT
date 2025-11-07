@@ -167,7 +167,7 @@ export default function RiwayatUjianPage() {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
-        <Card className="rounded-md shadow-sm">
+        <Card className="rounded-sm shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-gray-600">Total Ujian</CardTitle>
           </CardHeader>
@@ -182,7 +182,7 @@ export default function RiwayatUjianPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-md shadow-sm">
+        <Card className="rounded-sm shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-gray-600">Rata-Rata</CardTitle>
           </CardHeader>
@@ -197,7 +197,7 @@ export default function RiwayatUjianPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-md shadow-sm">
+        <Card className="rounded-sm shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-gray-600">Nilai Tertinggi</CardTitle>
           </CardHeader>
@@ -212,7 +212,7 @@ export default function RiwayatUjianPage() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-md shadow-sm">
+        <Card className="rounded-sm shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium text-gray-600">Nilai Terendah</CardTitle>
           </CardHeader>
@@ -229,7 +229,7 @@ export default function RiwayatUjianPage() {
       </div>
 
       {/* Riwayat Table */}
-      <Card className="rounded-md">
+      <Card className="rounded-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base md:text-lg">Daftar Riwayat Ujian</CardTitle>
           <CardDescription className="text-xs md:text-sm">Detail hasil ujian yang sudah Anda kerjakan</CardDescription>
@@ -249,7 +249,7 @@ export default function RiwayatUjianPage() {
                 const badge = getGradeBadge(riwayat.persentase)
                 
                 return (
-                  <Card key={riwayat.id} className="rounded-md shadow-sm border border-gray-200">
+                  <Card key={riwayat.id} className="rounded-sm shadow-sm border border-gray-200">
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex-1 min-w-0">

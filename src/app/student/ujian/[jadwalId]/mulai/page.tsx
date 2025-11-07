@@ -644,7 +644,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
             )}
 
             {/* Soal Card */}
-            <Card className="rounded-md shadow-sm">
+            <Card className="rounded-sm shadow-sm">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">
@@ -831,7 +831,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
             </Button>
 
             {showNavigasi && (
-              <Card className="rounded-md shadow-sm sticky top-24 w-64">
+              <Card className="rounded-sm shadow-sm sticky top-24 w-64">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm">Navigasi Soal</CardTitle>
                   <CardDescription className="text-xs">

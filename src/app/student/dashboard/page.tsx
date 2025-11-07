@@ -170,7 +170,7 @@ export default function StudentDashboard() {
 
       {/* Profile Card */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 md:gap-4">
-        <Card className="lg:col-span-1 rounded-md shadow-sm">
+        <Card className="lg:col-span-1 rounded-sm shadow-sm">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <User className="h-4 w-4" />
@@ -206,7 +206,7 @@ export default function StudentDashboard() {
 
         {/* Stats Cards */}
         <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-          <Card className="rounded-md shadow-sm">
+          <Card className="rounded-sm shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-medium text-gray-600">Total Ujian</CardTitle>
             </CardHeader>
@@ -221,7 +221,7 @@ export default function StudentDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-md shadow-sm">
+          <Card className="rounded-sm shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-xs font-medium text-gray-600">Ujian Selesai</CardTitle>
             </CardHeader>
@@ -243,7 +243,7 @@ export default function StudentDashboard() {
         <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">Ujian Tersedia</h2>
         
         {jadwalList.filter(j => !j.sudahDikerjakan).length === 0 ? (
-          <Card className="rounded-md shadow-sm">
+          <Card className="rounded-sm shadow-sm">
             <CardContent className="py-8 md:py-12 text-center text-gray-500">
               <BookOpen className="h-12 md:h-16 w-12 md:w-16 mx-auto text-gray-400 mb-4" />
               <p className="text-base md:text-lg font-medium">Tidak ada ujian tersedia</p>
@@ -256,7 +256,7 @@ export default function StudentDashboard() {
               const isActive = isUjianActive(jadwal.tanggalUjian, jadwal.jamMulai, jadwal.durasi)
               
               return (
-                <Card key={jadwal.id} className={isActive ? 'border-green-500 border-2 rounded-md shadow-sm' : 'rounded-md shadow-sm'}>
+                <Card key={jadwal.id} className={isActive ? 'border-green-500 border-2 rounded-sm shadow-sm' : 'rounded-sm shadow-sm'}>
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start gap-2">
                       <CardTitle className="text-sm md:text-base">{jadwal.namaUjian}</CardTitle>
@@ -306,7 +306,7 @@ export default function StudentDashboard() {
           <h2 className="text-lg md:text-xl font-semibold mb-2 md:mb-3">Ujian Sudah Selesai</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {jadwalList.filter(j => j.sudahDikerjakan).map((jadwal) => (
-              <Card key={jadwal.id} className="rounded-md shadow-sm border-green-200 bg-green-50/30 opacity-75">
+              <Card key={jadwal.id} className="rounded-sm shadow-sm border-green-200 bg-green-50/30 opacity-75">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg text-gray-700">{jadwal.namaUjian}</CardTitle>

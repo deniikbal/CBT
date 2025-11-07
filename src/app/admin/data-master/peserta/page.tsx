@@ -99,7 +99,11 @@ export default function PesertaPage() {
       const response = await fetch('/api/peserta')
       if (response.ok) {
         const data = await response.json()
-        setPesertaList(data)
+        // Sort data by noUjian using natural sort (ascending)
+        const sortedData = data.sort((a: Peserta, b: Peserta) => {
+          return a.noUjian.localeCompare(b.noUjian, 'id', { numeric: true, sensitivity: 'base' })
+        })
+        setPesertaList(sortedData)
       }
     } catch (error) {
       console.error('Error fetching peserta:', error)
@@ -125,7 +129,11 @@ export default function PesertaPage() {
       const response = await fetch('/api/kelas')
       if (response.ok) {
         const data = await response.json()
-        setKelasList(data)
+        // Sort data using natural sort
+        const sortedData = data.sort((a: Kelas, b: Kelas) => {
+          return a.name.localeCompare(b.name, 'id', { numeric: true, sensitivity: 'base' })
+        })
+        setKelasList(sortedData)
       }
     } catch (error) {
       console.error('Error fetching kelas:', error)
