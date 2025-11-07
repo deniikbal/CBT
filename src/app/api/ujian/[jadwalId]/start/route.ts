@@ -175,11 +175,10 @@ export async function POST(
       );
     }
 
-    // If not started yet, check if ujian time is valid
+    // If not started yet, check if ujian time has started
     if (!existingHasil) {
       const nowWIBDisplay = new Date(now.getTime() + 7 * 60 * 60 * 1000);
       const ujianStartWIBDisplay = new Date(ujianDate.getTime() + 7 * 60 * 60 * 1000);
-      const ujianEndWIBDisplay = new Date(ujianEnd.getTime() + 7 * 60 * 60 * 1000);
       
       if (now < ujianDate) {
         return NextResponse.json(
@@ -189,20 +188,6 @@ export async function POST(
               currentTimeWIB: nowWIBDisplay.toISOString(),
               ujianStartTimeWIB: ujianStartWIBDisplay.toISOString(),
               message: 'Waktu sekarang masih sebelum waktu mulai ujian'
-            }
-          },
-          { status: 400 }
-        );
-      }
-      
-      if (now > ujianEnd) {
-        return NextResponse.json(
-          { 
-            error: 'Ujian sudah berakhir',
-            debug: {
-              currentTimeWIB: nowWIBDisplay.toISOString(),
-              ujianEndTimeWIB: ujianEndWIBDisplay.toISOString(),
-              message: 'Waktu sekarang sudah melewati waktu selesai ujian'
             }
           },
           { status: 400 }
