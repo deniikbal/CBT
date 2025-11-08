@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle, Monitor } from 'lucide-react'
+import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle, Monitor, ExternalLink } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
@@ -30,6 +30,7 @@ interface JadwalUjian {
   acakOpsi: boolean
   tampilkanNilai: boolean
   requireExamBrowser: boolean
+  sourceType?: string
   sudahDikerjakan?: boolean
   hasilUjian?: {
     id: string
@@ -144,6 +145,10 @@ export default function UjianSayaPage() {
 
   const handleMulaiUjian = (jadwalId: string) => {
     router.push(`/student/ujian/${jadwalId}/mulai`)
+  }
+
+  const handleBukaGoogleForm = (jadwalId: string) => {
+    router.push(`/student/google-form/${jadwalId}`)
   }
 
   const handleLogout = () => {
@@ -407,12 +412,22 @@ export default function UjianSayaPage() {
                     </div>
 
                     <div className="pt-2">
-                      <Button 
-                        className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
-                        onClick={() => handleMulaiUjian(jadwal.id)}
-                      >
-                        Mulai Ujian Sekarang
-                      </Button>
+                      {jadwal.sourceType === 'GOOGLE_FORM' ? (
+                        <Button 
+                          className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                          onClick={() => handleBukaGoogleForm(jadwal.id)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Buka Google Form
+                        </Button>
+                      ) : (
+                        <Button 
+                          className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                          onClick={() => handleMulaiUjian(jadwal.id)}
+                        >
+                          Mulai Ujian Sekarang
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

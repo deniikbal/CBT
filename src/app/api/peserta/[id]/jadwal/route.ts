@@ -49,6 +49,7 @@ export async function GET(
           tampilkanNilai: jadwalUjian.tampilkanNilai,
           isActive: jadwalUjian.isActive,
           bankSoalKode: bankSoal.kodeBankSoal,
+          sourceType: bankSoal.sourceType,
         })
         .from(jadwalUjianPeserta)
         .innerJoin(jadwalUjian, eq(jadwalUjianPeserta.jadwalUjianId, jadwalUjian.id))
@@ -104,6 +105,7 @@ export async function GET(
             acakSoal: jadwal.acakSoal,
             acakOpsi: jadwal.acakOpsi,
             tampilkanNilai: jadwal.tampilkanNilai,
+            sourceType: jadwal.sourceType,
             bankSoal: jadwal.bankSoalKode ? {
               kodeBankSoal: jadwal.bankSoalKode,
             } : null,
@@ -124,6 +126,7 @@ export async function GET(
             acakSoal: jadwal.acakSoal,
             acakOpsi: jadwal.acakOpsi,
             tampilkanNilai: jadwal.tampilkanNilai,
+            sourceType: jadwal.sourceType,
             bankSoal: jadwal.bankSoalKode ? {
               kodeBankSoal: jadwal.bankSoalKode,
             } : null,

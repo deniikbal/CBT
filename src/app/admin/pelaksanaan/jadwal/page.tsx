@@ -26,6 +26,8 @@ interface BankSoal {
   id: string
   kodeBankSoal: string
   matpelId: string
+  sourceType?: string
+  googleFormUrl?: string
 }
 
 interface Kelas {
@@ -785,7 +787,7 @@ export default function JadwalUjianPage() {
               </div>
 
               {/* Bank Soal */}
-              <div className="space-y-2">
+              <div className="space-y-2 col-span-2">
                 <Label htmlFor="bankSoal">Bank Soal *</Label>
                 <Select
                   value={formData.bankSoalId}
@@ -800,7 +802,7 @@ export default function JadwalUjianPage() {
                     {filteredBankSoal.length > 0 ? (
                       filteredBankSoal.map((bank) => (
                         <SelectItem key={bank.id} value={bank.id}>
-                          {bank.kodeBankSoal}
+                          {bank.kodeBankSoal} {bank.sourceType === 'GOOGLE_FORM' ? '(Google Form)' : ''}
                         </SelectItem>
                       ))
                     ) : (
@@ -810,6 +812,40 @@ export default function JadwalUjianPage() {
                     )}
                   </SelectContent>
                 </Select>
+                
+                {/* Google Form URL Info */}
+                {formData.bankSoalId && (() => {
+                  const selectedBank = filteredBankSoal.find(b => b.id === formData.bankSoalId)
+                  if (selectedBank?.sourceType === 'GOOGLE_FORM' && selectedBank?.googleFormUrl) {
+                    return (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-2">
+                        <div className="flex items-start gap-2">
+                          <div className="text-blue-600 mt-0.5">
+                            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-blue-900 mb-1">Google Form URL</p>
+                            <p className="text-xs text-blue-800 truncate break-all">{selectedBank.googleFormUrl}</p>
+                            <a
+                              href={selectedBank.googleFormUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-700 font-medium mt-1 inline-flex items-center gap-1"
+                            >
+                              Buka Form
+                              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+                  return null
+                })()}
               </div>
 
               {/* Tanggal Ujian */}

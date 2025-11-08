@@ -6,6 +6,7 @@ export const roleEnum = pgEnum('role', ['ADMIN', 'USER']);
 export const difficultyEnum = pgEnum('difficulty', ['EASY', 'MEDIUM', 'HARD']);
 export const resultStatusEnum = pgEnum('result_status', ['IN_PROGRESS', 'SUBMITTED', 'EXPIRED']);
 export const jawabanBenarEnum = pgEnum('jawaban_benar', ['A', 'B', 'C', 'D', 'E']);
+export const sourceTypeEnum = pgEnum('source_type', ['MANUAL', 'GOOGLE_FORM']);
 
 // User Table
 export const users = pgTable('users', {
@@ -114,6 +115,8 @@ export const bankSoal = pgTable('bank_soal', {
   matpelId: text('matpel_id').notNull().references(() => mataPelajaran.id, { onDelete: 'cascade' }),
   createdBy: text('created_by').references(() => users.id, { onDelete: 'cascade' }),
   jumlahSoal: integer('jumlah_soal').notNull().default(0),
+  sourceType: sourceTypeEnum('source_type').notNull().default('MANUAL'),
+  googleFormUrl: text('google_form_url'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });

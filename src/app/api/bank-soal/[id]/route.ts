@@ -16,6 +16,8 @@ export async function GET(
       kodeBankSoal: bankSoal.kodeBankSoal,
       matpelId: bankSoal.matpelId,
       jumlahSoal: bankSoal.jumlahSoal,
+      sourceType: bankSoal.sourceType,
+      googleFormUrl: bankSoal.googleFormUrl,
       createdAt: bankSoal.createdAt,
       updatedAt: bankSoal.updatedAt,
       mataPelajaran: {
@@ -53,11 +55,18 @@ export async function PUT(
 ) {
   try {
     const { id } = await params
-    const { kodeBankSoal, matpelId, jumlahSoal } = await request.json()
+    const { kodeBankSoal, matpelId, jumlahSoal, sourceType = 'MANUAL', googleFormUrl } = await request.json()
 
     if (!kodeBankSoal || !matpelId) {
       return NextResponse.json(
         { error: 'Kode bank soal dan mata pelajaran harus diisi' },
+        { status: 400 }
+      )
+    }
+
+    if (sourceType === 'GOOGLE_FORM' && !googleFormUrl) {
+      return NextResponse.json(
+        { error: 'URL Google Form harus diisi jika menggunakan sumber Google Form' },
         { status: 400 }
       )
     }
@@ -89,6 +98,8 @@ export async function PUT(
         kodeBankSoal, 
         matpelId, 
         jumlahSoal: jumlahSoal || 0,
+        sourceType: sourceType as 'MANUAL' | 'GOOGLE_FORM',
+        googleFormUrl: sourceType === 'GOOGLE_FORM' ? googleFormUrl : null,
         updatedAt: new Date() 
       })
       .where(eq(bankSoal.id, id))

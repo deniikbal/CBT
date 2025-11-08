@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Edit, Trash2, BookOpen, FileText, Loader2 } from 'lucide-react'
+import { Plus, Edit, Trash2, BookOpen, FileText, Loader2, Link as LinkIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
 import { DataTable, Column } from '@/components/ui/data-table'
@@ -23,6 +23,8 @@ interface BankSoal {
   kodeBankSoal: string
   matpelId: string
   jumlahSoal: number
+  sourceType: 'MANUAL' | 'GOOGLE_FORM'
+  googleFormUrl?: string
   createdAt: string
   mataPelajaran: {
     id: string
@@ -44,7 +46,9 @@ export default function BankSoalPage() {
   const [formData, setFormData] = useState({ 
     kodeBankSoal: '', 
     matpelId: '', 
-    jumlahSoal: 0 
+    jumlahSoal: 0,
+    sourceType: 'MANUAL' as 'MANUAL' | 'GOOGLE_FORM',
+    googleFormUrl: ''
   })
 
   useEffect(() => {
@@ -145,7 +149,9 @@ export default function BankSoalPage() {
     setFormData({ 
       kodeBankSoal: bankSoal.kodeBankSoal, 
       matpelId: bankSoal.matpelId,
-      jumlahSoal: bankSoal.jumlahSoal
+      jumlahSoal: bankSoal.jumlahSoal,
+      sourceType: bankSoal.sourceType,
+      googleFormUrl: bankSoal.googleFormUrl || ''
     })
     setIsDialogOpen(true)
   }
@@ -170,7 +176,7 @@ export default function BankSoalPage() {
   }
 
   const resetForm = () => {
-    setFormData({ kodeBankSoal: '', matpelId: '', jumlahSoal: 0 })
+    setFormData({ kodeBankSoal: '', matpelId: '', jumlahSoal: 0, sourceType: 'MANUAL', googleFormUrl: '' })
     setEditingId(null)
   }
 
@@ -257,6 +263,34 @@ export default function BankSoalPage() {
                       className="w-full"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="sourceType">Sumber Soal *</Label>
+                    <Select 
+                      value={formData.sourceType} 
+                      onValueChange={(value) => setFormData({ ...formData, sourceType: value as 'MANUAL' | 'GOOGLE_FORM', googleFormUrl: '' })}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Pilih sumber soal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="MANUAL">Soal Manual</SelectItem>
+                        <SelectItem value="GOOGLE_FORM">Google Form</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {formData.sourceType === 'GOOGLE_FORM' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="googleFormUrl">Link Google Form *</Label>
+                      <Input
+                        id="googleFormUrl"
+                        placeholder="https://forms.google.com/..."
+                        value={formData.googleFormUrl}
+                        onChange={(e) => setFormData({ ...formData, googleFormUrl: e.target.value })}
+                        required={formData.sourceType === 'GOOGLE_FORM'}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                   <div className="flex justify-end gap-2 pt-2">
                     <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
                       Batal
@@ -309,6 +343,32 @@ export default function BankSoalPage() {
                 ),
               },
               {
+                header: 'Sumber Soal',
+                accessor: 'sourceType',
+                cell: (row) => (
+                  <div className="flex items-center gap-2">
+                    {row.sourceType === 'GOOGLE_FORM' ? (
+                      <>
+                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Google Form</span>
+                        {row.googleFormUrl && (
+                          <a 
+                            href={row.googleFormUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800"
+                            title="Buka Google Form"
+                          >
+                            <LinkIcon className="h-4 w-4" />
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Manual</span>
+                    )}
+                  </div>
+                ),
+              },
+              {
                 header: 'Target Soal',
                 accessor: 'jumlahSoal',
                 cell: (row) => (
@@ -337,15 +397,17 @@ export default function BankSoalPage() {
                 accessor: () => null,
                 cell: (row) => (
                   <div className="flex justify-end gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => router.push(`/admin/persiapan/bank-soal/${row.id}/soal`)}
-                      className="gap-1 border-blue-600 text-blue-600 hover:bg-blue-50"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Kelola Soal
-                    </Button>
+                    {row.sourceType === 'MANUAL' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => router.push(`/admin/persiapan/bank-soal/${row.id}/soal`)}
+                        className="gap-1 border-blue-600 text-blue-600 hover:bg-blue-50"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Kelola Soal
+                      </Button>
+                    )}
                     <Button 
                       variant="ghost" 
                       size="sm" 

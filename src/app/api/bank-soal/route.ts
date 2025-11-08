@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
       matpelId: bankSoal.matpelId,
       createdBy: bankSoal.createdBy,
       jumlahSoal: bankSoal.jumlahSoal,
+      sourceType: bankSoal.sourceType,
+      googleFormUrl: bankSoal.googleFormUrl,
       createdAt: bankSoal.createdAt,
       updatedAt: bankSoal.updatedAt,
       mataPelajaran: {
@@ -46,11 +48,18 @@ export async function GET(request: NextRequest) {
 // POST - Tambah bank soal baru
 export async function POST(request: NextRequest) {
   try {
-    const { kodeBankSoal, matpelId, jumlahSoal, createdBy } = await request.json()
+    const { kodeBankSoal, matpelId, jumlahSoal, createdBy, sourceType = 'MANUAL', googleFormUrl } = await request.json()
 
     if (!kodeBankSoal || !matpelId || !createdBy) {
       return NextResponse.json(
         { error: 'Kode bank soal, mata pelajaran, dan userId harus diisi' },
+        { status: 400 }
+      )
+    }
+
+    if (sourceType === 'GOOGLE_FORM' && !googleFormUrl) {
+      return NextResponse.json(
+        { error: 'URL Google Form harus diisi jika menggunakan sumber Google Form' },
         { status: 400 }
       )
     }
@@ -79,7 +88,9 @@ export async function POST(request: NextRequest) {
       kodeBankSoal,
       matpelId,
       createdBy,
-      jumlahSoal: jumlahSoal || 0
+      jumlahSoal: jumlahSoal || 0,
+      sourceType: sourceType as 'MANUAL' | 'GOOGLE_FORM',
+      googleFormUrl: sourceType === 'GOOGLE_FORM' ? googleFormUrl : null
     }).returning()
 
     return NextResponse.json(newBankSoal, { status: 201 })
