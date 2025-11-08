@@ -55,9 +55,9 @@ export default function GoogleFormSetupPage() {
 
     try {
       setGenerating(true)
-      // Generate link untuk peserta demo (untuk admin testing)
+      // Get first peserta dari jadwal yang dipilih (untuk testing)
       const response = await fetch(
-        `/api/jadwal-ujian/google-form/generate-link/${selectedJadwal}?pesertaId=demo-admin`,
+        `/api/jadwal-ujian/google-form/generate-link/${selectedJadwal}`,
         { method: 'GET' }
       )
 
@@ -66,6 +66,7 @@ export default function GoogleFormSetupPage() {
       if (data.success) {
         setFormLink(data.googleFormUrl)
         setRedirectLink(data.redirectUrl)
+        toast.success('Link berhasil di-generate')
       } else {
         toast.error(data.error || 'Gagal generate link')
       }
@@ -124,24 +125,43 @@ export default function GoogleFormSetupPage() {
         <CardHeader>
           <CardTitle className="text-base text-blue-900 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
-            Cara Setup (untuk Exambro)
+            ⚠️ PENTING: Cara Setup Google Form
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 text-sm text-blue-800">
-          <ol className="list-decimal list-inside space-y-2">
-            <li>Pilih jadwal di bawah → Generate link konfirmasi</li>
-            <li>Copy "Redirect URL"</li>
-            <li>Buka Google Form → Settings → Presentation</li>
-            <li>Enable "Show confirmation message"</li>
-            <li>
-              Paste Redirect URL di confirmation message:
-              <br />
-              <code className="bg-white p-2 rounded text-xs mt-1 block">
-                Klik &lt;a href="[PASTE_LINK]"&gt;di sini&lt;/a&gt; untuk konfirmasi ujian selesai
-              </code>
-            </li>
-            <li>Atau add item di form → paste link sebagai instruksi</li>
-          </ol>
+        <CardContent className="space-y-4 text-sm text-blue-800">
+          <Alert className="bg-white border-blue-300">
+            <AlertTriangle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-900">
+              <strong>JANGAN copy link dari halaman ini!</strong> Link di halaman admin hanya untuk preview. Setiap peserta akan auto-generate link confirmation sendiri saat login.
+            </AlertDescription>
+          </Alert>
+
+          <div>
+            <p className="font-semibold mb-2">Setup di Google Form (sekali saja):</p>
+            <ol className="list-decimal list-inside space-y-2">
+              <li>Buka Google Form</li>
+              <li>Settings (gear icon) → Presentation tab</li>
+              <li>Enable "Show confirmation message"</li>
+              <li>
+                Di confirmation message, paste:
+                <code className="bg-white p-2 rounded text-xs mt-1 block break-all">
+                  Ujian selesai! Sistem akan memberikan link untuk konfirmasi di halaman CBT.
+                </code>
+              </li>
+              <li>Save</li>
+            </ol>
+          </div>
+
+          <div>
+            <p className="font-semibold mb-2">Flow Peserta (otomatis):</p>
+            <ol className="list-decimal list-inside space-y-2">
+              <li>Login ke CBT → Ujian Saya</li>
+              <li>Klik "Buka Google Form" / "Siap Google Form"</li>
+              <li>Halaman CBT auto-generate link konfirmasi (unique per peserta)</li>
+              <li>Peserta isi & submit Google Form</li>
+              <li>Klik link konfirmasi → status update otomatis</li>
+            </ol>
+          </div>
         </CardContent>
       </Card>
 
@@ -209,45 +229,49 @@ export default function GoogleFormSetupPage() {
             </CardContent>
           </Card>
 
-          {/* Redirect Link */}
-          <Card className="border-green-200 bg-green-50">
+          {/* Info Section */}
+          <Card className="border-purple-200 bg-purple-50">
             <CardHeader>
-              <CardTitle className="text-base text-green-900 flex items-center gap-2">
+              <CardTitle className="text-base text-purple-900 flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />
-                Redirect URL (PENTING)
+                Informasi (Untuk Admin Saja)
               </CardTitle>
-              <CardDescription className="text-green-800">
-                Link ini yang di-embed di Google Form confirmation message
+              <CardDescription className="text-purple-800">
+                Link berikut hanya untuk referensi. Peserta akan auto-generate link mereka sendiri.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Alert className="border-green-300 bg-white">
-                <AlertDescription className="text-sm text-green-900">
-                  Setelah peserta submit Google Form, akan auto-redirect ke halaman ini untuk konfirmasi
+              <Alert className="border-purple-300 bg-white">
+                <AlertDescription className="text-sm text-purple-900">
+                  ✓ Peserta akan auto-generate link confirmation yang unik saat mereka login dan buka halaman Google Form
                 </AlertDescription>
               </Alert>
 
-              <div className="bg-white p-4 rounded-lg border-2 border-green-300 break-all">
-                <code className="text-sm text-green-900 font-mono">
-                  {redirectLink}
-                </code>
+              <div>
+                <p className="text-xs text-purple-700 mb-2 font-semibold">Google Form URL:</p>
+                <div className="bg-white p-3 rounded-lg border border-purple-300 break-all">
+                  <code className="text-xs text-purple-900 font-mono">
+                    {formLink}
+                  </code>
+                </div>
               </div>
 
-              <Button
-                onClick={() => handleCopy(redirectLink, 'Redirect URL')}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                <Copy className="h-4 w-4 mr-2" />
-                {copied ? 'Tersalin!' : 'Copy Redirect URL'}
-              </Button>
+              <div>
+                <p className="text-xs text-purple-700 mb-2 font-semibold">Contoh Redirect URL (untuk peserta pertama):</p>
+                <div className="bg-white p-3 rounded-lg border border-purple-300 break-all">
+                  <code className="text-xs text-purple-900 font-mono">
+                    {redirectLink}
+                  </code>
+                </div>
+              </div>
 
               <Button
                 onClick={() => window.open(redirectLink, '_blank')}
                 variant="outline"
-                className="w-full"
+                className="w-full text-xs"
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
-                Test Link
+                Test Link (akan gagal jika bukan peserta pertama)
               </Button>
             </CardContent>
           </Card>

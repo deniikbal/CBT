@@ -25,13 +25,6 @@ interface GoogleFormAccess {
   endTime?: string
 }
 
-interface SubmissionToken {
-  success: boolean
-  token?: string
-  confirmationUrl?: string
-  error?: string
-}
-
 export default function GoogleFormPage() {
   const params = useParams()
   const router = useRouter()
@@ -46,8 +39,7 @@ export default function GoogleFormPage() {
     minutes: number
     seconds: number
   } | null>(null)
-  const [submissionToken, setSubmissionToken] = useState<string | null>(null)
-  const [confirmationUrl, setConfirmationUrl] = useState<string | null>(null)
+  const [confirmationLink, setConfirmationLink] = useState<string | null>(null)
   const [copiedToClipboard, setCopiedToClipboard] = useState(false)
 
   // Timer untuk update waktu setiap detik
@@ -71,12 +63,12 @@ export default function GoogleFormPage() {
     fetchFormAccess(pesertaData.id)
   }, [])
 
-  // Generate submission token when pesertaId is set
+  // Generate confirmation link when pesertaId is set
   useEffect(() => {
-    if (pesertaId && !submissionToken) {
-      generateSubmissionToken()
+    if (pesertaId && !confirmationLink) {
+      generateConfirmationLink()
     }
-  }, [pesertaId, submissionToken])
+  }, [pesertaId, confirmationLink])
 
   // Update countdown
   useEffect(() => {
@@ -135,46 +127,20 @@ export default function GoogleFormPage() {
     }
   }
 
-  const generateSubmissionToken = async () => {
+  const generateConfirmationLink = () => {
     if (!pesertaId) return
-
-    try {
-      const response = await fetch(
-        `/api/jadwal-ujian/google-form/submit/${jadwalId}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ pesertaId }),
-        }
-      )
-
-      const data: SubmissionToken = await response.json()
-
-      if (data.success && data.token && data.confirmationUrl) {
-        setSubmissionToken(data.token)
-        setConfirmationUrl(data.confirmationUrl)
-      }
-    } catch (error) {
-      console.error('Error generating submission token:', error)
-    }
+    // Link simple tanpa token
+    const link = `/student/google-form/${jadwalId}/confirm`
+    setConfirmationLink(link)
+    console.log('[Client] Confirmation link ready:', link);
   }
 
   const handleCopyLink = () => {
-    if (confirmationUrl) {
-      const fullUrl = `${window.location.origin}${confirmationUrl}`
+    if (confirmationLink) {
+      const fullUrl = `${window.location.origin}${confirmationLink}`
       navigator.clipboard.writeText(fullUrl)
       setCopiedToClipboard(true)
       setTimeout(() => setCopiedToClipboard(false), 2000)
-    }
-  }
-
-  const handleOpenFormWithLink = () => {
-    if (formAccess?.url) {
-      // Generate token first if not exists
-      if (!submissionToken) {
-        generateSubmissionToken()
-      }
-      window.open(formAccess.url, '_blank')
     }
   }
 
@@ -381,51 +347,20 @@ export default function GoogleFormPage() {
           <Alert className="border-blue-200 bg-blue-50">
             <ExternalLink className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-blue-800 text-sm">
-              Klik tombol di bawah untuk membuka Google Form dalam tab baru, lalu isi dan submit form
+              1. Klik "Buka Google Form" untuk isi form<br/>
+              2. Submit form di Google Form<br/>
+              3. Setelah submit, akan otomatis redirect ke halaman ujian<br/>
+              4. Kembali di halaman ujian, klik "Konfirmasi Sudah Ujian"
             </AlertDescription>
           </Alert>
 
-          {/* Submission Link Section */}
-          {confirmationUrl && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
-              <div className="flex items-start gap-2">
-                <div className="text-amber-600 mt-0.5">
-                  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zm-11-1a1 1 0 11-2 0 1 1 0 012 0z" clipRule="evenodd" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-900 mb-2">
-                    Link Konfirmasi (Salin setelah submit form)
-                  </p>
-                  <p className="text-xs text-amber-800 mb-3">
-                    Setelah Anda submit Google Form, klik link di bawah untuk mengkonfirmasi bahwa ujian telah selesai:
-                  </p>
-                  <div className="bg-white p-2 rounded border border-amber-300 mb-2 break-all">
-                    <code className="text-xs text-amber-900">
-                      {`${window.location.origin}${confirmationUrl}`}
-                    </code>
-                  </div>
-                  <Button
-                    onClick={handleCopyLink}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs"
-                  >
-                    {copiedToClipboard ? '✓ Tersalin!' : 'Salin Link'}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
           <Button
-            onClick={handleOpenFormWithLink}
+            onClick={handleOpenForm}
             className="w-full bg-green-600 hover:bg-green-700"
             size="lg"
           >
             <ExternalLink className="w-4 h-4 mr-2" />
-            Buka Google Form
+            1️⃣ Buka Google Form
           </Button>
 
           <Button

@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     // Parse tanggalUjian sebagai WIB (convert dari YYYY-MM-DD ke UTC)
     // jamMulai adalah HH:mm dalam WIB
-    const ujianDateUTC = parseLocalWIBDateTime(tanggalUjian, jamMulai.split(':')[0] + ':00');
+    const ujianDateUTC = parseLocalWIBDateTime(tanggalUjian, jamMulai);
     
     // Create jadwal ujian
     const [newJadwal] = await db

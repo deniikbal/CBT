@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { jadwalUjian, bankSoal } from '@/db/schema';
+import { jadwalUjian, bankSoal, jadwalUjianPeserta } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateSubmissionToken } from '@/lib/submission-token';
 
@@ -11,15 +11,6 @@ export async function GET(
 ) {
   try {
     const { jadwalId } = await params;
-    const { searchParams } = new URL(request.url);
-    const pesertaId = searchParams.get('pesertaId');
-
-    if (!pesertaId) {
-      return NextResponse.json(
-        { error: 'pesertaId diperlukan' },
-        { status: 400 }
-      );
-    }
 
     // Get jadwal dan bank soal
     const [jadwal] = await db
@@ -38,6 +29,22 @@ export async function GET(
         { status: 404 }
       );
     }
+
+    // Get first peserta dari jadwal (untuk admin preview/testing)
+    const [firstPeserta] = await db
+      .select({ pesertaId: jadwalUjianPeserta.pesertaId })
+      .from(jadwalUjianPeserta)
+      .where(eq(jadwalUjianPeserta.jadwalUjianId, jadwalId))
+      .limit(1);
+
+    if (!firstPeserta) {
+      return NextResponse.json(
+        { error: 'Tidak ada peserta yang terdaftar untuk jadwal ini' },
+        { status: 404 }
+      );
+    }
+
+    const pesertaId = firstPeserta.pesertaId;
 
     // Generate submission token
     const token = generateSubmissionToken(pesertaId, jadwalId);

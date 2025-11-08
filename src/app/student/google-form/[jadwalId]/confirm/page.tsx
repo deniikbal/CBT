@@ -146,7 +146,10 @@ export default function ConfirmSubmissionPage() {
 
           <div className="space-y-2">
             <Button
-              onClick={() => router.push('/student/ujian')}
+              onClick={() => {
+                // Refresh halaman ujian untuk update status
+                window.location.href = '/student/ujian'
+              }}
               className="w-full bg-green-600 hover:bg-green-700"
               size="lg"
             >

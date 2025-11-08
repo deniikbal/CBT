@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, bankSoal, jadwalUjianPeserta } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { parseLocalWIBDateTime } from '@/lib/timezone';
+import { parseLocalWIBDateTime, extractWIBDateStr } from '@/lib/timezone';
 
 // GET Google Form URL dengan access control
 export async function GET(
@@ -82,21 +82,29 @@ export async function GET(
     }
 
     // Check time window
-    // tanggalUjian dari DB adalah UTC timestamp, extract date part
-    // jamMulai adalah string HH:mm (WIB local time)
     const now = new Date();
     
-    // Extract date dari tanggalUjian (dalam UTC)
-    const tanggalUjianDate = new Date(jadwal.tanggalUjian);
-    const dateStr = tanggalUjianDate.toISOString().split('T')[0];
+    // Extract WIB date dari tanggalUjian (UTC timestamp)
+    const dateStr = extractWIBDateStr(jadwal.tanggalUjian);
     
-    // Parse sebagai WIB (dateStr adalah UTC date, jamMulai adalah WIB time)
-    // Ini untuk convert ke UTC untuk comparison
+    // Parse sebagai WIB untuk conversion ke UTC
     const ujianDate = parseLocalWIBDateTime(dateStr, jadwal.jamMulai);
     const endTime = new Date(ujianDate.getTime() + jadwal.durasi * 60 * 1000);
 
     // Allow access 5 minutes before start time
     const allowedStartTime = new Date(ujianDate.getTime() - 5 * 60 * 1000);
+
+    console.log('[API] Time check:', {
+      now: now.toISOString(),
+      allowedStartTime: allowedStartTime.toISOString(),
+      ujianDate: ujianDate.toISOString(),
+      endTime: endTime.toISOString(),
+      dateStr,
+      jamMulai: jadwal.jamMulai,
+      durasi: jadwal.durasi,
+      nowVsAllowed: now >= allowedStartTime ? 'OK' : 'TOO EARLY',
+      nowVsEnd: now <= endTime ? 'OK' : 'TOO LATE',
+    });
 
     if (now < allowedStartTime) {
       const minutesUntilStart = Math.ceil((allowedStartTime.getTime() - now.getTime()) / (60 * 1000));

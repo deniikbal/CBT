@@ -95,6 +95,8 @@ export async function GET(
             )
             .limit(1);
 
+          console.log(`[API] Hasil query untuk jadwal ${jadwal.id}:`, hasil);
+
           return {
             id: jadwal.id,
             namaUjian: jadwal.namaUjian,

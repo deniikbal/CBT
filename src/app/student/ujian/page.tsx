@@ -73,7 +73,14 @@ export default function UjianSayaPage() {
       const response = await fetch(`/api/peserta/${pesertaId}/jadwal`)
       if (response.ok) {
         const data = await response.json()
-        console.log('Jadwal data:', data)
+        console.log('Jadwal data full:', data)
+        data.forEach((j: any, idx: number) => {
+          console.log(`[${idx}] ${j.namaUjian}:`, {
+            sudahDikerjakan: j.sudahDikerjakan,
+            hasilUjian: j.hasilUjian,
+            sourceType: j.sourceType,
+          })
+        })
         setJadwalList(data)
         
         // Check if any exam requires exam browser
@@ -155,6 +162,58 @@ export default function UjianSayaPage() {
 
   const handleBukaGoogleForm = (jadwalId: string) => {
     router.push(`/student/google-form/${jadwalId}`)
+  }
+
+  const handleKonfirmasiSudahUjian = async (jadwalId: string) => {
+    try {
+      const pesertaId = peserta?.id
+      if (!pesertaId) return
+
+      const response = await fetch(
+        '/api/jadwal-ujian/google-form/mark-submitted',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jadwalId, pesertaId }),
+        }
+      )
+
+      const data = await response.json()
+      if (response.ok && data.success) {
+        // Refresh jadwal list untuk update UI
+        fetchJadwal(pesertaId)
+      } else {
+        alert('Gagal mencatat ujian: ' + (data.error || 'Kesalahan server'))
+      }
+    } catch (error) {
+      console.error('Error marking exam as submitted:', error)
+      alert('Terjadi kesalahan saat mencatat ujian')
+    }
+  }
+
+  const getMinimumTimeReached = (jadwal: JadwalUjian): boolean => {
+    if (!jadwal.minimumPengerjaan || !jadwal.hasilUjian?.waktuMulai) {
+      return true // Jika tidak ada minimum, langsung bisa konfirmasi
+    }
+
+    const waktuMulai = new Date(jadwal.hasilUjian.waktuMulai)
+    const minimumMs = jadwal.minimumPengerjaan * 60 * 1000
+    const waktuMinimumTercapai = new Date(waktuMulai.getTime() + minimumMs)
+
+    return currentTime >= waktuMinimumTercapai
+  }
+
+  const getRemainingMinimumTime = (jadwal: JadwalUjian): number => {
+    if (!jadwal.minimumPengerjaan || !jadwal.hasilUjian?.waktuMulai) {
+      return 0
+    }
+
+    const waktuMulai = new Date(jadwal.hasilUjian.waktuMulai)
+    const minimumMs = jadwal.minimumPengerjaan * 60 * 1000
+    const waktuMinimumTercapai = new Date(waktuMulai.getTime() + minimumMs)
+
+    const remaining = waktuMinimumTercapai.getTime() - currentTime.getTime()
+    return Math.max(0, Math.ceil(remaining / 1000 / 60)) // dalam menit
   }
 
   const handleLogout = () => {
@@ -417,15 +476,43 @@ export default function UjianSayaPage() {
                       )}
                     </div>
 
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       {jadwal.sourceType === 'GOOGLE_FORM' ? (
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
-                          onClick={() => handleBukaGoogleForm(jadwal.id)}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Buka Google Form
-                        </Button>
+                        <>
+                          {getMinimumTimeReached(jadwal) ? (
+                            <>
+                              <Button 
+                                className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleBukaGoogleForm(jadwal.id)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Buka Google Form
+                              </Button>
+                              <Button 
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleKonfirmasiSudahUjian(jadwal.id)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Konfirmasi Sudah Ujian
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button 
+                                className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleBukaGoogleForm(jadwal.id)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Buka Google Form
+                              </Button>
+                              <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-center">
+                                <p className="text-xs text-yellow-800">
+                                  Tunggu {getRemainingMinimumTime(jadwal)} menit lagi untuk konfirmasi
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </>
                       ) : (
                         <Button 
                           className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
@@ -505,12 +592,9 @@ export default function UjianSayaPage() {
 
                     <div className="pt-2">
                       {jadwal.sourceType === 'GOOGLE_FORM' ? (
-                        <Button 
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-sm md:text-base h-10 md:h-11"
-                          onClick={() => handleBukaGoogleForm(jadwal.id)}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Siap Google Form
+                        <Button className="w-full" variant="outline" disabled>
+                          <Clock className="h-4 w-4 mr-2" />
+                          Belum Waktunya
                         </Button>
                       ) : (
                         <Button className="w-full" variant="outline" disabled>
@@ -572,7 +656,24 @@ export default function UjianSayaPage() {
                       )}
                     </div>
 
-                    {jadwal.tampilkanNilai && persentase !== null && (
+                    {/* Google Form - No scoring */}
+                    {jadwal.sourceType === 'GOOGLE_FORM' && (
+                      <div className="bg-white border border-green-200 rounded-lg p-4 mt-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-gray-600">Status</p>
+                            <p className="text-lg font-bold text-green-600">Ujian Selesai</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-600">Tipe</p>
+                            <p className="text-sm font-semibold text-green-600">Google Form</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Regular exam with scoring */}
+                    {jadwal.sourceType !== 'GOOGLE_FORM' && jadwal.tampilkanNilai && persentase !== null && (
                       <div className="bg-white border border-green-200 rounded-lg p-4 mt-3">
                         <div className="flex items-center justify-between">
                           <div>
@@ -589,7 +690,7 @@ export default function UjianSayaPage() {
                       </div>
                     )}
 
-                    {!jadwal.tampilkanNilai && (
+                    {jadwal.sourceType !== 'GOOGLE_FORM' && !jadwal.tampilkanNilai && (
                       <div className="bg-white border border-gray-200 rounded-lg p-3 mt-3">
                         <p className="text-sm text-center text-gray-600">
                           Nilai tidak ditampilkan oleh pengawas

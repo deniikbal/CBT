@@ -77,3 +77,24 @@ export function formatWIBDate(date: Date | string): string {
 export function getMinutesDiff(from: Date, to: Date): number {
   return Math.ceil((to.getTime() - from.getTime()) / (60 * 1000));
 }
+
+/**
+ * Extract WIB date string (YYYY-MM-DD) dari UTC timestamp
+ * Berguna untuk extract date dari tanggalUjian di DB saat retrieving
+ */
+export function extractWIBDateStr(utcDate: Date | string): string {
+  try {
+    const date = typeof utcDate === 'string' ? new Date(utcDate) : utcDate;
+    // Convert UTC ke WIB
+    const wibDate = new Date(date.getTime() + WIB_OFFSET_HOURS * 60 * 60 * 1000);
+    
+    const year = wibDate.getUTCFullYear();
+    const month = String(wibDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(wibDate.getUTCDate()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}`;
+  } catch (error) {
+    console.error('Error extracting WIB date:', error);
+    return '';
+  }
+}

@@ -2,44 +2,30 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hasilUjianPeserta, jadwalUjian, jadwalUjianPeserta } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { verifySubmissionToken } from '@/lib/submission-token';
 
-// GET - Verify token dan record submission
-export async function GET(request: NextRequest) {
+// POST - Confirm submission (simple, tanpa token)
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ jadwalId: string }> }
+) {
   try {
-    const { searchParams } = new URL(request.url);
-    const token = searchParams.get('token');
+    const { jadwalId } = await params;
+    const { pesertaId } = await request.json();
 
-    if (!token) {
+    if (!pesertaId || !jadwalId) {
       return NextResponse.json(
-        { error: 'Token diperlukan' },
+        { error: 'pesertaId dan jadwalId diperlukan' },
         { status: 400 }
       );
     }
 
-    // Verify token
-    const tokenData = verifySubmissionToken(token);
-
-    if (!tokenData) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Token tidak valid atau telah kadaluarsa',
-          expired: true,
-        },
-        { status: 403 }
-      );
-    }
-
-    const { pesertaId, jadwalId: tokenJadwalId } = tokenData;
-    
-    // Validate peserta exists
+    // Verify peserta is assigned to this jadwal
     const [pesertaExists] = await db
       .select({ id: jadwalUjianPeserta.id })
       .from(jadwalUjianPeserta)
       .where(
         and(
-          eq(jadwalUjianPeserta.jadwalUjianId, tokenJadwalId),
+          eq(jadwalUjianPeserta.jadwalUjianId, jadwalId),
           eq(jadwalUjianPeserta.pesertaId, pesertaId)
         )
       )
@@ -61,7 +47,7 @@ export async function GET(request: NextRequest) {
       .from(hasilUjianPeserta)
       .where(
         and(
-          eq(hasilUjianPeserta.jadwalUjianId, tokenJadwalId),
+          eq(hasilUjianPeserta.jadwalUjianId, jadwalId),
           eq(hasilUjianPeserta.pesertaId, pesertaId)
         )
       )
@@ -69,27 +55,12 @@ export async function GET(request: NextRequest) {
 
     if (!existingHasil) {
       // Create new entry if not exists
-      const [jadwal] = await db
-        .select({ durasi: jadwalUjian.durasi })
-        .from(jadwalUjian)
-        .where(eq(jadwalUjian.id, tokenJadwalId))
-        .limit(1);
-
-      if (!jadwal) {
-        return NextResponse.json(
-          { success: false, error: 'Jadwal ujian tidak ditemukan' },
-          { status: 404 }
-        );
-      }
-
       const now = new Date();
 
-      console.log('[API] Before insert - pesertaId:', pesertaId, 'jadwalId:', tokenJadwalId);
-      
       const [newHasil] = await db
         .insert(hasilUjianPeserta)
         .values({
-          jadwalUjianId: tokenJadwalId,
+          jadwalUjianId: jadwalId,
           pesertaId,
           waktuMulai: now,
           waktuSelesai: now,
@@ -100,10 +71,9 @@ export async function GET(request: NextRequest) {
         })
         .returning();
 
-      console.log('[API] After insert - newHasil:', newHasil);
       console.log('[API] Google Form submission recorded:', {
         pesertaId,
-        jadwalId: tokenJadwalId,
+        jadwalId,
         timestamp: new Date().toISOString(),
       });
 
