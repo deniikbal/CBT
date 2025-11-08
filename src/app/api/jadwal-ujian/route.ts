@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
         bankSoal: {
           id: bankSoal.id,
           kodeBankSoal: bankSoal.kodeBankSoal,
+          sourceType: bankSoal.sourceType,
         },
         kelas: {
           id: kelas.id,
