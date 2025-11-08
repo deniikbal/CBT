@@ -30,6 +30,8 @@ export async function GET(
       waktuMulai: jadwal.waktuMulai ? jadwal.waktuMulai.toISOString() : new Date().toISOString(),
       tampilkanNilai: jadwal.tampilkanNilai,
       autoSubmitOnViolation: jadwal.autoSubmitOnViolation || false,
+      requireExamBrowser: jadwal.requireExamBrowser || false,
+      allowedBrowserPattern: jadwal.allowedBrowserPattern || 'cbt-',
     })
   } catch (error) {
     console.error('Error fetching jadwal info:', error)

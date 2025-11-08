@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -55,8 +55,8 @@ export default function StudentLoginPage() {
               <BookOpen className="h-8 w-8 text-white" />
             </div>
           </a>
-          <CardTitle className="text-2xl font-bold">Login Peserta</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl md:text-2xl font-bold">Login Peserta</CardTitle>
+          <CardDescription className="text-sm md:text-base">
             Masukkan nomor ujian dan password untuk mengakses ujian
           </CardDescription>
         </CardHeader>
@@ -65,7 +65,7 @@ export default function StudentLoginPage() {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="text-xs md:text-sm">{error}</AlertDescription>
               </Alert>
             )}
 

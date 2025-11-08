@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { v4 as uuidv4 } from 'uuid'
 
 interface SecurityConfig {
   hasilUjianId: string
@@ -27,7 +28,7 @@ export function useExamSecurity({
   const [blurCount, setBlurCount] = useState(initialBlurCount)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const sessionId = useRef<string>(crypto.randomUUID())
+  const sessionId = useRef<string>(uuidv4())
   const sessionCheckInterval = useRef<NodeJS.Timeout>()
 
   // Update blurCount when initialBlurCount changes (from database)

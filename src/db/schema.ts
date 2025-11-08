@@ -151,6 +151,8 @@ export const jadwalUjian = pgTable('jadwal_ujian', {
   tampilkanNilai: boolean('tampilkan_nilai').notNull().default(true),
   resetPelanggaranOnEnable: boolean('reset_pelanggaran_on_enable').notNull().default(true), // Reset counter saat enable account
   autoSubmitOnViolation: boolean('auto_submit_on_violation').notNull().default(false), // Auto submit saat 5x pelanggaran
+  requireExamBrowser: boolean('require_exam_browser').notNull().default(false), // Wajibkan exam browser untuk ujian ini
+  allowedBrowserPattern: text('allowed_browser_pattern').default('cbt-'), // Pattern user agent yang diizinkan (default: cbt-)
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),

@@ -36,13 +36,21 @@ export default function LandingPage() {
                 <p className="text-xs text-blue-100">Computer Based Test</p>
               </div>
             </div>
-            <nav className="flex items-center gap-6">
+            <nav className="flex items-center gap-3 md:gap-6">
               <a href="#fitur" className="hidden md:block text-white/90 hover:text-white transition-colors font-medium">Fitur</a>
               <a href="#keunggulan" className="hidden md:block text-white/90 hover:text-white transition-colors font-medium">Keunggulan</a>
+              <Link href="/test-browser">
+                <Button variant="outline" size="sm" className="bg-white/10 border-white/20 text-white hover:bg-white/20 font-medium shadow-md backdrop-blur-sm">
+                  <Monitor className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Test Browser</span>
+                  <span className="sm:hidden">Test</span>
+                </Button>
+              </Link>
               <Link href="/login">
                 <Button variant="secondary" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold shadow-md">
                   <GraduationCap className="h-4 w-4 mr-2" />
-                  Login Peserta
+                  <span className="hidden sm:inline">Login Peserta</span>
+                  <span className="sm:hidden">Login</span>
                 </Button>
               </Link>
             </nav>

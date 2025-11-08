@@ -26,6 +26,8 @@ export async function GET(
         tampilkanNilai: jadwalUjian.tampilkanNilai,
         resetPelanggaranOnEnable: jadwalUjian.resetPelanggaranOnEnable,
         autoSubmitOnViolation: jadwalUjian.autoSubmitOnViolation,
+        requireExamBrowser: jadwalUjian.requireExamBrowser,
+        allowedBrowserPattern: jadwalUjian.allowedBrowserPattern,
         isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
@@ -96,6 +98,8 @@ export async function PUT(
       tampilkanNilai,
       resetPelanggaranOnEnable,
       autoSubmitOnViolation,
+      requireExamBrowser,
+      allowedBrowserPattern,
       isActive,
     } = body;
 
@@ -123,6 +127,8 @@ export async function PUT(
         tampilkanNilai: tampilkanNilai !== false,
         resetPelanggaranOnEnable: resetPelanggaranOnEnable !== false,
         autoSubmitOnViolation: autoSubmitOnViolation || false,
+        requireExamBrowser: requireExamBrowser || false,
+        allowedBrowserPattern: allowedBrowserPattern || 'cbt-',
         isActive: isActive !== false,
         updatedAt: new Date(),
       })
