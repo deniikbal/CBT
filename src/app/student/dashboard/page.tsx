@@ -36,6 +36,7 @@ interface JadwalUjian {
   acakSoal: boolean
   acakOpsi: boolean
   tampilkanNilai: boolean
+  requireExamBrowser: boolean
   sudahDikerjakan?: boolean
 }
 
@@ -45,16 +46,6 @@ export default function StudentDashboard() {
   const [jadwalList, setJadwalList] = useState<JadwalUjian[]>([])
   const [loading, setLoading] = useState(true)
   const [browserCheckFailed, setBrowserCheckFailed] = useState(false)
-
-  // Check exam browser on mount
-  useEffect(() => {
-    const userAgent = navigator.userAgent
-    const hasExamBrowser = userAgent.includes('cbt-')
-    
-    if (!hasExamBrowser) {
-      setBrowserCheckFailed(true)
-    }
-  }, [])
 
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
@@ -71,6 +62,18 @@ export default function StudentDashboard() {
       if (response.ok) {
         const data = await response.json()
         setJadwalList(data)
+        
+        // Check if any exam requires exam browser
+        const requiresBrowser = data.some((jadwal: JadwalUjian) => jadwal.requireExamBrowser)
+        
+        if (requiresBrowser) {
+          const userAgent = navigator.userAgent
+          const hasExamBrowser = userAgent.includes('cbt-')
+          
+          if (!hasExamBrowser) {
+            setBrowserCheckFailed(true)
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching jadwal:', error)

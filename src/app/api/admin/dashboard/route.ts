@@ -2,35 +2,38 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { peserta, jurusan, bankSoal, jadwalUjian } from '@/db/schema'
 import { count } from 'drizzle-orm'
+import { cache, cacheKeys } from '@/lib/cache'
 
 export async function GET() {
   try {
-    // Get total peserta
-    const [totalPeserta] = await db
-      .select({ count: count() })
-      .from(peserta)
+    // Check cache first (aggressive cache 15 minutes)
+    const cachedStats = cache.get(cacheKeys.dashboardStats)
+    if (cachedStats) {
+      console.log('[CACHE HIT] Dashboard stats')
+      return NextResponse.json(cachedStats)
+    }
 
-    // Get total jurusan
-    const [totalJurusan] = await db
-      .select({ count: count() })
-      .from(jurusan)
+    console.log('[CACHE MISS] Dashboard stats - querying database')
 
-    // Get total bank soal
-    const [totalBankSoal] = await db
-      .select({ count: count() })
-      .from(bankSoal)
+    // Get all stats in parallel to reduce query time
+    const [totalPeserta, totalJurusan, totalBankSoal, totalJadwal] = await Promise.all([
+      db.select({ count: count() }).from(peserta),
+      db.select({ count: count() }).from(jurusan),
+      db.select({ count: count() }).from(bankSoal),
+      db.select({ count: count() }).from(jadwalUjian),
+    ])
 
-    // Get total jadwal ujian
-    const [totalJadwal] = await db
-      .select({ count: count() })
-      .from(jadwalUjian)
+    const stats = {
+      totalPeserta: totalPeserta?.[0]?.count || 0,
+      totalJurusan: totalJurusan?.[0]?.count || 0,
+      totalBankSoal: totalBankSoal?.[0]?.count || 0,
+      totalJadwal: totalJadwal?.[0]?.count || 0,
+    }
 
-    return NextResponse.json({
-      totalPeserta: totalPeserta?.count || 0,
-      totalJurusan: totalJurusan?.count || 0,
-      totalBankSoal: totalBankSoal?.count || 0,
-      totalJadwal: totalJadwal?.count || 0,
-    })
+    // Cache stats for 15 minutes (aggressive cache)
+    cache.set(cacheKeys.dashboardStats, stats, 900)
+
+    return NextResponse.json(stats)
   } catch (error) {
     console.error('Error fetching dashboard stats:', error)
     return NextResponse.json(

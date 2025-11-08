@@ -55,8 +55,6 @@ interface JadwalUjian {
   tampilkanNilai: boolean
   resetPelanggaranOnEnable: boolean
   autoSubmitOnViolation: boolean
-  requireExamBrowser: boolean
-  allowedBrowserPattern: string
   isActive: boolean
   bankSoal: {
     id: string
@@ -110,8 +108,6 @@ export default function JadwalUjianPage() {
     tampilkanNilai: true,
     resetPelanggaranOnEnable: true,
     autoSubmitOnViolation: false,
-    requireExamBrowser: false,
-    allowedBrowserPattern: 'cbt-',
     isActive: true,
   })
 
@@ -1071,42 +1067,7 @@ export default function JadwalUjianPage() {
                 </div>
               </div>
 
-              {/* Row 4: Exam Browser Security */}
-              <div className="grid grid-cols-2 gap-8">
-                {/* Require Exam Browser */}
-                <div className="space-y-2">
-                  <Label>Wajibkan Exam Browser</Label>
-                  <p className="text-xs text-gray-500">Siswa harus menggunakan aplikasi Exam Browser untuk mengikuti ujian</p>
-                  <RadioGroup
-                    value={formData.requireExamBrowser ? 'true' : 'false'}
-                    onValueChange={(value) => setFormData({ ...formData, requireExamBrowser: value === 'true' })}
-                  >
-                    <div className="flex gap-4">
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="true" id="require-exam-browser-ya" />
-                        <Label htmlFor="require-exam-browser-ya" className="cursor-pointer font-normal">Ya</Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="false" id="require-exam-browser-tidak" />
-                        <Label htmlFor="require-exam-browser-tidak" className="cursor-pointer font-normal">Tidak</Label>
-                      </div>
-                    </div>
-                  </RadioGroup>
-                </div>
 
-                {/* Allowed Browser Pattern */}
-                <div className="space-y-2">
-                  <Label htmlFor="allowedBrowserPattern">Pola User Agent Exam Browser</Label>
-                  <p className="text-xs text-gray-500">Pattern untuk mendeteksi exam browser (contoh: cbt-)</p>
-                  <Input
-                    id="allowedBrowserPattern"
-                    value={formData.allowedBrowserPattern}
-                    onChange={(e) => setFormData({ ...formData, allowedBrowserPattern: e.target.value })}
-                    placeholder="cbt-"
-                    disabled={!formData.requireExamBrowser}
-                  />
-                </div>
-              </div>
             </div>
 
             {/* Buttons */}

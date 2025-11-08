@@ -47,16 +47,22 @@ export default function StudentLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <Card className="w-full max-w-md rounded-sm">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-orange-100 to-orange-50 p-4">
+      {/* Header Link */}
+      <a href="/" className="absolute top-4 left-4 flex items-center gap-2 text-orange-600 hover:text-orange-700 transition-colors font-semibold">
+        <BookOpen className="h-5 w-5" />
+        <span className="hidden sm:inline">Kembali</span>
+      </a>
+
+      <Card className="w-full max-w-md rounded-lg shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <a href="/" className="flex justify-center mb-4 hover:opacity-80 transition-opacity">
-            <div className="bg-blue-600 p-3 rounded-full">
+            <div className="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-full">
               <BookOpen className="h-8 w-8 text-white" />
             </div>
           </a>
-          <CardTitle className="text-xl md:text-2xl font-bold">Login Peserta</CardTitle>
-          <CardDescription className="text-sm md:text-base">
+          <CardTitle className="text-xl md:text-2xl font-bold text-gray-900">Login Peserta</CardTitle>
+          <CardDescription className="text-sm md:text-base text-gray-600">
             Masukkan nomor ujian dan password untuk mengakses ujian
           </CardDescription>
         </CardHeader>
@@ -110,7 +116,7 @@ export default function StudentLoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+            <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold" disabled={loading}>
               {loading ? 'Memproses...' : 'Login'}
             </Button>
           </form>

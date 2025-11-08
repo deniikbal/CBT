@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, jadwalUjianPeserta, bankSoal, kelas, peserta } from '@/db/schema';
 import { eq } from 'drizzle-orm';
+import { cache, cacheKeys } from '@/lib/cache';
 
 // GET single jadwal ujian
 export async function GET(
@@ -10,6 +11,13 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    // Check cache first
+    const cachedJadwal = cache.get(cacheKeys.jadwal(id))
+    if (cachedJadwal) {
+      console.log('[CACHE HIT] Jadwal ujian:', id)
+      return NextResponse.json(cachedJadwal)
+    }
 
     const [jadwal] = await db
       .select({
@@ -26,8 +34,6 @@ export async function GET(
         tampilkanNilai: jadwalUjian.tampilkanNilai,
         resetPelanggaranOnEnable: jadwalUjian.resetPelanggaranOnEnable,
         autoSubmitOnViolation: jadwalUjian.autoSubmitOnViolation,
-        requireExamBrowser: jadwalUjian.requireExamBrowser,
-        allowedBrowserPattern: jadwalUjian.allowedBrowserPattern,
         isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
@@ -66,7 +72,12 @@ export async function GET(
       .leftJoin(kelas, eq(peserta.kelasId, kelas.id))
       .where(eq(jadwalUjianPeserta.jadwalUjianId, id));
 
-    return NextResponse.json({ ...jadwal, peserta: pesertaList });
+    const result = { ...jadwal, peserta: pesertaList }
+    
+    // Cache result for 15 minutes (aggressive)
+    cache.set(cacheKeys.jadwal(id), result, 900)
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching jadwal ujian:', error);
     return NextResponse.json(
@@ -98,8 +109,6 @@ export async function PUT(
       tampilkanNilai,
       resetPelanggaranOnEnable,
       autoSubmitOnViolation,
-      requireExamBrowser,
-      allowedBrowserPattern,
       isActive,
     } = body;
 
@@ -127,8 +136,6 @@ export async function PUT(
         tampilkanNilai: tampilkanNilai !== false,
         resetPelanggaranOnEnable: resetPelanggaranOnEnable !== false,
         autoSubmitOnViolation: autoSubmitOnViolation || false,
-        requireExamBrowser: requireExamBrowser || false,
-        allowedBrowserPattern: allowedBrowserPattern || 'cbt-',
         isActive: isActive !== false,
         updatedAt: new Date(),
       })
@@ -158,6 +165,10 @@ export async function PUT(
         await db.insert(jadwalUjianPeserta).values(pesertaValues);
       }
     }
+
+    // Invalidate cache after update
+    cache.invalidate(cacheKeys.jadwal(id))
+    console.log('[CACHE INVALIDATED] Jadwal ujian:', id)
 
     return NextResponse.json(updated);
   } catch (error: any) {
@@ -223,6 +234,10 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    // Invalidate cache after delete
+    cache.invalidate(cacheKeys.jadwal(id))
+    console.log('[CACHE INVALIDATED] Jadwal ujian deleted:', id)
 
     return NextResponse.json({ message: 'Jadwal ujian berhasil dihapus' });
   } catch (error) {

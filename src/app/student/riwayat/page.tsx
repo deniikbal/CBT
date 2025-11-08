@@ -17,6 +17,11 @@ interface Peserta {
   name: string
 }
 
+interface JadwalUjian {
+  id: string
+  requireExamBrowser: boolean
+}
+
 interface RiwayatUjian {
   id: string
   namaUjian: string
@@ -39,22 +44,13 @@ export default function RiwayatUjianPage() {
   const [browserCheckFailed, setBrowserCheckFailed] = useState(false)
   const itemsPerPage = 5
 
-  // Check exam browser on mount
-  useEffect(() => {
-    const userAgent = navigator.userAgent
-    const hasExamBrowser = userAgent.includes('cbt-')
-    
-    if (!hasExamBrowser) {
-      setBrowserCheckFailed(true)
-    }
-  }, [])
-
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
     if (storedPeserta) {
       const pesertaData = JSON.parse(storedPeserta)
       setPeserta(pesertaData)
       fetchRiwayat(pesertaData.id)
+      checkBrowserRequirement(pesertaData.id)
     }
   }, [])
 
@@ -69,6 +65,29 @@ export default function RiwayatUjianPage() {
       console.error('Error fetching riwayat:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkBrowserRequirement = async (pesertaId: string) => {
+    try {
+      const response = await fetch(`/api/peserta/${pesertaId}/jadwal`)
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Check if any exam requires exam browser
+        const requiresBrowser = data.some((jadwal: JadwalUjian) => jadwal.requireExamBrowser)
+        
+        if (requiresBrowser) {
+          const userAgent = navigator.userAgent
+          const hasExamBrowser = userAgent.includes('cbt-')
+          
+          if (!hasExamBrowser) {
+            setBrowserCheckFailed(true)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking browser requirement:', error)
     }
   }
 

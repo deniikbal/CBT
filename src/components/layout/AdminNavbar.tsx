@@ -1,6 +1,6 @@
 'use client'
 
-import { Menu, User, LogOut, UserCircle, Settings, ChevronDown, LayoutDashboard, Database, FileText, ClipboardList, Award, BookOpen, GraduationCap, School, BookMarked, Users, Calendar } from 'lucide-react'
+import { Menu, User, LogOut, UserCircle, Settings, ChevronDown, LayoutDashboard, Database, FileText, ClipboardList, Award, BookOpen, GraduationCap, School, BookMarked, Users, Calendar, Shield } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
@@ -81,6 +81,13 @@ const getMenuItems = (role?: string): MenuItem[] => {
         submenu: [
           { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList },
           { title: 'Belum Ujian', href: '/admin/hasil-ujian/belum-ujian', icon: Users }
+        ]
+      },
+      {
+        title: 'Settings',
+        icon: Settings,
+        submenu: [
+          { title: 'Exam Browser Settings', href: '/admin/settings/exam-browser', icon: Shield }
         ]
       }
     ]

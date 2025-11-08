@@ -186,8 +186,13 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error submitting ujian:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Gagal submit ujian';
     return NextResponse.json(
-      { error: 'Gagal submit ujian' },
+      { 
+        error: 'Terjadi kesalahan saat submit ujian',
+        details: errorMessage,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

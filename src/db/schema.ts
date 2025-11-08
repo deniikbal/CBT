@@ -151,9 +151,23 @@ export const jadwalUjian = pgTable('jadwal_ujian', {
   tampilkanNilai: boolean('tampilkan_nilai').notNull().default(true),
   resetPelanggaranOnEnable: boolean('reset_pelanggaran_on_enable').notNull().default(true), // Reset counter saat enable account
   autoSubmitOnViolation: boolean('auto_submit_on_violation').notNull().default(false), // Auto submit saat 5x pelanggaran
-  requireExamBrowser: boolean('require_exam_browser').notNull().default(false), // Wajibkan exam browser untuk ujian ini
-  allowedBrowserPattern: text('allowed_browser_pattern').default('cbt-'), // Pattern user agent yang diizinkan (default: cbt-)
   isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
+});
+
+// Exam Browser Settings Table (Global Settings)
+export const examBrowserSettings = pgTable('exam_browser_settings', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  isEnabled: boolean('is_enabled').notNull().default(false),
+  allowedBrowserPattern: text('allowed_browser_pattern').default('cbt-'),
+  maxViolations: integer('max_violations').default(5),
+  allowMultipleSessions: boolean('allow_multiple_sessions').notNull().default(false),
+  blockDevtools: boolean('block_devtools').notNull().default(true),
+  blockScreenshot: boolean('block_screenshot').notNull().default(true),
+  blockRightClick: boolean('block_right_click').notNull().default(true),
+  blockCopyPaste: boolean('block_copy_paste').notNull().default(true),
+  requireFullscreen: boolean('require_fullscreen').notNull().default(true),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().$onUpdate(() => new Date()),
 });
@@ -388,6 +402,9 @@ export type NewSoalBank = typeof soalBank.$inferInsert;
 
 export type JadwalUjian = typeof jadwalUjian.$inferSelect;
 export type NewJadwalUjian = typeof jadwalUjian.$inferInsert;
+
+export type ExamBrowserSettings = typeof examBrowserSettings.$inferSelect;
+export type NewExamBrowserSettings = typeof examBrowserSettings.$inferInsert;
 
 export type JadwalUjianPeserta = typeof jadwalUjianPeserta.$inferSelect;
 export type NewJadwalUjianPeserta = typeof jadwalUjianPeserta.$inferInsert;

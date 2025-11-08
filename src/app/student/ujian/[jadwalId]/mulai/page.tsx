@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { Clock, AlertCircle, CheckCircle, CheckCircle2, Send, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Shield, Monitor } from 'lucide-react'
+import { Clock, AlertCircle, CheckCircle, CheckCircle2, Send, ChevronLeft, ChevronRight, PanelLeftClose, PanelLeftOpen, Shield, Monitor, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useExamSecurity } from '@/hooks/useExamSecurity'
@@ -422,9 +422,12 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         body: JSON.stringify(submitData)
       })
 
-      let data
+      let data: any = {}
       try {
-        data = await response.json()
+        const responseText = await response.text()
+        if (responseText) {
+          data = JSON.parse(responseText)
+        }
       } catch (parseError) {
         console.error('Failed to parse response:', parseError)
         data = { error: 'Server error: Invalid response format' }
@@ -436,8 +439,14 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
         toast.success('Ujian berhasil disubmit!', { duration: 3000 })
         router.push(`/student/ujian/${jadwalId}/hasil?skor=${data.skor}&maksimal=${data.skorMaksimal}&tampilkan=${data.tampilkanNilai}`)
       } else {
-        const errorMessage = data?.error || 'Gagal submit ujian'
-        console.error('Submit failed:', { status: response.status, error: errorMessage, data })
+        const errorMessage = data?.error || `Server error: ${response.status} ${response.statusText}`
+        console.error('Submit failed:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          error: errorMessage, 
+          data,
+          responseComplete: !!data
+        })
         
         // Special styling for minimum time error - show toast in center with clean minimal style
         if (errorMessage.includes('harus mengerjakan minimal')) {
@@ -448,10 +457,14 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
             description: 'Silakan kerjakan ujian lebih lama sebelum submit.',
           })
         } else {
-          // Regular error toast
+          // Regular error toast with better formatting
+          const description = data?.details 
+            ? `${data.details}` 
+            : (response.status === 500 ? 'Terjadi kesalahan server. Silakan coba lagi.' : undefined)
+          
           toast.error(errorMessage, { 
             duration: 7000,
-            description: data?.details || undefined 
+            description
           })
         }
         setSubmitting(false)
@@ -1029,76 +1042,93 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
       </Dialog>
 
       {/* Submit Confirmation Dialog */}
-      <Dialog open={showSubmitDialog} onOpenChange={setShowSubmitDialog}>
-        <DialogContent>
+      <Dialog open={showSubmitDialog} onOpenChange={(open) => !submitting && setShowSubmitDialog(open)}>
+        <DialogContent className={submitting ? "opacity-100" : ""}>
           <DialogHeader>
             <DialogTitle>Konfirmasi Submit Ujian</DialogTitle>
             <DialogDescription>
-              {totalSoal - getJumlahDijawab() === 0 
-                ? 'Apakah Anda yakin ingin mengirim jawaban ujian?' 
-                : 'Anda belum menjawab semua soal!'}
+              {submitting 
+                ? 'Sedang mengirim jawaban ujian Anda...' 
+                : totalSoal - getJumlahDijawab() === 0 
+                  ? 'Apakah Anda yakin ingin mengirim jawaban ujian?' 
+                  : 'Anda belum menjawab semua soal!'}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Soal:</span>
-                <span className="font-semibold">{totalSoal}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Sudah Dijawab:</span>
-                <span className="font-semibold text-green-600">{getJumlahDijawab()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Belum Dijawab:</span>
-                <span className={cn(
-                  "font-semibold",
-                  totalSoal - getJumlahDijawab() > 0 ? "text-red-600" : "text-green-600"
-                )}>
-                  {totalSoal - getJumlahDijawab()}
-                </span>
-              </div>
+
+          {/* Loading State */}
+          {submitting && (
+            <div className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="h-12 w-12 animate-spin text-green-600 mb-4" />
+              <p className="text-sm font-semibold text-gray-700 text-center">Menyimpan jawaban Anda...</p>
+              <p className="text-xs text-gray-500 text-center mt-2">Jangan tutup dialog ini atau refresh halaman</p>
             </div>
+          )}
 
-            {totalSoal - getJumlahDijawab() > 0 && (
-              <Alert className="mt-4" variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  <div className="font-semibold mb-1">
-                    Anda harus menjawab semua soal sebelum submit!
+          {/* Content (Hidden when submitting) */}
+          {!submitting && (
+            <>
+              <div className="py-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Total Soal:</span>
+                    <span className="font-semibold">{totalSoal}</span>
                   </div>
-                  <div className="text-sm">
-                    Masih ada {totalSoal - getJumlahDijawab()} soal yang belum dijawab. Silakan periksa kembali.
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Sudah Dijawab:</span>
+                    <span className="font-semibold text-green-600">{getJumlahDijawab()}</span>
                   </div>
-                </AlertDescription>
-              </Alert>
-            )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Belum Dijawab:</span>
+                    <span className={cn(
+                      "font-semibold",
+                      totalSoal - getJumlahDijawab() > 0 ? "text-red-600" : "text-green-600"
+                    )}>
+                      {totalSoal - getJumlahDijawab()}
+                    </span>
+                  </div>
+                </div>
 
-            {totalSoal - getJumlahDijawab() === 0 && (
-              <Alert className="mt-4 border-green-500 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800 text-sm">
-                  Semua soal sudah dijawab. Siap untuk submit!
-                </AlertDescription>
-              </Alert>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowSubmitDialog(false)} disabled={submitting}>
-              {totalSoal - getJumlahDijawab() > 0 ? 'Tutup' : 'Batal'}
-            </Button>
-            <Button 
-              className={cn(
-                totalSoal - getJumlahDijawab() === 0 
-                  ? "bg-green-600 hover:bg-green-700" 
-                  : "bg-gray-400 cursor-not-allowed"
-              )}
-              onClick={handleSubmit} 
-              disabled={submitting || totalSoal - getJumlahDijawab() > 0}
-            >
-              {submitting ? 'Mengirim...' : totalSoal - getJumlahDijawab() > 0 ? 'Jawab Semua Soal Dulu' : 'Ya, Submit Sekarang'}
-            </Button>
-          </DialogFooter>
+                {totalSoal - getJumlahDijawab() > 0 && (
+                  <Alert className="mt-4" variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="font-semibold mb-1">
+                        Anda harus menjawab semua soal sebelum submit!
+                      </div>
+                      <div className="text-sm">
+                        Masih ada {totalSoal - getJumlahDijawab()} soal yang belum dijawab. Silakan periksa kembali.
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {totalSoal - getJumlahDijawab() === 0 && (
+                  <Alert className="mt-4 border-green-500 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800 text-sm">
+                      Semua soal sudah dijawab. Siap untuk submit!
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSubmitDialog(false)}>
+                  {totalSoal - getJumlahDijawab() > 0 ? 'Tutup' : 'Batal'}
+                </Button>
+                <Button 
+                  className={cn(
+                    totalSoal - getJumlahDijawab() === 0 
+                      ? "bg-green-600 hover:bg-green-700" 
+                      : "bg-gray-400 cursor-not-allowed"
+                  )}
+                  onClick={handleSubmit} 
+                  disabled={totalSoal - getJumlahDijawab() > 0}
+                >
+                  Ya, Submit Sekarang
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -25,8 +25,6 @@ export async function GET(request: NextRequest) {
         tampilkanNilai: jadwalUjian.tampilkanNilai,
         resetPelanggaranOnEnable: jadwalUjian.resetPelanggaranOnEnable,
         autoSubmitOnViolation: jadwalUjian.autoSubmitOnViolation,
-        requireExamBrowser: jadwalUjian.requireExamBrowser,
-        allowedBrowserPattern: jadwalUjian.allowedBrowserPattern,
         isActive: jadwalUjian.isActive,
         createdAt: jadwalUjian.createdAt,
         bankSoal: {
@@ -126,8 +124,6 @@ export async function POST(request: NextRequest) {
       tampilkanNilai,
       resetPelanggaranOnEnable,
       autoSubmitOnViolation,
-      requireExamBrowser,
-      allowedBrowserPattern,
       isActive,
       createdBy,
     } = body;
@@ -168,7 +164,7 @@ export async function POST(request: NextRequest) {
         namaUjian,
         bankSoalId,
         createdBy,
-        kelasId: null, // Always null - no auto-assign by kelas
+        kelasId: null,
         tanggalUjian: new Date(tanggalUjian),
         jamMulai,
         durasi,
@@ -178,8 +174,6 @@ export async function POST(request: NextRequest) {
         tampilkanNilai: tampilkanNilai !== false,
         resetPelanggaranOnEnable: resetPelanggaranOnEnable !== false,
         autoSubmitOnViolation: autoSubmitOnViolation || false,
-        requireExamBrowser: requireExamBrowser || false,
-        allowedBrowserPattern: allowedBrowserPattern || 'cbt-',
         isActive: isActive !== false,
       })
       .returning();

@@ -15,7 +15,9 @@ import {
   LayoutDashboard,
   Calendar,
   ClipboardList,
-  Award
+  Award,
+  Settings as SettingsIcon,
+  Shield
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -77,6 +79,13 @@ const getMenuItems = (role?: string): MenuItem[] => {
         submenu: [
           { title: 'Hasil', href: '/admin/hasil-ujian/hasil', icon: ClipboardList },
           { title: 'Belum Ujian', href: '/admin/hasil-ujian/belum-ujian', icon: Users }
+        ]
+      },
+      {
+        title: 'Settings',
+        icon: SettingsIcon,
+        submenu: [
+          { title: 'Exam Browser Settings', href: '/admin/settings/exam-browser', icon: Shield }
         ]
       }
     ]
