@@ -1,30 +1,79 @@
-// Timezone utility untuk WIB (+7)
-export const WIB_OFFSET = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+/**
+ * Timezone utilities untuk WIB (UTC+7)
+ * 
+ * Strategi:
+ * - Database stores semua timestamp dalam UTC
+ * - Client-side comparison menggunakan WIB time
+ * - API validation menggunakan UTC time
+ */
 
-export function getWIBDate(date: Date): Date {
-  // Convert UTC date to WIB
-  const utcDate = new Date(date);
-  return new Date(utcDate.getTime() + WIB_OFFSET);
-}
+const WIB_OFFSET_HOURS = 7;
 
-export function getUTCFromWIB(date: Date): Date {
-  // Convert WIB date back to UTC
-  return new Date(date.getTime() - WIB_OFFSET);
-}
-
+/**
+ * Get current server time dan convert to WIB
+ * Gunakan ini untuk client-side countdown
+ */
 export function getCurrentWIBTime(): Date {
   const now = new Date();
-  return getWIBDate(now);
+  // Add WIB offset (UTC+7)
+  return new Date(now.getTime() + WIB_OFFSET_HOURS * 60 * 60 * 1000);
 }
 
-export function parseWIBDateTime(dateString: string, timeString: string): Date {
-  // Parse date (YYYY-MM-DD) and time (HH:mm) and return as UTC
-  const [year, month, day] = dateString.split('-').map(Number);
-  const [hours, minutes] = timeString.split(':').map(Number);
-  
-  // Create date in WIB timezone
-  const wibDate = new Date(year, month - 1, day, hours, minutes, 0);
-  
-  // Convert to UTC
-  return getUTCFromWIB(wibDate);
+/**
+ * Parse local date string (YYYY-MM-DD) dan time (HH:mm) sebagai WIB
+ * Return UTC Date untuk di-compare dengan database timestamp
+ * 
+ * @param dateStr Format YYYY-MM-DD (contoh: 2024-11-08)
+ * @param timeStr Format HH:mm (contoh: 14:30)
+ * @returns UTC Date object
+ */
+export function parseLocalWIBDateTime(dateStr: string, timeStr: string): Date {
+  try {
+    // Parse components
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const [hours, minutes] = timeStr.split(':').map(Number);
+
+    if (!year || !month || !day || hours === undefined || minutes === undefined) {
+      throw new Error('Invalid date/time format');
+    }
+
+    // Create UTC date
+    // Formula: WIB time = UTC time + 7 hours
+    // So: UTC time = WIB time - 7 hours
+    const utcDate = new Date(Date.UTC(year, month - 1, day, hours - WIB_OFFSET_HOURS, minutes, 0));
+
+    return utcDate;
+  } catch (error) {
+    console.error('Error parsing local WIB datetime:', error);
+    return new Date();
+  }
+}
+
+/**
+ * Format tanggal untuk display ke user (dalam format WIB)
+ */
+export function formatWIBDate(date: Date | string): string {
+  try {
+    const d = typeof date === 'string' ? new Date(date) : date;
+    const wibDate = new Date(d.getTime() + WIB_OFFSET_HOURS * 60 * 60 * 1000);
+    
+    // Format: DD/MM/YYYY HH:mm
+    const day = String(wibDate.getUTCDate()).padStart(2, '0');
+    const month = String(wibDate.getUTCMonth() + 1).padStart(2, '0');
+    const year = wibDate.getUTCFullYear();
+    const hours = String(wibDate.getUTCHours()).padStart(2, '0');
+    const mins = String(wibDate.getUTCMinutes()).padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${mins}`;
+  } catch (error) {
+    console.error('Error formatting WIB date:', error);
+    return '';
+  }
+}
+
+/**
+ * Get time difference dalam menit
+ */
+export function getMinutesDiff(from: Date, to: Date): number {
+  return Math.ceil((to.getTime() - from.getTime()) / (60 * 1000));
 }

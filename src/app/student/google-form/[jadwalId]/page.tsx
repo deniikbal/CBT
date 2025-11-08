@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, AlertTriangle, Clock, CheckCircle, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { parseWIBDateTime, getCurrentWIBTime } from '@/lib/timezone'
+import { getCurrentWIBTime } from '@/lib/timezone'
 
 interface GoogleFormAccess {
   success: boolean

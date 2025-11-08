@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, bankSoal, jadwalUjianPeserta } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import { parseWIBDateTime, getCurrentWIBTime } from '@/lib/timezone';
+import { parseLocalWIBDateTime } from '@/lib/timezone';
 
 // GET Google Form URL dengan access control
 export async function GET(
@@ -81,13 +81,18 @@ export async function GET(
       );
     }
 
-    // Check time window (convert to WIB timezone)
-    const now = getCurrentWIBTime();
-    const ujianDate = parseWIBDateTime(
-      jadwal.tanggalUjian.toISOString().split('T')[0],
-      jadwal.jamMulai
-    );
+    // Check time window
+    // tanggalUjian dari DB adalah UTC timestamp, extract date part
+    // jamMulai adalah string HH:mm (WIB local time)
+    const now = new Date();
     
+    // Extract date dari tanggalUjian (dalam UTC)
+    const tanggalUjianDate = new Date(jadwal.tanggalUjian);
+    const dateStr = tanggalUjianDate.toISOString().split('T')[0];
+    
+    // Parse sebagai WIB (dateStr adalah UTC date, jamMulai adalah WIB time)
+    // Ini untuk convert ke UTC untuk comparison
+    const ujianDate = parseLocalWIBDateTime(dateStr, jadwal.jamMulai);
     const endTime = new Date(ujianDate.getTime() + jadwal.durasi * 60 * 1000);
 
     // Allow access 5 minutes before start time

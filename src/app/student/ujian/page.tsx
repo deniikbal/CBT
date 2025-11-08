@@ -10,7 +10,7 @@ import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle, Monitor, ExternalL
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
-import { parseWIBDateTime, getCurrentWIBTime } from '@/lib/timezone'
+import { parseLocalWIBDateTime, getCurrentWIBTime } from '@/lib/timezone'
 
 interface Peserta {
   id: string
@@ -95,12 +95,16 @@ export default function UjianSayaPage() {
   }
 
   const getUjianStatus = (tanggal: string, jamMulai: string) => {
-    const now = getCurrentWIBTime()
-    const dateStr = new Date(tanggal).toISOString().split('T')[0]
-    const ujianDate = parseWIBDateTime(dateStr, jamMulai)
+    const now = new Date();
+    
+    // Extract date dari tanggal (dalam UTC)
+    const tanggalDate = new Date(tanggal);
+    const dateStr = tanggalDate.toISOString().split('T')[0];
+    
+    // Parse sebagai WIB local time (return UTC untuk comparison)
+    const ujianDate = parseLocalWIBDateTime(dateStr, jamMulai);
     
     // Hanya check apakah sudah melewati waktu mulai atau belum
-    // Tidak ada status expired berdasarkan waktu selesai
     if (now < ujianDate) {
       return {
         status: 'upcoming',
@@ -109,7 +113,6 @@ export default function UjianSayaPage() {
         icon: Clock
       }
     } else {
-      // Sudah melewati waktu mulai = active (selama status isActive dari admin)
       return {
         status: 'active',
         label: 'Sedang Berlangsung',
@@ -120,9 +123,11 @@ export default function UjianSayaPage() {
   }
 
   const getCountdown = (tanggal: string, jamMulai: string) => {
-    const dateStr = new Date(tanggal).toISOString().split('T')[0]
-    const ujianDate = parseWIBDateTime(dateStr, jamMulai)
-    const now = getCurrentWIBTime()
+    const now = new Date();
+    
+    const tanggalDate = new Date(tanggal);
+    const dateStr = tanggalDate.toISOString().split('T')[0];
+    const ujianDate = parseLocalWIBDateTime(dateStr, jamMulai);
     
     const diff = ujianDate.getTime() - now.getTime()
     

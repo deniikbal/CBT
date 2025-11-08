@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, jadwalUjianPeserta, bankSoal, kelas, peserta } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
+import { parseLocalWIBDateTime } from '@/lib/timezone';
 
 // GET all jadwal ujian
 export async function GET(request: NextRequest) {
@@ -157,6 +158,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Parse tanggalUjian sebagai WIB (convert dari YYYY-MM-DD ke UTC)
+    // jamMulai adalah HH:mm dalam WIB
+    const ujianDateUTC = parseLocalWIBDateTime(tanggalUjian, jamMulai.split(':')[0] + ':00');
+    
     // Create jadwal ujian
     const [newJadwal] = await db
       .insert(jadwalUjian)
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
         bankSoalId,
         createdBy,
         kelasId: null,
-        tanggalUjian: new Date(tanggalUjian),
+        tanggalUjian: ujianDateUTC,
         jamMulai,
         durasi,
         minimumPengerjaan: minimumPengerjaan || null,
