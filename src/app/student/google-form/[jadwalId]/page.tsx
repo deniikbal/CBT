@@ -61,7 +61,10 @@ export default function GoogleFormPage() {
     const pesertaData = JSON.parse(storedPeserta)
     setPesertaId(pesertaData.id)
     fetchFormAccess(pesertaData.id)
-  }, [])
+    
+    // Mark exam as started when this page is opened
+    markExamAsStarted(pesertaData.id)
+  }, [jadwalId])
 
   // Generate confirmation link when pesertaId is set
   useEffect(() => {
@@ -90,6 +93,18 @@ export default function GoogleFormPage() {
       setCountdown(null)
     }
   }, [currentTime, formAccess])
+
+  const markExamAsStarted = async (pId: string) => {
+    try {
+      await fetch('/api/jadwal-ujian/google-form/mark-started', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jadwalId, pesertaId: pId }),
+      })
+    } catch (err) {
+      console.error('Error marking exam as started:', err)
+    }
+  }
 
   const fetchFormAccess = async (pId: string) => {
     try {

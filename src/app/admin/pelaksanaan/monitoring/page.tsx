@@ -35,6 +35,7 @@ interface ActiveExam {
   namaUjian: string
   bankSoalKode: string
   mataPelajaran: string
+  sourceType: string
   waktuMulai: string
   status: string
   ipAddress: string
@@ -335,10 +336,24 @@ export default function MonitoringPage() {
                 </div>
 
                 <div className="p-2.5 pt-1.5">
-                  {/* Nama Peserta */}
-                  <h3 className="font-bold text-[11px] text-gray-900 truncate pr-5 mb-1.5 mt-0.5">
-                    {exam.pesertaName}
-                  </h3>
+                  {/* Nama Peserta + Badges */}
+                  <div className="flex items-center gap-1 mb-1.5">
+                    <h3 className="font-bold text-[11px] text-gray-900 truncate flex-1">
+                      {exam.pesertaName}
+                    </h3>
+                    {/* Google Form Badge */}
+                    {exam.sourceType === 'GOOGLE_FORM' && (
+                      <span className="inline-flex items-center bg-blue-100 text-blue-700 text-[7px] px-1 py-0.5 rounded font-semibold whitespace-nowrap">
+                        GF
+                      </span>
+                    )}
+                    {/* Status Badge untuk Google Form */}
+                    {exam.sourceType === 'GOOGLE_FORM' && exam.status === 'mulai' && (
+                      <span className="inline-flex items-center bg-purple-100 text-purple-700 text-[7px] px-1 py-0.5 rounded font-semibold whitespace-nowrap">
+                        MULAI
+                      </span>
+                    )}
+                  </div>
 
                   {/* Stats Grid */}
                   <div className="grid grid-cols-2 gap-1 mb-1.5">
@@ -413,8 +428,37 @@ export default function MonitoringPage() {
               <Activity className="h-5 w-5" />
               Detail Aktivitas - {selectedExam?.pesertaName}
             </DialogTitle>
-            <DialogDescription>
-              No Ujian: {selectedExam?.pesertaNoUjian} • {selectedExam?.namaUjian}
+            <DialogDescription className="space-y-1">
+              <div>No Ujian: {selectedExam?.pesertaNoUjian} • {selectedExam?.namaUjian}</div>
+              <div className="flex gap-2 pt-1">
+                {selectedExam?.sourceType === 'GOOGLE_FORM' && (
+                  <>
+                    <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-semibold">
+                      📋 Google Form
+                    </span>
+                    {selectedExam.status === 'mulai' && (
+                      <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded font-semibold">
+                        Status: Mulai (Baru buka form)
+                      </span>
+                    )}
+                    {selectedExam.status === 'in_progress' && (
+                      <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-semibold">
+                        Status: Sedang Mengerjakan
+                      </span>
+                    )}
+                    {selectedExam.status === 'submitted' && (
+                      <span className="inline-flex items-center bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-semibold">
+                        Status: Sudah Submit
+                      </span>
+                    )}
+                  </>
+                )}
+                {selectedExam?.sourceType !== 'GOOGLE_FORM' && (
+                  <span className="inline-flex items-center bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded font-semibold">
+                    📝 Ujian Manual
+                  </span>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
 

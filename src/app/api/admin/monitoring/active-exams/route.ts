@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hasilUjianPeserta, jadwalUjian, peserta, bankSoal, mataPelajaran, activityLog } from '@/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq, sql, or, inArray } from 'drizzle-orm';
 
 export async function GET() {
   try {
     console.log('[Monitoring API] Fetching active exams...');
     
-    // Get all ongoing exams (status = in_progress)
+    // Get all ongoing exams
+    // - Untuk Google Form: tampilkan 'mulai', 'in_progress', 'submitted'
+    // - Untuk Manual/Regular: tampilkan hanya 'in_progress' (keep original behavior)
     let activeExams;
     try {
       activeExams = await db
@@ -20,6 +22,7 @@ export async function GET() {
           namaUjian: jadwalUjian.namaUjian,
           bankSoalKode: bankSoal.kodeBankSoal,
           mataPelajaranName: mataPelajaran.name,
+          sourceType: bankSoal.sourceType,
           waktuMulai: hasilUjianPeserta.waktuMulai,
           status: hasilUjianPeserta.status,
           sessionId: hasilUjianPeserta.sessionId,
@@ -31,7 +34,14 @@ export async function GET() {
         .innerJoin(jadwalUjian, eq(hasilUjianPeserta.jadwalUjianId, jadwalUjian.id))
         .leftJoin(bankSoal, eq(jadwalUjian.bankSoalId, bankSoal.id))
         .leftJoin(mataPelajaran, eq(bankSoal.matpelId, mataPelajaran.id))
-        .where(eq(hasilUjianPeserta.status, 'in_progress'));
+        .where(
+          or(
+            // Google Form: tampilkan mulai, in_progress, submitted
+            inArray(hasilUjianPeserta.status, ['mulai', 'in_progress', 'submitted']),
+            // Manual/Regular: hanya in_progress (original behavior)
+            eq(hasilUjianPeserta.status, 'in_progress')
+          )
+        );
       
       console.log(`[Monitoring API] Found ${activeExams.length} active exams`);
     } catch (queryError) {
@@ -150,6 +160,7 @@ export async function GET() {
             namaUjian: exam.namaUjian,
             bankSoalKode: exam.bankSoalKode || '-',
             mataPelajaran: exam.mataPelajaranName || '-',
+            sourceType: exam.sourceType || 'MANUAL',
             waktuMulai: exam.waktuMulai,
             status: exam.status,
             ipAddress: exam.ipAddress || '-',
@@ -170,6 +181,7 @@ export async function GET() {
             namaUjian: exam.namaUjian,
             bankSoalKode: '-',
             mataPelajaran: '-',
+            sourceType: exam.sourceType || 'MANUAL',
             waktuMulai: exam.waktuMulai,
             status: exam.status,
             ipAddress: '-',

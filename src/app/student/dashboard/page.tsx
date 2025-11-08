@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Calendar, Clock, BookOpen, Award, User, GraduationCap, CheckCircle, AlertCircle, Monitor } from 'lucide-react'
+import { Calendar, Clock, BookOpen, Award, User, GraduationCap, CheckCircle, AlertCircle, Monitor, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface Peserta {
   id: string
@@ -30,6 +32,7 @@ interface JadwalUjian {
   tanggalUjian: string
   jamMulai: string
   durasi: number
+  minimumPengerjaan: number | null
   bankSoal: {
     kodeBankSoal: string
   } | null
@@ -37,7 +40,16 @@ interface JadwalUjian {
   acakOpsi: boolean
   tampilkanNilai: boolean
   requireExamBrowser: boolean
+  sourceType?: string
   sudahDikerjakan?: boolean
+  hasilUjian?: {
+    id: string
+    status: string
+    skor: number | null
+    skorMaksimal: number | null
+    waktuSelesai: string | null
+    waktuMulai: string | null
+  } | null
 }
 
 export default function StudentDashboard() {
@@ -46,6 +58,11 @@ export default function StudentDashboard() {
   const [jadwalList, setJadwalList] = useState<JadwalUjian[]>([])
   const [loading, setLoading] = useState(true)
   const [browserCheckFailed, setBrowserCheckFailed] = useState(false)
+  const [currentTime, setCurrentTime] = useState(new Date())
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false)
+  const [confirmModalData, setConfirmModalData] = useState<{ jadwalId: string; namaUjian: string } | null>(null)
+  const [confirmCheckbox, setConfirmCheckbox] = useState(false)
+  const [isSubmittingConfirm, setIsSubmittingConfirm] = useState(false)
 
   useEffect(() => {
     const storedPeserta = localStorage.getItem('peserta')
@@ -54,6 +71,15 @@ export default function StudentDashboard() {
       setPeserta(pesertaData)
       fetchJadwal(pesertaData.id)
     }
+  }, [])
+
+  // Update timer setiap detik
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date())
+    }, 1000)
+
+    return () => clearInterval(interval)
   }, [])
 
   const fetchJadwal = async (pesertaId: string) => {
@@ -94,8 +120,82 @@ export default function StudentDashboard() {
     return now >= ujianDate && now <= ujianEnd
   }
 
+  const isFormStarted = (jadwal: JadwalUjian): boolean => {
+    // Check if user has opened the form (status should be 'mulai' or 'in_progress')
+    return jadwal.hasilUjian?.status === 'mulai' || jadwal.hasilUjian?.status === 'in_progress'
+  }
+
+  const getMinimumTimeReached = (jadwal: JadwalUjian): boolean => {
+    if (!jadwal.minimumPengerjaan || !jadwal.hasilUjian?.waktuMulai) {
+      return true
+    }
+
+    const waktuMulai = new Date(jadwal.hasilUjian.waktuMulai)
+    const minimumMs = jadwal.minimumPengerjaan * 60 * 1000
+    const waktuMinimumTercapai = new Date(waktuMulai.getTime() + minimumMs)
+
+    return currentTime >= waktuMinimumTercapai
+  }
+
+  const getRemainingMinimumTime = (jadwal: JadwalUjian): number => {
+    if (!jadwal.minimumPengerjaan || !jadwal.hasilUjian?.waktuMulai) {
+      return 0
+    }
+
+    const waktuMulai = new Date(jadwal.hasilUjian.waktuMulai)
+    const minimumMs = jadwal.minimumPengerjaan * 60 * 1000
+    const waktuMinimumTercapai = new Date(waktuMulai.getTime() + minimumMs)
+
+    const remaining = waktuMinimumTercapai.getTime() - currentTime.getTime()
+    return Math.max(0, Math.ceil(remaining / 1000 / 60))
+  }
+
+  const handleBukaKonfirmasiModal = (jadwalId: string, namaUjian: string) => {
+    setConfirmModalData({ jadwalId, namaUjian })
+    setConfirmCheckbox(false)
+    setConfirmModalOpen(true)
+  }
+
+  const handleConfirmSubmit = async () => {
+    if (!confirmCheckbox || !confirmModalData) return
+
+    try {
+      setIsSubmittingConfirm(true)
+      const pesertaId = peserta?.id
+      if (!pesertaId) return
+
+      const response = await fetch(
+        '/api/jadwal-ujian/google-form/mark-submitted',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jadwalId: confirmModalData.jadwalId, pesertaId }),
+        }
+      )
+
+      const data = await response.json()
+      if (response.ok && data.success) {
+        setConfirmModalOpen(false)
+        setConfirmModalData(null)
+        setConfirmCheckbox(false)
+        fetchJadwal(pesertaId)
+      } else {
+        alert('Gagal mencatat ujian: ' + (data.error || 'Kesalahan server'))
+      }
+    } catch (error) {
+      console.error('Error marking exam as submitted:', error)
+      alert('Terjadi kesalahan saat mencatat ujian')
+    } finally {
+      setIsSubmittingConfirm(false)
+    }
+  }
+
   const handleMulaiUjian = (jadwalId: string) => {
     router.push(`/student/ujian/${jadwalId}/mulai`)
+  }
+
+  const handleBukaGoogleForm = (jadwalId: string) => {
+    router.push(`/student/google-form/${jadwalId}`)
   }
 
   const handleLogout = () => {
@@ -360,14 +460,64 @@ export default function StudentDashboard() {
                       {jadwal.jamMulai} ({jadwal.durasi} menit)
                     </div>
                     
-                    <div className="pt-2">
+                    <div className="pt-2 space-y-2">
                       {isActive ? (
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
-                          onClick={() => handleMulaiUjian(jadwal.id)}
-                        >
-                          Mulai Ujian
-                        </Button>
+                        jadwal.sourceType === 'GOOGLE_FORM' ? (
+                          <>
+                            {isFormStarted(jadwal) ? (
+                              <>
+                                {getMinimumTimeReached(jadwal) ? (
+                                  <>
+                                    <Button 
+                                      className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                      onClick={() => handleBukaGoogleForm(jadwal.id)}
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Buka Google Form
+                                    </Button>
+                                    <Button 
+                                      className="w-full bg-blue-600 hover:bg-blue-700 text-sm md:text-base h-10 md:h-11"
+                                      onClick={() => handleBukaKonfirmasiModal(jadwal.id, jadwal.namaUjian)}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-2" />
+                                      Konfirmasi Sudah Ujian
+                                    </Button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Button 
+                                      className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                      onClick={() => handleBukaGoogleForm(jadwal.id)}
+                                    >
+                                      <ExternalLink className="h-4 w-4 mr-2" />
+                                      Buka Google Form
+                                    </Button>
+                                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-center">
+                                      <p className="text-xs text-yellow-800">
+                                        Tunggu {getRemainingMinimumTime(jadwal)} menit lagi
+                                      </p>
+                                    </div>
+                                  </>
+                                )}
+                              </>
+                            ) : (
+                              <Button 
+                                className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleBukaGoogleForm(jadwal.id)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Buka Google Form
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <Button 
+                            className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                            onClick={() => handleMulaiUjian(jadwal.id)}
+                          >
+                            Mulai Ujian
+                          </Button>
+                        )
                       ) : (
                         <Button className="w-full text-sm md:text-base h-10 md:h-11" variant="outline" disabled>
                           Belum Waktunya
@@ -426,6 +576,66 @@ export default function StudentDashboard() {
           </div>
         </div>
       )}
+
+      {/* Modal Konfirmasi Ujian */}
+      <Dialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <AlertCircle className="h-5 w-5 text-orange-500" />
+              Konfirmasi Ujian
+            </DialogTitle>
+            <DialogDescription>
+              Pastikan Anda sudah menyelesaikan ujian Google Form sebelum mengkonfirmasi
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">Ujian yang akan dikonfirmasi:</p>
+              <p className="text-lg font-bold text-blue-600">{confirmModalData?.namaUjian}</p>
+            </div>
+
+            <Alert className="border-yellow-200 bg-yellow-50">
+              <AlertCircle className="h-4 w-4 text-yellow-600" />
+              <AlertDescription className="text-sm text-yellow-800">
+                Setelah konfirmasi, ujian ini akan dicatat sebagai selesai dan tidak dapat diubah.
+              </AlertDescription>
+            </Alert>
+
+            <div className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
+              <Checkbox 
+                id="confirm-checkbox"
+                checked={confirmCheckbox}
+                onCheckedChange={(checked) => setConfirmCheckbox(checked as boolean)}
+                className="mt-1"
+              />
+              <label 
+                htmlFor="confirm-checkbox"
+                className="text-sm text-gray-700 cursor-pointer flex-1"
+              >
+                Saya sudah menyelesaikan ujian Google Form dan siap mengkonfirmasi
+              </label>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmModalOpen(false)}
+            >
+              Batal
+            </Button>
+            <Button
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleConfirmSubmit}
+              disabled={!confirmCheckbox || isSubmittingConfirm}
+            >
+              {isSubmittingConfirm ? 'Memproses...' : 'Konfirmasi'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
