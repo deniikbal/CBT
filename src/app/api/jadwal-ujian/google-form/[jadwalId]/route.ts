@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { jadwalUjian, bankSoal, jadwalUjianPeserta } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
+import { parseWIBDateTime, getCurrentWIBTime } from '@/lib/timezone';
 
 // GET Google Form URL dengan access control
 export async function GET(
@@ -80,11 +81,12 @@ export async function GET(
       );
     }
 
-    // Check time window
-    const now = new Date();
-    const ujianDate = new Date(jadwal.tanggalUjian);
-    const [hours, minutes] = jadwal.jamMulai.split(':').map(Number);
-    ujianDate.setHours(hours, minutes, 0);
+    // Check time window (convert to WIB timezone)
+    const now = getCurrentWIBTime();
+    const ujianDate = parseWIBDateTime(
+      jadwal.tanggalUjian.toISOString().split('T')[0],
+      jadwal.jamMulai
+    );
     
     const endTime = new Date(ujianDate.getTime() + jadwal.durasi * 60 * 1000);
 

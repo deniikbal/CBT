@@ -10,6 +10,7 @@ import { Calendar, Clock, BookOpen, AlertCircle, CheckCircle, Monitor, ExternalL
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { parseWIBDateTime, getCurrentWIBTime } from '@/lib/timezone'
 
 interface Peserta {
   id: string
@@ -94,10 +95,9 @@ export default function UjianSayaPage() {
   }
 
   const getUjianStatus = (tanggal: string, jamMulai: string) => {
-    const now = new Date()
-    const ujianDate = new Date(tanggal)
-    const [hours, minutes] = jamMulai.split(':').map(Number)
-    ujianDate.setHours(hours, minutes, 0)
+    const now = getCurrentWIBTime()
+    const dateStr = new Date(tanggal).toISOString().split('T')[0]
+    const ujianDate = parseWIBDateTime(dateStr, jamMulai)
     
     // Hanya check apakah sudah melewati waktu mulai atau belum
     // Tidak ada status expired berdasarkan waktu selesai
@@ -120,11 +120,11 @@ export default function UjianSayaPage() {
   }
 
   const getCountdown = (tanggal: string, jamMulai: string) => {
-    const ujianDate = new Date(tanggal)
-    const [hours, minutes] = jamMulai.split(':').map(Number)
-    ujianDate.setHours(hours, minutes, 0)
+    const dateStr = new Date(tanggal).toISOString().split('T')[0]
+    const ujianDate = parseWIBDateTime(dateStr, jamMulai)
+    const now = getCurrentWIBTime()
     
-    const diff = ujianDate.getTime() - currentTime.getTime()
+    const diff = ujianDate.getTime() - now.getTime()
     
     if (diff <= 0) {
       return null

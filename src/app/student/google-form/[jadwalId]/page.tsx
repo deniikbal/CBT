@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Loader2, AlertTriangle, Clock, CheckCircle, ExternalLink } from 'lucide-react'
 import { format } from 'date-fns'
 import { id as localeId } from 'date-fns/locale'
+import { parseWIBDateTime, getCurrentWIBTime } from '@/lib/timezone'
 
 interface GoogleFormAccess {
   success: boolean
@@ -66,8 +67,9 @@ export default function GoogleFormPage() {
       const startTime = new Date(formAccess.startTime)
       // Allow 5 minutes before
       const allowedStartTime = new Date(startTime.getTime() - 5 * 60 * 1000)
+      const now = getCurrentWIBTime()
       
-      const diff = allowedStartTime.getTime() - currentTime.getTime()
+      const diff = allowedStartTime.getTime() - now.getTime()
       if (diff > 0) {
         const minutes = Math.floor(diff / (60 * 1000))
         const seconds = Math.floor((diff % (60 * 1000)) / 1000)
