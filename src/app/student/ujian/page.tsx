@@ -73,6 +73,7 @@ export default function UjianSayaPage() {
       const response = await fetch(`/api/peserta/${pesertaId}/jadwal`)
       if (response.ok) {
         const data = await response.json()
+        console.log('Jadwal data:', data)
         setJadwalList(data)
         
         // Check if any exam requires exam browser
@@ -503,9 +504,19 @@ export default function UjianSayaPage() {
                     )}
 
                     <div className="pt-2">
-                      <Button className="w-full" variant="outline" disabled>
-                        Belum Waktunya
-                      </Button>
+                      {jadwal.sourceType === 'GOOGLE_FORM' ? (
+                        <Button 
+                          className="w-full bg-blue-600 hover:bg-blue-700 text-sm md:text-base h-10 md:h-11"
+                          onClick={() => handleBukaGoogleForm(jadwal.id)}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Siap Google Form
+                        </Button>
+                      ) : (
+                        <Button className="w-full" variant="outline" disabled>
+                          Belum Waktunya
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

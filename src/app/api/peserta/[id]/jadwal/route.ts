@@ -66,6 +66,7 @@ export async function GET(
         .sort((a, b) => new Date(b.tanggalUjian).getTime() - new Date(a.tanggalUjian).getTime());
       
       console.log('[API] Found', jadwalList.length, 'jadwal');
+      console.log('[API] First jadwal sourceType:', jadwalList[0]?.sourceType);
     } catch (queryError) {
       console.error('[API] Database query error:', queryError);
       throw queryError;
