@@ -74,6 +74,26 @@ export default function UjianSayaPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Auto-refresh jadwal saat halaman di-focus (untuk refresh data setelah submit)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && peserta?.id) {
+        fetchJadwal(peserta.id)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', () => {
+      if (peserta?.id) {
+        fetchJadwal(peserta.id)
+      }
+    })
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [peserta?.id])
+
   const fetchJadwal = async (pesertaId: string) => {
     try {
       const response = await fetch(`/api/peserta/${pesertaId}/jadwal`)
@@ -167,6 +187,7 @@ export default function UjianSayaPage() {
   }
 
   const handleBukaGoogleForm = (jadwalId: string) => {
+    // Navigate to google form page - mark-started will be triggered there
     router.push(`/student/google-form/${jadwalId}`)
   }
 
@@ -217,6 +238,11 @@ export default function UjianSayaPage() {
   }
 
   const getMinimumTimeReached = (jadwal: JadwalUjian): boolean => {
+    // Untuk Google Form, bypass minimum time check - langsung bisa konfirmasi
+    if (jadwal.sourceType === 'GOOGLE_FORM') {
+      return true
+    }
+
     if (!jadwal.minimumPengerjaan || !jadwal.hasilUjian?.waktuMulai) {
       return true // Jika tidak ada minimum, langsung bisa konfirmasi
     }

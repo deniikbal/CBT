@@ -41,6 +41,7 @@ export default function GoogleFormPage() {
   } | null>(null)
   const [confirmationLink, setConfirmationLink] = useState<string | null>(null)
   const [copiedToClipboard, setCopiedToClipboard] = useState(false)
+  const [isOpeningForm, setIsOpeningForm] = useState(false)
 
   // Timer untuk update waktu setiap detik
   useEffect(() => {
@@ -61,9 +62,6 @@ export default function GoogleFormPage() {
     const pesertaData = JSON.parse(storedPeserta)
     setPesertaId(pesertaData.id)
     fetchFormAccess(pesertaData.id)
-    
-    // Mark exam as started when this page is opened
-    markExamAsStarted(pesertaData.id)
   }, [jadwalId])
 
   // Generate confirmation link when pesertaId is set
@@ -94,18 +92,6 @@ export default function GoogleFormPage() {
     }
   }, [currentTime, formAccess])
 
-  const markExamAsStarted = async (pId: string) => {
-    try {
-      await fetch('/api/jadwal-ujian/google-form/mark-started', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jadwalId, pesertaId: pId }),
-      })
-    } catch (err) {
-      console.error('Error marking exam as started:', err)
-    }
-  }
-
   const fetchFormAccess = async (pId: string) => {
     try {
       setLoading(true)
@@ -130,9 +116,27 @@ export default function GoogleFormPage() {
     }
   }
 
-  const handleOpenForm = () => {
-    if (formAccess?.url) {
-      window.open(formAccess.url, '_blank')
+  const handleOpenForm = async () => {
+    try {
+      setIsOpeningForm(true)
+      
+      // Mark exam as started first
+      if (pesertaId) {
+        await fetch('/api/jadwal-ujian/google-form/mark-started', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jadwalId, pesertaId }),
+        })
+      }
+      
+      // Then open the form
+      if (formAccess?.url) {
+        window.open(formAccess.url, '_blank')
+      }
+    } catch (err) {
+      console.error('Error opening form:', err)
+    } finally {
+      setIsOpeningForm(false)
     }
   }
 
@@ -373,9 +377,19 @@ export default function GoogleFormPage() {
             onClick={handleOpenForm}
             className="w-full bg-green-600 hover:bg-green-700"
             size="lg"
+            disabled={isOpeningForm}
           >
-            <ExternalLink className="w-4 h-4 mr-2" />
-            1️⃣ Buka Google Form
+            {isOpeningForm ? (
+              <>
+                <div className="animate-spin mr-2">⏳</div>
+                Memproses...
+              </>
+            ) : (
+              <>
+                <ExternalLink className="w-4 h-4 mr-2" />
+                1️⃣ Buka Google Form
+              </>
+            )}
           </Button>
 
           <Button
