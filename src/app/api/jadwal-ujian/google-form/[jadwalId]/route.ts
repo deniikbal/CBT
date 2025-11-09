@@ -46,10 +46,10 @@ export async function GET(
       );
     }
 
-    // Check if jadwal is active
+    // Check if jadwal is active - only use status to determine if exam is available
     if (!jadwal.isActive) {
       return NextResponse.json(
-        { error: 'Jadwal ujian tidak aktif' },
+        { error: 'Waktu ujian telah berakhir' },
         { status: 403 }
       );
     }
@@ -81,52 +81,11 @@ export async function GET(
       );
     }
 
-    // Check time window
+    // Calculate remaining time based on duration for display purposes only
     const now = new Date();
-    
-    // Extract WIB date dari tanggalUjian (UTC timestamp)
     const dateStr = extractWIBDateStr(jadwal.tanggalUjian);
-    
-    // Parse sebagai WIB untuk conversion ke UTC
     const ujianDate = parseLocalWIBDateTime(dateStr, jadwal.jamMulai);
     const endTime = new Date(ujianDate.getTime() + jadwal.durasi * 60 * 1000);
-
-    // Allow access 5 minutes before start time
-    const allowedStartTime = new Date(ujianDate.getTime() - 5 * 60 * 1000);
-
-    console.log('[API] Time check:', {
-      now: now.toISOString(),
-      allowedStartTime: allowedStartTime.toISOString(),
-      ujianDate: ujianDate.toISOString(),
-      endTime: endTime.toISOString(),
-      dateStr,
-      jamMulai: jadwal.jamMulai,
-      durasi: jadwal.durasi,
-      nowVsAllowed: now >= allowedStartTime ? 'OK' : 'TOO EARLY',
-      nowVsEnd: now <= endTime ? 'OK' : 'TOO LATE',
-    });
-
-    if (now < allowedStartTime) {
-      const minutesUntilStart = Math.ceil((allowedStartTime.getTime() - now.getTime()) / (60 * 1000));
-      return NextResponse.json(
-        {
-          error: 'Ujian belum dimulai',
-          minutesUntilStart,
-          startTime: ujianDate.toISOString(),
-        },
-        { status: 403 }
-      );
-    }
-
-    if (now > endTime) {
-      return NextResponse.json(
-        {
-          error: 'Waktu ujian telah berakhir',
-          endTime: endTime.toISOString(),
-        },
-        { status: 403 }
-      );
-    }
 
     // All checks passed, return the Google Form URL
     return NextResponse.json({
