@@ -465,13 +465,51 @@ export default function UjianSayaPage() {
                       )}
                     </div>
 
-                    <div className="pt-2">
-                      <Button 
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-sm md:text-base h-10 md:h-11"
-                        onClick={() => handleMulaiUjian(jadwal.id)}
-                      >
-                        Lanjutkan Ujian
-                      </Button>
+                    <div className="pt-2 space-y-2">
+                      {jadwal.sourceType === 'GOOGLE_FORM' ? (
+                        <>
+                          {getMinimumTimeReached(jadwal) ? (
+                            <>
+                              <Button 
+                                className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleBukaGoogleForm(jadwal.id)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Buka Google Form
+                              </Button>
+                              <Button 
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleBukaKonfirmasiModal(jadwal.id, jadwal.namaUjian)}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Konfirmasi Sudah Ujian
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <Button 
+                                className="w-full bg-green-600 hover:bg-green-700 text-sm md:text-base h-10 md:h-11"
+                                onClick={() => handleBukaGoogleForm(jadwal.id)}
+                              >
+                                <ExternalLink className="h-4 w-4 mr-2" />
+                                Buka Google Form
+                              </Button>
+                              <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-center">
+                                <p className="text-xs text-yellow-800">
+                                  Tunggu {getRemainingMinimumTime(jadwal)} menit lagi untuk konfirmasi
+                                </p>
+                              </div>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <Button 
+                          className="w-full bg-orange-600 hover:bg-orange-700 text-sm md:text-base h-10 md:h-11"
+                          onClick={() => handleMulaiUjian(jadwal.id)}
+                        >
+                          Lanjutkan Ujian
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
