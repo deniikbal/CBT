@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hasilUjianPeserta, jadwalUjian, peserta, bankSoal, mataPelajaran, activityLog } from '@/db/schema';
-import { eq, sql, or, inArray } from 'drizzle-orm';
+import { eq, sql, or, inArray, and } from 'drizzle-orm';
 
 export async function GET() {
   try {
@@ -36,10 +36,16 @@ export async function GET() {
         .leftJoin(mataPelajaran, eq(bankSoal.matpelId, mataPelajaran.id))
         .where(
           or(
-            // Google Form: tampilkan mulai, in_progress, submitted
-            inArray(hasilUjianPeserta.status, ['mulai', 'in_progress', 'submitted']),
-            // Manual/Regular: hanya in_progress (original behavior)
-            eq(hasilUjianPeserta.status, 'in_progress')
+            // Google Form: tampilkan hanya mulai, in_progress (jangan submitted)
+            and(
+              eq(bankSoal.sourceType, 'GOOGLE_FORM'),
+              inArray(hasilUjianPeserta.status, ['mulai', 'in_progress'])
+            ),
+            // Manual: hanya in_progress (original behavior)
+            and(
+              eq(bankSoal.sourceType, 'MANUAL'),
+              eq(hasilUjianPeserta.status, 'in_progress')
+            )
           )
         );
       
