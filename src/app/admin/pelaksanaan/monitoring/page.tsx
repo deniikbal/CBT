@@ -42,6 +42,7 @@ interface ActiveExam {
   ipAddress: string
   progress: number
   duration: number
+  elapsedMinutes: number
   activityCounts: Record<string, number>
   totalSuspicious: number
   riskLevel: 'low' | 'medium' | 'high'

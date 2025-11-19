@@ -28,6 +28,7 @@ export async function GET() {
           sessionId: hasilUjianPeserta.sessionId,
           ipAddress: hasilUjianPeserta.ipAddress,
           jawaban: hasilUjianPeserta.jawaban,
+          durasiUjian: jadwalUjian.durasi,
         })
         .from(hasilUjianPeserta)
         .innerJoin(peserta, eq(hasilUjianPeserta.pesertaId, peserta.id))
@@ -122,8 +123,11 @@ export async function GET() {
             progress = 0;
           }
 
-          // Calculate duration
-          const duration = exam.waktuMulai
+          // Get exam duration (total duration in minutes)
+          const duration = exam.durasiUjian || 0;
+
+          // Calculate elapsed time in minutes
+          const elapsedMinutes = exam.waktuMulai
             ? Math.floor((Date.now() - new Date(exam.waktuMulai).getTime()) / 1000 / 60)
             : 0;
 
@@ -173,6 +177,7 @@ export async function GET() {
             ipAddress: exam.ipAddress || '-',
             progress,
             duration,
+            elapsedMinutes,
             activityCounts,
             totalSuspicious,
             riskLevel,
@@ -195,6 +200,7 @@ export async function GET() {
             ipAddress: '-',
             progress: 0,
             duration: 0,
+            elapsedMinutes: 0,
             activityCounts: {},
             totalSuspicious: 0,
             riskLevel: 'low' as const,
