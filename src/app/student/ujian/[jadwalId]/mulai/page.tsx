@@ -66,6 +66,7 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
   
   // Create auto submit handler ref that will be assigned later
   const autoSubmitRef = useRef<(() => void) | null>(null)
+  const autoSubmitTriggeredRef = useRef(false)
 
   // Exam Security Hooks - must be called before any conditional returns
   const { blurCount, isFullscreen, logActivity, requestFullscreen } = useExamSecurity({
@@ -202,14 +203,22 @@ export default function PengerjaanUjianPage({ params }: { params: Promise<{ jadw
     // Don't start timer if timeLeft is null (not loaded yet)
     if (timeLeft === null) return
 
-    // Time expired - show warning but don't auto submit
-    // Let student submit manually
+    // Time expired - auto submit
     if (timeLeft <= 0) {
       if (!timeExpired) {
         setTimeExpired(true)
-        toast.error('⏰ Waktu ujian telah habis! Silakan submit jawaban Anda sekarang.', {
-          duration: 10000,
+        toast.error('⏰ Waktu ujian telah habis! Ujian akan disubmit otomatis...', {
+          duration: 5000,
         })
+      }
+      
+      // Auto-submit once when time expires
+      if (!autoSubmitTriggeredRef.current && autoSubmitRef.current) {
+        autoSubmitTriggeredRef.current = true
+        // Delay slightly to ensure toast is visible
+        setTimeout(() => {
+          autoSubmitRef.current?.()
+        }, 500)
       }
       return
     }

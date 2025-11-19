@@ -32,6 +32,7 @@ interface ActiveExam {
   pesertaId: string
   pesertaName: string
   pesertaNoUjian: string
+  jadwalId: string
   namaUjian: string
   bankSoalKode: string
   mataPelajaran: string
@@ -62,6 +63,16 @@ export default function MonitoringPage() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterRisk, setFilterRisk] = useState<string>('all')
+  const [forceSubmitting, setForceSubmitting] = useState(false)
+  const [showForceSubmitDialog, setShowForceSubmitDialog] = useState(false)
+  const [examToForceSubmit, setExamToForceSubmit] = useState<ActiveExam | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [forceSubmitResult, setForceSubmitResult] = useState<{
+    pesertaName: string
+    skor: number
+    skorMaksimal: number
+    persentase: number
+  } | null>(null)
 
   // Fetch active exams
   const fetchActiveExams = async () => {
@@ -142,6 +153,65 @@ export default function MonitoringPage() {
   const handleViewDetails = (exam: ActiveExam) => {
     setSelectedExam(exam)
     fetchActivities(exam.id)
+  }
+
+  const handleForceSubmit = async () => {
+    if (!examToForceSubmit) return
+    
+    setForceSubmitting(true)
+    try {
+      const response = await fetch('/api/admin/ujian/force-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          hasilId: examToForceSubmit.id,
+          jadwalId: examToForceSubmit.jadwalId || examToForceSubmit.id
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        console.log('[Force Submit] Success:', data)
+        setShowForceSubmitDialog(false)
+        
+        // Set success result
+        setForceSubmitResult({
+          pesertaName: examToForceSubmit.pesertaName,
+          skor: data.skor,
+          skorMaksimal: data.skorMaksimal,
+          persentase: data.persentase
+        })
+        
+        // Show success modal
+        setShowSuccessModal(true)
+        
+        // Refresh exam list after delay
+        setTimeout(() => {
+          fetchActiveExams()
+          setExamToForceSubmit(null)
+        }, 2000)
+      } else {
+        const errorMsg = data.error || 'Gagal force submit ujian'
+        console.error('[Force Submit] Error:', errorMsg)
+        alert(`✗ Gagal: ${errorMsg}`)
+      }
+    } catch (error) {
+      console.error('[Force Submit] Exception:', error)
+      alert(`✗ Error: ${error instanceof Error ? error.message : 'Terjadi kesalahan'}`)
+    } finally {
+      setForceSubmitting(false)
+    }
+  }
+
+  const getTimeExpiredStatus = (exam: ActiveExam) => {
+    if (!exam.duration) return null
+    
+    const waktuMulai = new Date(exam.waktuMulai)
+    const waktuSelesai = new Date(waktuMulai.getTime() + exam.duration * 60000)
+    const sekarang = new Date()
+    
+    return sekarang > waktuSelesai
   }
 
   const getRiskBadge = (level: string) => {
@@ -314,24 +384,39 @@ export default function MonitoringPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-            {filteredExams.map((exam) => (
+            {filteredExams.map((exam) => {
+              const isTimeExpired = getTimeExpiredStatus(exam)
+              
+              return (
               <div 
                 key={exam.id} 
                 className={`relative rounded-lg border-2 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-lg overflow-hidden ${
+                  isTimeExpired ? 'border-red-600 bg-gradient-to-br from-red-100 to-white ring-2 ring-red-300' :
                   exam.riskLevel === 'high' ? 'border-red-500 bg-gradient-to-br from-red-50 to-white' :
                   exam.riskLevel === 'medium' ? 'border-yellow-500 bg-gradient-to-br from-yellow-50 to-white' :
                   'border-green-500 bg-gradient-to-br from-green-50 to-white'
                 }`}
                 onClick={() => handleViewDetails(exam)}
               >
-                {/* Risk Badge Corner */}
-                <div className="absolute top-0 right-0">
-                  {exam.riskLevel === 'high' ? (
-                    <div className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">⚠️</div>
-                  ) : exam.riskLevel === 'medium' ? (
-                    <div className="bg-yellow-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">⚡</div>
-                  ) : (
-                    <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">✓</div>
+                {/* Top Badges */}
+                <div className="absolute top-0 right-0 flex gap-1">
+                  {/* Time Expired Badge */}
+                  {isTimeExpired && (
+                    <div className="bg-red-600 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md font-bold animate-pulse">
+                      ⏰ WAKTU HABIS
+                    </div>
+                  )}
+                  {/* Risk Badge Corner */}
+                  {!isTimeExpired && (
+                    <>
+                      {exam.riskLevel === 'high' ? (
+                        <div className="bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">⚠️</div>
+                      ) : exam.riskLevel === 'medium' ? (
+                        <div className="bg-yellow-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">⚡</div>
+                      ) : (
+                        <div className="bg-green-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">✓</div>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -366,6 +451,18 @@ export default function MonitoringPage() {
                       <span className="text-[9px] font-semibold text-gray-700">{exam.duration}m</span>
                     </div>
                   </div>
+
+                  {/* Time Expired Warning */}
+                  {isTimeExpired && (
+                    <div className="bg-red-100 border-l-4 border-red-600 rounded p-1.5 mb-1.5">
+                      <div className="text-[8px] font-bold text-red-700 flex items-center gap-1">
+                        <span>⏰ WAKTU HABIS</span>
+                      </div>
+                      <p className="text-[7px] text-red-600 mt-0.5">
+                        Klik untuk force submit jawaban
+                      </p>
+                    </div>
+                  )}
 
                   {/* Pelanggaran Badge */}
                   {exam.totalSuspicious === 0 ? (
@@ -415,7 +512,8 @@ export default function MonitoringPage() {
                   )}
                 </div>
               </div>
-            ))}
+            )
+            })}
           </div>
         )}
       </div>
@@ -428,42 +526,45 @@ export default function MonitoringPage() {
               <Activity className="h-5 w-5" />
               Detail Aktivitas - {selectedExam?.pesertaName}
             </DialogTitle>
-            <DialogDescription className="space-y-1">
-              <div>No Ujian: {selectedExam?.pesertaNoUjian} • {selectedExam?.namaUjian}</div>
-              <div className="flex gap-2 pt-1">
-                {selectedExam?.sourceType === 'GOOGLE_FORM' && (
-                  <>
-                    <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-semibold">
-                      📋 Google Form
-                    </span>
-                    {selectedExam.status === 'mulai' && (
-                      <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded font-semibold">
-                        Status: Mulai (Baru buka form)
-                      </span>
-                    )}
-                    {selectedExam.status === 'in_progress' && (
-                      <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-semibold">
-                        Status: Sedang Mengerjakan
-                      </span>
-                    )}
-                    {selectedExam.status === 'submitted' && (
-                      <span className="inline-flex items-center bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-semibold">
-                        Status: Sudah Submit
-                      </span>
-                    )}
-                  </>
-                )}
-                {selectedExam?.sourceType !== 'GOOGLE_FORM' && (
-                  <span className="inline-flex items-center bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded font-semibold">
-                    📝 Ujian Manual
-                  </span>
-                )}
-              </div>
-            </DialogDescription>
           </DialogHeader>
 
           {selectedExam && (
-            <div className="space-y-4 mt-4">
+            <div className="space-y-4">
+              {/* Exam Info */}
+              <div className="space-y-2 text-sm bg-gray-50 p-3 rounded-lg">
+                <div>
+                  <span className="text-gray-600 font-medium">No Ujian:</span> {selectedExam.pesertaNoUjian} • {selectedExam.namaUjian}
+                </div>
+                <div className="flex gap-2 pt-1 flex-wrap">
+                  {selectedExam.sourceType === 'GOOGLE_FORM' && (
+                    <>
+                      <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-semibold">
+                        📋 Google Form
+                      </span>
+                      {selectedExam.status === 'mulai' && (
+                        <span className="inline-flex items-center bg-purple-100 text-purple-700 text-xs px-2 py-1 rounded font-semibold">
+                          Status: Mulai (Baru buka form)
+                        </span>
+                      )}
+                      {selectedExam.status === 'in_progress' && (
+                        <span className="inline-flex items-center bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded font-semibold">
+                          Status: Sedang Mengerjakan
+                        </span>
+                      )}
+                      {selectedExam.status === 'submitted' && (
+                        <span className="inline-flex items-center bg-green-100 text-green-700 text-xs px-2 py-1 rounded font-semibold">
+                          Status: Sudah Submit
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {selectedExam.sourceType !== 'GOOGLE_FORM' && (
+                    <span className="inline-flex items-center bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded font-semibold">
+                      📝 Ujian Manual
+                    </span>
+                  )}
+                </div>
+              </div>
               {/* Summary */}
               <Alert className={
                 selectedExam.riskLevel === 'high' ? 'border-red-500 bg-red-50' :
@@ -525,8 +626,189 @@ export default function MonitoringPage() {
                   </div>
                 )}
               </div>
+
+              {/* Force Submit Section */}
+              <div className="border-t pt-4 mt-6">
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-semibold text-orange-900 flex items-center gap-2 mb-1">
+                        <AlertTriangle className="h-4 w-4" />
+                        Force Submit Ujian
+                      </h4>
+                      <p className="text-sm text-orange-700">
+                        Gunakan tombol ini untuk memaksa submit ujian peserta yang sudah habis waktu atau untuk tindakan administratif lainnya.
+                      </p>
+                    </div>
+                    <Button 
+                      className="bg-orange-600 hover:bg-orange-700 text-white whitespace-nowrap ml-4"
+                      onClick={() => {
+                        setExamToForceSubmit(selectedExam)
+                        setShowForceSubmitDialog(true)
+                      }}
+                      disabled={selectedExam?.status === 'submitted'}
+                    >
+                      ⚡ Force Submit
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Force Submit Confirmation Dialog */}
+      <Dialog open={showForceSubmitDialog} onOpenChange={setShowForceSubmitDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
+              Konfirmasi Force Submit
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin memaksa submit ujian ini?
+            </DialogDescription>
+          </DialogHeader>
+          
+          {examToForceSubmit && (
+            <div className="space-y-3 py-4">
+              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Peserta:</span>
+                  <span className="font-semibold">{examToForceSubmit.pesertaName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">No Ujian:</span>
+                  <span className="font-semibold">{examToForceSubmit.pesertaNoUjian}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Ujian:</span>
+                  <span className="font-semibold">{examToForceSubmit.namaUjian}</span>
+                </div>
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span className="text-gray-600">Status:</span>
+                  <span className={`font-semibold ${getTimeExpiredStatus(examToForceSubmit) ? 'text-red-600' : 'text-blue-600'}`}>
+                    {getTimeExpiredStatus(examToForceSubmit) ? '⏰ Waktu Habis' : '⏱️ Masih Berlangsung'}
+                  </span>
+                </div>
+              </div>
+
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Tindakan ini akan langsung mensubmit ujian peserta dengan jawaban yang sudah mereka kerjakan. Tindakan ini tidak dapat dibatalkan.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowForceSubmitDialog(false)
+                setExamToForceSubmit(null)
+              }}
+              disabled={forceSubmitting}
+            >
+              Batal
+            </Button>
+            <Button 
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+              onClick={handleForceSubmit}
+              disabled={forceSubmitting}
+            >
+              {forceSubmitting ? '⏳ Sedang Submit...' : '⚡ Ya, Force Submit'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="max-w-md">
+          <div className="text-center py-6">
+            {/* Success Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-green-100 rounded-full animate-pulse"></div>
+                <div className="relative bg-green-500 rounded-full p-4">
+                  <CheckCircle2 className="h-12 w-12 text-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Ujian Berhasil Disubmit!
+            </h2>
+
+            {/* Peserta Info */}
+            {forceSubmitResult && (
+              <>
+                <p className="text-gray-600 mb-6">
+                  Ujian <span className="font-semibold">{forceSubmitResult.pesertaName}</span> berhasil diforce submit oleh admin
+                </p>
+
+                {/* Score Display */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-100">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Nilai Akhir</p>
+                      <p className="text-4xl font-bold text-blue-600">
+                        {forceSubmitResult.skor}/{forceSubmitResult.skorMaksimal}
+                      </p>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-1000"
+                        style={{ width: `${forceSubmitResult.persentase}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-700">
+                      <span className="text-2xl text-green-600">{forceSubmitResult.persentase}%</span> Benar
+                    </p>
+                  </div>
+                </div>
+
+                {/* Status Badge */}
+                <div className="flex justify-center mb-6">
+                  {forceSubmitResult.persentase >= 80 && (
+                    <span className="inline-flex items-center bg-green-100 text-green-800 text-sm px-4 py-2 rounded-full font-semibold">
+                      ⭐ Sangat Baik
+                    </span>
+                  )}
+                  {forceSubmitResult.persentase >= 60 && forceSubmitResult.persentase < 80 && (
+                    <span className="inline-flex items-center bg-blue-100 text-blue-800 text-sm px-4 py-2 rounded-full font-semibold">
+                      ✓ Baik
+                    </span>
+                  )}
+                  {forceSubmitResult.persentase < 60 && (
+                    <span className="inline-flex items-center bg-orange-100 text-orange-800 text-sm px-4 py-2 rounded-full font-semibold">
+                      ⚠ Perlu Belajar
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Info Text */}
+            <p className="text-xs text-gray-500 mb-6">
+              Peserta akan otomatis dihapus dari monitoring dalam beberapa detik
+            </p>
+
+            {/* Close Button */}
+            <Button
+              onClick={() => {
+                setShowSuccessModal(false)
+                setForceSubmitResult(null)
+              }}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              ✓ Tutup
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
